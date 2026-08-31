@@ -1,0 +1,343 @@
+{
+  "teachers": [
+    {
+      "id": "t1",
+      "name": "Admin",
+      "username": "admin",
+      "password": "123",
+      "subject": "Admin",
+      "isWaliKelas": false,
+      "kelas": ""
+    },
+    {
+      "id": "t2",
+      "name": "Pak Ahmad, S.Pd",
+      "username": "ahmad",
+      "password": "123",
+      "subject": "IPA",
+      "isWaliKelas": true,
+      "kelas": "7"
+    },
+    {
+      "id": "t3",
+      "name": "Bu Fatimah, S.Pd",
+      "username": "fatimah",
+      "password": "123",
+      "subject": "Matematika",
+      "isWaliKelas": true,
+      "kelas": "8"
+    },
+    {
+      "id": "t4",
+      "name": "Pak Lukman, S.Ag",
+      "username": "lukman",
+      "password": "123",
+      "subject": "PAI",
+      "isWaliKelas": false,
+      "kelas": ""
+    },
+    {
+      "id": "t5",
+      "name": "Bu Khadijah, S.Pd",
+      "username": "khadijah",
+      "password": "123",
+      "subject": "Bahasa Indonesia",
+      "isWaliKelas": true,
+      "kelas": "9"
+    }
+  ],
+  "students": [
+    { "id": "s7_1", "nisn": "0130007001", "name": "Muhammad Al-Fatih", "kelas": "7" },
+    { "id": "s7_2", "nisn": "0130007002", "name": "Aisha Zahra", "kelas": "7" },
+    { "id": "s7_3", "nisn": "0130007003", "name": "Yusuf Ibrahim", "kelas": "7" },
+    { "id": "s7_4", "nisn": "0130007004", "name": "Siti Khadijah", "kelas": "7" },
+    { "id": "s7_5", "nisn": "0130007005", "name": "Ahmad Dahlan", "kelas": "7" },
+    { "id": "s7_6", "nisn": "0130007006", "name": "Rahmawati Sukarno", "kelas": "7" },
+    { "id": "s7_7", "nisn": "0130007007", "name": "Agus Salim", "kelas": "7" },
+    { "id": "s7_8", "nisn": "0130007008", "name": "Dewi Sartika", "kelas": "7" },
+    { "id": "s7_9", "nisn": "0130007009", "name": "Ki Hajar Dewantara", "kelas": "7" },
+    { "id": "s7_10", "nisn": "0130007010", "name": "Cut Nyak Dien", "kelas": "7" },
+    { "id": "s7_11", "nisn": "0130007011", "name": "B.J. Habibie", "kelas": "7" },
+    { "id": "s7_12", "nisn": "0130007012", "name": "Abdurrahman Wahid", "kelas": "7" },
+    { "id": "s7_13", "nisn": "0130007013", "name": "Megawati Soekarnoputri", "kelas": "7" },
+    { "id": "s7_14", "nisn": "0130007014", "name": "Raden Ajeng Kartini", "kelas": "7" },
+    { "id": "s7_15", "nisn": "0130007015", "name": "Pattimura Ahmad", "kelas": "7" },
+    { "id": "s7_16", "nisn": "0130007016", "name": "Sultan Hasanuddin", "kelas": "7" },
+    { "id": "s7_17", "nisn": "0130007017", "name": "Tuanku Imam Bonjol", "kelas": "7" },
+    { "id": "s7_18", "nisn": "0130007018", "name": "Pangeran Diponegoro", "kelas": "7" },
+    { "id": "s7_19", "nisn": "0130007019", "name": "Gajah Mada Adi", "kelas": "7" },
+    { "id": "s7_20", "nisn": "0130007020", "name": "Hayam Wuruk Putra", "kelas": "7" },
+    { "id": "s7_21", "nisn": "0130007021", "name": "Sultan Iskandar Muda", "kelas": "7" },
+    { "id": "s7_22", "nisn": "0130007022", "name": "Martha Christina Tiahahu", "kelas": "7" },
+    { "id": "s7_23", "nisn": "0130007023", "name": "Frans Kaisiepo", "kelas": "7" },
+    { "id": "s7_24", "nisn": "0130007024", "name": "I Gusti Ngurah Rai", "kelas": "7" },
+    { "id": "s7_25", "nisn": "0130007025", "name": "Silas Papare", "kelas": "7" },
+    { "id": "s7_26", "nisn": "0130007026", "name": "Fatmawati Soekarno", "kelas": "7" },
+    { "id": "s7_27", "nisn": "0130007027", "name": "Mohammad Hatta", "kelas": "7" },
+    { "id": "s7_28", "nisn": "0130007028", "name": "Tan Malaka", "kelas": "7" },
+    { "id": "s7_29", "nisn": "0130007029", "name": "Sutan Sjahrir", "kelas": "7" },
+
+    { "id": "s8_1", "nisn": "0118378701", "name": "Aaisyah Nur Husnaa", "kelas": "8" },
+    { "id": "s8_2", "nisn": "0120008002", "name": "Adam Malik", "kelas": "8" },
+    { "id": "s8_3", "nisn": "0120008003", "name": "Ali Sadikin", "kelas": "8" },
+    { "id": "s8_4", "nisn": "0120008004", "name": "Amran Halim", "kelas": "8" },
+    { "id": "s8_5", "nisn": "0120008005", "name": "Andi Meriem Matalatta", "kelas": "8" },
+    { "id": "s8_6", "nisn": "0120008006", "name": "Anwar Ibrahim Sabri", "kelas": "8" },
+    { "id": "s8_7", "nisn": "0120008007", "name": "Chairil Anwar", "kelas": "8" },
+    { "id": "s8_8", "nisn": "0120008008", "name": "Emilia Contessa", "kelas": "8" },
+    { "id": "s8_9", "nisn": "0120008009", "name": "Farhan Azizi", "kelas": "8" },
+    { "id": "s8_10", "nisn": "0120008010", "name": "Gibran Rakabuming", "kelas": "8" },
+    { "id": "s8_11", "nisn": "0120008011", "name": "Hamzah Haz", "kelas": "8" },
+    { "id": "s8_12", "nisn": "0120008012", "name": "Ismail Marzuki", "kelas": "8" },
+    { "id": "s8_13", "nisn": "0120008013", "name": "Joko Widodo Putera", "kelas": "8" },
+    { "id": "s8_14", "nisn": "0120008014", "name": "Krisdayanti Nur", "kelas": "8" },
+    { "id": "s8_15", "nisn": "0120008015", "name": "Ma'ruf Amin", "kelas": "8" },
+    { "id": "s8_16", "nisn": "0120008016", "name": "Megawati Eka", "kelas": "8" },
+    { "id": "s8_17", "nisn": "0120008017", "name": "Mochtar Lubis", "kelas": "8" },
+    { "id": "s8_18", "nisn": "0120008018", "name": "Nadiem Makarim", "kelas": "8" },
+    { "id": "s8_19", "nisn": "0120008019", "name": "Prabowo Subianto", "kelas": "8" },
+    { "id": "s8_20", "nisn": "0120008020", "name": "Raisa Andriana", "kelas": "8" },
+    { "id": "s8_21", "nisn": "0120008021", "name": "Rhoma Irama", "kelas": "8" },
+    { "id": "s8_22", "nisn": "0120008022", "name": "Sandiaga Uno", "kelas": "8" },
+    { "id": "s8_23", "nisn": "0120008023", "name": "Susilo Bambang Yudhoyono", "kelas": "8" },
+    { "id": "s8_24", "nisn": "0120008024", "name": "Tri Rismaharini", "kelas": "8" },
+    { "id": "s8_25", "nisn": "0120008025", "name": "Taufiq Kiemas", "kelas": "8" },
+    { "id": "s8_26", "nisn": "0120008026", "name": "Usmar Ismail", "kelas": "8" },
+    { "id": "s8_27", "nisn": "0120008027", "name": "Waldjinah Lestari", "kelas": "8" },
+    { "id": "s8_28", "nisn": "0120008028", "name": "WS Rendra", "kelas": "8" },
+    { "id": "s8_29", "nisn": "0120008029", "name": "Yusuf Kalla", "kelas": "8" },
+
+    { "id": "s9_1", "nisn": "0110009001", "name": "Achmad Yani", "kelas": "9" },
+    { "id": "s9_2", "nisn": "0110009002", "name": "Ahmad Yani Jatmiko", "kelas": "9" },
+    { "id": "s9_3", "nisn": "0110009003", "name": "Bambang Pamungkas", "kelas": "9" },
+    { "id": "s9_4", "nisn": "0110009004", "name": "Basuki Tjahaja Purnama", "kelas": "9" },
+    { "id": "s9_5", "nisn": "0110009005", "name": "Chrisye Rahardi", "kelas": "9" },
+    { "id": "s9_6", "nisn": "0110009006", "name": "Didi Kempot", "kelas": "9" },
+    { "id": "s9_7", "nisn": "0110009007", "name": "Donald Pandiangan", "kelas": "9" },
+    { "id": "s9_8", "nisn": "0110009008", "name": "Elvy Sukaesih", "kelas": "9" },
+    { "id": "s9_9", "nisn": "0110009009", "name": "Fakhri Husaini", "kelas": "9" },
+    { "id": "s9_10", "nisn": "0110009010", "name": "Gesang Martohartono", "kelas": "9" },
+    { "id": "s9_11", "nisn": "0110009011", "name": "Hendra Setiawan", "kelas": "9" },
+    { "id": "s9_12", "nisn": "0110009012", "name": "Iwan Fals", "kelas": "9" },
+    { "id": "s9_13", "nisn": "0110009013", "name": "Jefri Nichol", "kelas": "9" },
+    { "id": "s9_14", "nisn": "0110009014", "name": "Kasino Warkop", "kelas": "9" },
+    { "id": "s9_15", "nisn": "0110009015", "name": "Lilyana Natsir", "kelas": "9" },
+    { "id": "s9_16", "nisn": "0110009016", "name": "Najwa Shihab", "kelas": "9" },
+    { "id": "s9_17", "nisn": "0110009017", "name": "Nicholas Saputra", "kelas": "9" },
+    { "id": "s9_18", "nisn": "0110009018", "name": "Onky Alexander", "kelas": "9" },
+    { "id": "s9_19", "nisn": "0110009019", "name": "Pevita Pearce", "kelas": "9" },
+    { "id": "s9_20", "nisn": "0110009020", "name": "Raditya Dika", "kelas": "9" },
+    { "id": "s9_21", "nisn": "0110009021", "name": "Reza Rahadian", "kelas": "9" },
+    { "id": "s9_22", "nisn": "0110009022", "name": "Rudy Hartono", "kelas": "9" },
+    { "id": "s9_23", "nisn": "0110009023", "name": "Susi Susanti", "kelas": "9" },
+    { "id": "s9_24", "nisn": "0110009024", "name": "Taufik Hidayat", "kelas": "9" },
+    { "id": "s9_25", "nisn": "0110009025", "name": "Titiek Puspa", "kelas": "9" },
+    { "id": "s9_26", "nisn": "0110009026", "name": "Utut Adianto", "kelas": "9" },
+    { "id": "s9_27", "nisn": "0110009027", "name": "Wiji Thukul", "kelas": "9" },
+    { "id": "s9_28", "nisn": "0110009028", "name": "Yati Octavia", "kelas": "9" },
+    { "id": "s9_29", "nisn": "0110009029", "name": "Zaskia Adya Mecca", "kelas": "9" }
+  ],
+  "grades": [
+    {
+      "studentId": "s8_1",
+      "subject": "PAI",
+      "score": 92,
+      "tps": [
+        { "id": "pai1", "text": "Membaca, menulis, mendemonstrasikan hafalan QS Al-Baqarah/Qisash", "achieved": true },
+        { "id": "pai2", "text": "Meyakini rukun iman serta mencerminkannya dalam perilaku sosial", "achieved": true },
+        { "id": "pai3", "text": "Memahami rukun islam dan tata cara bersuci secara sahih", "achieved": true }
+      ],
+      "usaha": "A",
+      "proses": "B",
+      "capaian": "A",
+      "deskripsi": "Alhamdulillah, pelajaran PAI ananda Sholihah Aaisyah Nur Husnaa sudah tercapai dengan sangat baik. Selama usaha dan proses ananda sudah mampu memahami dan memperaktivkan Sholat Jenazah. Ananda harus selalu didampingi proses belajarnya agar pemahamannya utuh dan mampu mengaplikasikan kedalam kehidupan sehari-hari. Tetap semangat ya Sholihah.",
+      "lastUpdatedBy": "Pak Lukman, S.Ag",
+      "lastUpdatedAt": "2026-06-17T05:00:00.000Z"
+    },
+    {
+      "studentId": "s8_1",
+      "subject": "PPKN",
+      "score": 85,
+      "tps": [
+        { "id": "ppkn1", "text": "Menghayati sejarah perumusan dan penetapan Pancasila sebagai dasar negara", "achieved": true },
+        { "id": "ppkn2", "text": "Menerapkan nilai-nilai Pancasila dalam kehidupan sehari-hari", "achieved": true },
+        { "id": "ppkn3", "text": "Memahami norma-norma yang berlaku dalam kehidupan bermasyarakat", "achieved": true }
+      ],
+      "usaha": "B",
+      "proses": "B",
+      "capaian": "B",
+      "deskripsi": "Alhamdulillah ananda Sholihah Aaisyah Nur Husnaa memahami dengan baik tentang memahami kedudukan Pancasila sebagai dasar negara, pandangan hidup bangsa dan ideologi negara, serta mengimplementasikan nilai-nilai Pancasila dalam kehidupan di lingkungan keluarga, sekolah dan masyarakat. Melalui Sumatif Tengah Semester yang berbasis proyek (membuat infografis dengan tema “Kedudukan Pancasila sebagai Dasar Negara, Pandangan Hidup Bangsa dan Ideologi Negara”), ananda Sholihah Aaisyah Nur Husnaa menunjukkan sikap kerjasama dengan teman satu kelompoknya dan menunjukkan sikap menghargai perbedaan dan menyajikan infografis sesuai dengan tema yang diberikan.",
+      "lastUpdatedBy": "Bu Fatimah, S.Pd",
+      "lastUpdatedAt": "2026-06-17T05:05:00.000Z"
+    },
+    {
+      "studentId": "s8_1",
+      "subject": "Bahasa Indonesia",
+      "score": 95,
+      "tps": [
+        { "id": "indo1", "text": "Mengidentifikasi informasi dan struktur teks deskripsi", "achieved": true },
+        { "id": "indo2", "text": "Menganalisis unsur intrinsik cerita fantasi", "achieved": true },
+        { "id": "indo3", "text": "Menulis teks prosedur dengan memperhatikan kaidah kebahasaan", "achieved": true }
+      ],
+      "usaha": "A",
+      "proses": "A",
+      "capaian": "A",
+      "deskripsi": "Alhamdulillah ananda Aaisyah Nur Husnaa dalam usaha, proses serta capaian untuk pelajaran Bahasa Indonesia Sudah Sangat Baik. Mampu mengidentifikasi unsur - unsur intrinsik dalam ulasan karya fiksi dan mengaplikasikan makna kata denotasi dan konotasi dalam teks karya fiksi dengan Sangat Aaik. Selalu semangat belajarnya dan kolaborasi kelompok perlu ditingkatkan lagi ya.",
+      "lastUpdatedBy": "Bu Khadijah, S.Pd",
+      "lastUpdatedAt": "2026-06-17T05:10:00.000Z"
+    },
+    {
+      "studentId": "s8_1",
+      "subject": "Matematika",
+      "score": 80,
+      "tps": [
+        { "id": "mtk1", "text": "Menyelesaikan operasi hitung bilangan bulat dan pecahan", "achieved": true },
+        { "id": "mtk2", "text": "Menyederhanakan bentuk aljabar linear", "achieved": true },
+        { "id": "mtk3", "text": "Memecahkan persamaan dan pertidaksamaan linear satu variabel", "achieved": true }
+      ],
+      "usaha": "B",
+      "proses": "B",
+      "capaian": "B",
+      "deskripsi": "Alhamdulillah ananda Shalihah Aaisyah Nur Husnaa memahami dengan baik mengenai menyelidiki dan memahami sifat-sifat berbagai bangun geometri serta memahami konsep relasi dan fungsi serta menggunakannya untuk menyajikan dan menganalisis hubungan antar dua himpunan secara tepat, logis, dan sistematis. Melalui Sumatif Tengah Semester yang berbasis proyek (kekongruenan bangun datar), ananda Shalihah Aaisyah Nur Husnaa menunjukkan sikap yang baik serta dapat mengerjakan proyek kekongruenan bangun datar dengan baik.",
+      "lastUpdatedBy": "Bu Fatimah, S.Pd",
+      "lastUpdatedAt": "2026-06-17T05:15:00.000Z"
+    },
+    {
+      "studentId": "s8_1",
+      "subject": "IPA",
+      "score": 88,
+      "tps": [
+        { "id": "ipa1", "text": "Memahami konsep metode ilmiah dan pengukuran besaran fisika", "achieved": true },
+        { "id": "ipa2", "text": "Mengidentifikasi sifat zat dan pemisahan campuran", "achieved": true },
+        { "id": "ipa3", "text": "Menganalisis interaksi komponen ekosistem lingkungan", "achieved": true }
+      ],
+      "usaha": "B",
+      "proses": "B",
+      "capaian": "A",
+      "deskripsi": "Alhamdulillah ananda Shalihah Aaisyah dalam usaha, proses serta capaian untuk pelajaran IPA sudah baik. Mampu menerapkan Konsep ditiap materi dan penerapan rumus dengan baik, yang perlu ditingkatkan adalah fokus selama penjelasan materi, sehingga bisa mengikuti proses pembelajaran, terutama dalam penerapan rumus IPA yang memerlukan fokus dalam pengerjaan soal, sementara dalam capaian nya berupa produk makanan sehat yang telah dibuat dengan menerapkan kreatifitas dan menghasilkan makanan sehat mampu bekerja sama dengan tim dan berkontribusi aktif.",
+      "lastUpdatedBy": "Pak Ahmad, S.Pd",
+      "lastUpdatedAt": "2026-06-17T05:20:00.000Z"
+    },
+    {
+      "studentId": "s8_1",
+      "subject": "IPS",
+      "score": 82,
+      "tps": [
+        { "id": "ips1", "text": "Memahami interaksi antara manusia dengan ruang dalam lingkup lokal", "achieved": true },
+        { "id": "ips2", "text": "Menganalisis proses sosialisasi dan pengaruhnya terhadap kepribadian", "achieved": true },
+        { "id": "ips3", "text": "Mengidentifikasi jenis-jenis kegiatan ekonomi masyarakat", "achieved": true }
+      ],
+      "usaha": "A",
+      "proses": "A",
+      "capaian": "B",
+      "deskripsi": "Alhamdulillah, ananda Aaisyah Nur Husnaa dalam pembelajaran Ilmu Pengetahuan Sosial (IPS) menunjukkan usaha, proses, serta capaian yang baik. Video digital tentang Sumpah Pemuda mampu menjelaskan makna persatuan dengan runtut. Ananda diharapkan dapat menambah ilustrasi agar lebih menarik.",
+      "lastUpdatedBy": "Bu Fatimah, S.Pd",
+      "lastUpdatedAt": "2026-06-17T05:25:00.000Z"
+    },
+    {
+      "studentId": "s8_1",
+      "subject": "Bahasa Inggris",
+      "score": 84,
+      "tps": [
+        { "id": "ing1", "text": "To greet and introduce myself and others in English", "achieved": true },
+        { "id": "ing2", "text": "To describe people, animals and objects around me", "achieved": true },
+        { "id": "ing3", "text": "To express daily routines and general simple actions", "achieved": true }
+      ],
+      "usaha": "B",
+      "proses": "B",
+      "capaian": "B",
+      "deskripsi": "Deskripsi: Alhamdulillah ananda Aaisyah Nuur Husnaa dalam usaha, proses serta capaian untuk pelajaran Bahasa Inggris sudah Sangat Baik. Mampu memahami expression of permission, command dan invitation. serta mempraktekkan expression of permission, command, and invitation dalam dialog dengan Sangat Baik. Selalu semangat belajarnya ya.",
+      "lastUpdatedBy": "Bu Fatimah, S.Pd",
+      "lastUpdatedAt": "2026-06-17T05:30:00.000Z"
+    },
+    {
+      "studentId": "s8_1",
+      "subject": "PJOK",
+      "score": 88,
+      "tps": [
+        { "id": "pjok1", "text": "Mempraktikkan variasi pola gerak dasar permainan bola besar", "achieved": true },
+        { "id": "pjok2", "text": "Menganalisis prinsip kebugaran jasmani yang berdampak pada kesehatan", "achieved": true },
+        { "id": "pjok3", "text": "Memelihara kebersihan diri dan pencegahan bahaya zat berbahaya", "achieved": true }
+      ],
+      "usaha": "A",
+      "proses": "B",
+      "capaian": "B",
+      "deskripsi": "Peserta didik menunjukkan peningkatan kemampuan fisik dan keterampilan olahraga dengan semangat latihan yang tinggi.",
+      "lastUpdatedBy": "Pak Ahmad, S.Pd",
+      "lastUpdatedAt": "2026-06-17T05:35:00.000Z"
+    }
+  ],
+  "walikelas_notes": {
+    "s8_1": {
+      "sakit": 0,
+      "izin": 0,
+      "alpa": 0,
+      "catatan": "Alhamdulillah, ananda Aaisyah Nur Husnaa aktif belajar dengan disiplin yang luar biasa serta patuh instruksi ustadz/ustadzah. Pertahankan prestasimu ya sholihah.",
+      "spiritualUsaha": "A",
+      "spiritualProses": "A",
+      "spiritualCapaian": "B",
+      "spiritualDeskripsi": "Alhamdulillah ananda sholihah Aaisyah Nur Husnaa menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara wudhu dan sholat dengan benar serta berusaha menjaga kejujuran dalam keseharian. Aaisyah juga memiliki adab yang sopan terhadap ustadz dan ustadzah, serta sudah terbiasa makan dan minum dengan tertib. Meski kadang masih perlu diingatkan ketika waktu sholat atau pelajaran tahsin dan tahfiz tiba, ia selalu menerima nasihat dengan lapang dada. Semangatnya dalam beribadah mencerminkan niat yang kuat untuk terus menjadi pribadi yang lebih dekat dengan Allah.",
+      "sosialUsaha": "A",
+      "sosialProses": "B",
+      "sosialCapaian": "A",
+      "sosialDeskripsi": "Alhamdulillah ananda sholihah Aaisyah Nur Husnaa mudah bergaul dan memiliki rasa empati tinggi. Ia sudah mampu berinteraksi dengan teman sekelas dengan baik dan menunjukkan keceriaan dalam bekerja sama. Aaisyah juga mudah dimintai pertolongan baik oleh teman maupun ustadz-ustadzah. Secara keseluruhan, Aaisyah adalah pribadi yang penyayang, membantu, dan disenangi teman-temannya."
+    }
+  },
+  "tujuan_pembelajaran_templates": {
+    "IPA": [
+      { "id": "ipa1", "text": "Memahami konsep metode ilmiah dan pengukuran besaran fisika" },
+      { "id": "ipa2", "text": "Mengidentifikasi sifat zat dan pemisahan campuran" },
+      { "id": "ipa3", "text": "Menganalisis interaksi komponen ekosistem lingkungan" }
+    ],
+    "IPS": [
+      { "id": "ips1", "text": "Memahami interaksi antara manusia dengan ruang dalam lingkup lokal" },
+      { "id": "ips2", "text": "Menganalisis proses sosialisasi dan pengaruhnya terhadap kepribadian" },
+      { "id": "ips3", "text": "Mengidentifikasi jenis-jenis kegiatan ekonomi masyarakat" }
+    ],
+    "PPKN": [
+      { "id": "ppkn1", "text": "Menghayati sejarah perumusan dan penetapan Pancasila sebagai dasar negara" },
+      { "id": "ppkn2", "text": "Menerapkan nilai-nilai Pancasila dalam kehidupan sehari-hari" },
+      { "id": "ppkn3", "text": "Memahami norma-norma yang berlaku dalam kehidupan bermasyarakat" }
+    ],
+    "Matematika": [
+      { "id": "mtk1", "text": "Menyelesaikan operasi hitung bilangan bulat dan pecahan" },
+      { "id": "mtk2", "text": "Menyederhanakan bentuk aljabar linear" },
+      { "id": "mtk3", "text": "Memecahkan persamaan dan pertidaksamaan linear satu variabel" }
+    ],
+    "Bahasa Indonesia": [
+      { "id": "indo1", "text": "Mengidentifikasi informasi dan struktur teks deskripsi" },
+      { "id": "indo2", "text": "Menganalisis unsur intrinsik cerita fantasi" },
+      { "id": "indo3", "text": "Menulis teks prosedur dengan memperhatikan kaidah kebahasaan" }
+    ],
+    "Bahasa Inggris": [
+      { "id": "ing1", "text": "To greet and introduce myself and others in English" },
+      { "id": "ing2", "text": "To describe people, animals and objects around me" },
+      { "id": "ing3", "text": "To express daily routines and general simple actions" }
+    ],
+    "Bahasa Arab": [
+      { "id": "arab1", "text": "Melafalkan kosakata harian (mufrodat) tentang lingkungan sekolah" },
+      { "id": "arab2", "text": "Memahami struktur pola kalimat tanya sederhana terkait diri" },
+      { "id": "arab3", "text": "Membaca teks pendek bahasa arab secara lancar dan menterjemahkannya" }
+    ],
+    "Informatika": [
+      { "id": "info1", "text": "Memahami pemikiran komputasional untuk penyelesaian masalah" },
+      { "id": "info2", "text": "Menggunakan perkakas pengolah kata dan angka secara produktif" },
+      { "id": "info3", "text": "Mengidentifikasi fungsi perangkat keras dan sistem operasi komputer" }
+    ],
+    "Prakarya": [
+      { "id": "prak1", "text": "Mengidentifikasi jenis kerajinan bahan serat alam daerah setempat" },
+      { "id": "prak2", "text": "Merancang dan membuat produk kerajinan serat sesuai teknik" },
+      { "id": "prak3", "text": "Memahami teknik pengolahan pangan komoditas lokal" }
+    ],
+    "PJOK": [
+      { "id": "pjok1", "text": "Mempraktikkan variasi pola gerak dasar permainan bola besar" },
+      { "id": "pjok2", "text": "Menganalisis prinsip kebugaran jasmani yang berdampak pada kesehatan" },
+      { "id": "pjok3", "text": "Memelihara kebersihan diri dan pencegahan bahaya zat berbahaya" }
+    ],
+    "PAI": [
+      { "id": "pai1", "text": "Membaca, menulis, mendemonstrasikan hafalan QS Al-Baqarah/Qisash" },
+      { "id": "pai2", "text": "Meyakini rukun iman serta mencerminkannya dalam perilaku sosial" },
+      { "id": "pai3", "text": "Memahami rukun islam dan tata cara bersuci secara sahih" }
+    ]
+  }
+}
