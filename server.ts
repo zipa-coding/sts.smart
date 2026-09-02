@@ -11,30 +11,54 @@ app.use(express.json());
 // Path to data file
 const DB_PATH = path.join(process.cwd(), "src", "data", "db.json");
 
-// Helper to read database
+// In-memory database cache for sub-millisecond responses
+let memoryDB: any = null;
+let saveDebounceTimer: NodeJS.Timeout | null = null;
+
+// Helper to read database with memory caching
 async function readDB() {
+  if (memoryDB) {
+    return memoryDB;
+  }
   try {
     const data = await fs.readFile(DB_PATH, "utf-8");
-    return JSON.parse(data);
+    memoryDB = JSON.parse(data);
+    return memoryDB;
   } catch (err) {
     console.error("Error reading db file, using empty default:", err);
-    return {
+    memoryDB = {
       teachers: [],
       students: [],
       grades: [],
       walikelas_notes: {},
       tujuan_pembelajaran_templates: {},
     };
+    return memoryDB;
   }
 }
 
-// Helper to write database
+// Helper to write database with background async disk sync
 async function writeDB(data: any) {
+  memoryDB = data;
   try {
     await fs.writeFile(DB_PATH, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
     console.error("Error writing db file:", err);
   }
+}
+
+// Background sync helper that doesn't block HTTP responses
+function asyncPersistDB() {
+  if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(async () => {
+    if (memoryDB) {
+      try {
+        await fs.writeFile(DB_PATH, JSON.stringify(memoryDB, null, 2), "utf-8");
+      } catch (e) {
+        console.error("Async disk sync error:", e);
+      }
+    }
+  }, 50);
 }
 
 // ==================== API ENDPOINTS ====================

@@ -10,7 +10,10 @@ import {
   Save,
   CheckCircle,
   Clock,
-  RefreshCw
+  RefreshCw,
+  UserPlus,
+  X,
+  AlertCircle
 } from "lucide-react";
 import PrintRaportView from "./PrintRaportView";
 
@@ -64,6 +67,60 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
 
   const [activeEkskulList, setActiveEkskulList] = useState<{ id: string; name: string; type: "Wajib" | "Pilihan" }[]>([]);
   const [studentEkskulGrades, setStudentEkskulGrades] = useState<{ [ekskulName: string]: { predicate: string; description: string; selected: boolean } }>({});
+
+  // Quick Add Student Modal State
+  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const [newStudentName, setNewStudentName] = useState("");
+  const [newStudentNisn, setNewStudentNisn] = useState("");
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
+  const [addStudentError, setAddStudentError] = useState("");
+
+  const handleQuickAddStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddStudentError("");
+
+    const name = newStudentName.trim();
+    const nisn = newStudentNisn.trim().replace(/\D/g, "");
+
+    if (!name) {
+      setAddStudentError("Nama siswa wajib diisi.");
+      return;
+    }
+    if (!nisn) {
+      setAddStudentError("NISN siswa wajib diisi (numerik angka).");
+      return;
+    }
+
+    setIsAddingStudent(true);
+    try {
+      const response = await fetch("/api/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          nisn,
+          kelas: selectedClass
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal menambahkan siswa.");
+      }
+
+      await fetchData();
+      onRefreshTrigger();
+      setIsAddStudentOpen(false);
+      setNewStudentName("");
+      setNewStudentNisn("");
+      setSuccess(`Siswa ${name} berhasil ditambahkan ke Kelas ${selectedClass}!`);
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err: any) {
+      setAddStudentError(err.message || "Terjadi kesalahan saat menambahkan siswa.");
+    } finally {
+      setIsAddingStudent(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -299,13 +356,26 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
           <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
             Pilih Siswa ({currentClassStudents.length}):
           </span>
-          <button
-            onClick={fetchData}
-            title="Sinkronisasi"
-            className="p-1 hover:bg-slate-100 rounded transition cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                setAddStudentError("");
+                setIsAddStudentOpen(true);
+              }}
+              title="Tambah Siswa Baru ke Kelas Ini"
+              className="p-1 hover:bg-emerald-50 text-emerald-750 border border-emerald-300 rounded transition cursor-pointer flex items-center gap-1 text-[10px] font-bold px-1.5"
+            >
+              <UserPlus className="w-3 h-3" />
+              <span>+ Siswa</span>
+            </button>
+            <button
+              onClick={fetchData}
+              title="Sinkronisasi"
+              className="p-1 hover:bg-slate-100 rounded transition cursor-pointer text-slate-400"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1" id="walikelas-student-scroll">
@@ -720,6 +790,96 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
           </div>
         )}
       </div>
+
+      {/* QUICK ADD STUDENT MODAL FOR WALI KELAS */}
+      {isAddStudentOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-scale-up">
+            <div className="bg-emerald-800 px-6 py-4 text-white flex items-center justify-between">
+              <h3 className="font-bold text-sm uppercase tracking-wide flex items-center gap-2">
+                <UserPlus className="w-4 h-4" />
+                <span>Tambah Siswa ke Kelas {selectedClass}</span>
+              </h3>
+              <button
+                onClick={() => setIsAddStudentOpen(false)}
+                className="text-white/85 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickAddStudent} className="p-6 space-y-4">
+              {addStudentError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex gap-2 items-start">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+                  <span className="font-semibold">{addStudentError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Nama Lengkap Siswa
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  placeholder="Contoh: Ahmad Fadilah"
+                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  NISN Siswa (Nomor Induk Siswa Nasional)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newStudentNisn}
+                  onChange={(e) => setNewStudentNisn(e.target.value)}
+                  placeholder="Contoh: 0134988720"
+                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="quick-student-nisn-input"
+                />
+              </div>
+
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
+                Siswa baru akan otomatis didaftarkan ke dalam <strong>Kelas {selectedClass}</strong> dan dapat langsung diinput nilainya.
+              </div>
+
+              <div className="flex gap-3 pt-3">
+                <button
+                  type="button"
+                  disabled={isAddingStudent}
+                  onClick={() => setIsAddStudentOpen(false)}
+                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAddingStudent}
+                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60"
+                >
+                  {isAddingStudent ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Simpan Siswa</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -430,7 +430,7 @@ export default function PrintRaportView({
                   <p style="margin: 2px 0 0 0; font-size: 8.5pt; font-weight: bold; color: #000000; line-height: 1.25;">TAHUN PELAJARAN ${format.tahunPelajaran || "2026-2027"}</p>
                 </div>
                 <!-- Right Side: School logo -->
-                <div style="width: 165px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end;">
+                <div style="width: 165px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
                   <div style="width: 75px; height: 75px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #cccccc; border-radius: 50%; overflow: hidden; background-color: #ffffff;">
                     <img src="${logoUrl}" style="width: 75px; height: 75px; object-fit: cover;" />
                   </div>
@@ -1033,7 +1033,7 @@ export default function PrintRaportView({
               <p style="margin: 2px 0 0 0; font-size: 8.5pt; font-weight: bold; color: #000000; line-height: 1.25;">TAHUN PELAJARAN ${format.tahunPelajaran || "2026-2027"}</p>
             </td>
             <!-- Right Side School Logo -->
-            <td style="width: 25%; text-align: right; vertical-align: middle; border: none; padding-bottom: 12px;">
+            <td style="width: 25%; text-align: center; vertical-align: middle; border: none; padding-bottom: 12px;">
               <img src="${absLogoUrl}" style="width: 55px; height: 55px; display: inline-block; border: 1px solid #cccccc; border-radius: 50%;" />
             </td>
           </tr>
@@ -1783,7 +1783,7 @@ export default function PrintRaportView({
               </p>
             </div>
             {format.showLogo ? (
-              <div className="flex items-center w-32 md:w-44 shrink-0 justify-end">
+              <div className="flex items-center w-32 md:w-44 shrink-0 justify-center">
                 <div className="w-14 h-14 md:w-18 md:h-18 shrink-0 select-none overflow-hidden rounded-full border-1.5 border-gray-300 bg-white flex items-center justify-center">
                   <img
                     src={logoUrl}

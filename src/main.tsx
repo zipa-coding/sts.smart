@@ -4,6 +4,18 @@ import App from './App.tsx';
 import './index.css';
 import dbData from './data/db.json';
 import { isFirebaseConfigured, firebaseApi } from './lib/firebase';
+import { registerSW } from 'virtual:pwa-register';
+
+// Automatically register and update PWA service worker
+registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    console.log('Versi baru Raport STS tersedia. Memperbarui...');
+  },
+  onOfflineReady() {
+    console.log('Aplikasi Raport STS siap digunakan secara offline.');
+  },
+});
 
 // Keep reference to original fetch
 const originalFetch = window.fetch;
@@ -15,10 +27,23 @@ const isStaticHost =
   window.location.hostname.includes('gmpg.io') ||
   window.location.protocol === 'file:';
 
+// Memory cache for client-side storage simulation
+let clientDbCache: any = null;
+
 // Initialize localStorage with db.json seed data if empty
 function initializeLocalStorage() {
-  if (!localStorage.getItem('smart_sts_db')) {
-    localStorage.setItem('smart_sts_db', JSON.stringify(dbData));
+  if (!clientDbCache) {
+    const raw = localStorage.getItem('smart_sts_db');
+    if (raw) {
+      try {
+        clientDbCache = JSON.parse(raw);
+      } catch (e) {
+        clientDbCache = dbData;
+      }
+    } else {
+      clientDbCache = dbData;
+      localStorage.setItem('smart_sts_db', JSON.stringify(dbData));
+    }
   }
 }
 
@@ -32,8 +57,11 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
   }
 
   initializeLocalStorage();
-  const getDB = () => JSON.parse(localStorage.getItem('smart_sts_db') || '{}');
-  const saveDB = (data: any) => localStorage.setItem('smart_sts_db', JSON.stringify(data));
+  const getDB = () => clientDbCache || JSON.parse(localStorage.getItem('smart_sts_db') || '{}');
+  const saveDB = (data: any) => {
+    clientDbCache = data;
+    localStorage.setItem('smart_sts_db', JSON.stringify(data));
+  };
 
   const path = urlStr.startsWith('http') 
     ? new URL(urlStr).pathname 
@@ -42,180 +70,187 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
   const method = init?.method?.toUpperCase() || 'GET';
   const body = init?.body ? JSON.parse(init.body as string) : null;
 
-  // Let's add an artificial lag for realism
-  await new Promise(resolve => setTimeout(resolve, 80));
-
   try {
     if (isFirebaseConfigured) {
-      // 1. POST /api/login
-      if (path === '/api/login' && method === 'POST') {
-        const user = await firebaseApi.login(body);
-        if (!user) {
-          return new Response(JSON.stringify({ error: "Kombinasi pengguna dan kata sandi salah." }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' }
-          });
+      try {
+        // 1. POST /api/login
+        if (path === '/api/login' && method === 'POST') {
+          const user = await firebaseApi.login(body);
+          if (!user) {
+            return new Response(JSON.stringify({ error: "Kombinasi pengguna dan kata sandi salah." }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          return new Response(JSON.stringify(user), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
-        return new Response(JSON.stringify(user), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
 
-      // POST /api/verify-session
-      if (path === '/api/verify-session' && method === 'POST') {
-        const user = await firebaseApi.login(body);
-        if (!user) {
-          return new Response(JSON.stringify({ error: "Sesi tidak valid." }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' }
-          });
+        // POST /api/verify-session
+        if (path === '/api/verify-session' && method === 'POST') {
+          const user = await firebaseApi.login(body);
+          if (!user) {
+            return new Response(JSON.stringify({ error: "Sesi tidak valid." }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          return new Response(JSON.stringify(user), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
-        return new Response(JSON.stringify(user), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
 
-      // 2. GET /api/teachers
-      if (path === '/api/teachers' && method === 'GET') {
-        const t = await firebaseApi.getTeachers();
-        return new Response(JSON.stringify(t), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-
-      // POST /api/teachers
-      if (path === '/api/teachers' && method === 'POST') {
-        try {
-          const t = await firebaseApi.postTeacher(body);
-          return new Response(JSON.stringify(t), { status: 201, headers: { 'Content-Type': 'application/json' } });
-        } catch (e: any) {
-          return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        // 2. GET /api/teachers
+        if (path === '/api/teachers' && method === 'GET') {
+          const t = await firebaseApi.getTeachers();
+          return new Response(JSON.stringify(t), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
-      }
 
-      // PUT /api/teachers/:id
-      if (path.startsWith('/api/teachers/') && method === 'PUT') {
-        const id = path.split('/').pop() || "";
-        const t = await firebaseApi.putTeacher(id, body);
-        return new Response(JSON.stringify(t), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // POST /api/teachers
+        if (path === '/api/teachers' && method === 'POST') {
+          try {
+            const t = await firebaseApi.postTeacher(body);
+            return new Response(JSON.stringify(t), { status: 201, headers: { 'Content-Type': 'application/json' } });
+          } catch (e: any) {
+            if (e.message?.includes("Username sudah digunakan") || e.message?.includes("wajib") || e.message?.includes("lengkap")) {
+              return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+            }
+            console.warn("Firestore postTeacher failed, falling back to local DB:", e);
+            // Fall back to local DB processing
+          }
+        }
 
-      // DELETE /api/teachers/:id
-      if (path.startsWith('/api/teachers/') && method === 'DELETE') {
-        const id = path.split('/').pop() || "";
-        try {
-          const res = await firebaseApi.deleteTeacher(id);
+        // PUT /api/teachers/:id
+        if (path.startsWith('/api/teachers/') && method === 'PUT') {
+          const id = path.split('/').pop() || "";
+          const t = await firebaseApi.putTeacher(id, body);
+          return new Response(JSON.stringify(t), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // DELETE /api/teachers/:id
+        if (path.startsWith('/api/teachers/') && method === 'DELETE') {
+          const id = path.split('/').pop() || "";
+          try {
+            const res = await firebaseApi.deleteTeacher(id);
+            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          } catch (e: any) {
+            return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+          }
+        }
+
+        // 3. GET /api/students
+        if (path === '/api/students' && method === 'GET') {
+          const s = await firebaseApi.getStudents();
+          return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // POST /api/students
+        if (path === '/api/students' && method === 'POST') {
+          try {
+            const s = await firebaseApi.postStudent(body);
+            return new Response(JSON.stringify(s), { status: 201, headers: { 'Content-Type': 'application/json' } });
+          } catch (e: any) {
+            if (e.message?.includes("NISN") || e.message?.includes("wajib") || e.message?.includes("lengkap")) {
+              return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+            }
+            console.warn("Firestore postStudent failed, falling back to local DB:", e);
+            // Fall back to local DB processing
+          }
+        }
+
+        // PUT /api/students/:id
+        if (path.startsWith('/api/students/') && method === 'PUT') {
+          const id = path.split('/').pop() || "";
+          const s = await firebaseApi.putStudent(id, body);
+          return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // DELETE /api/students/:id
+        if (path.startsWith('/api/students/') && method === 'DELETE') {
+          const id = path.split('/').pop() || "";
+          const res = await firebaseApi.deleteStudent(id);
           return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        } catch (e: any) {
-          return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
-      }
 
-      // 3. GET /api/students
-      if (path === '/api/students' && method === 'GET') {
-        const s = await firebaseApi.getStudents();
-        return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-
-      // POST /api/students
-      if (path === '/api/students' && method === 'POST') {
-        try {
-          const s = await firebaseApi.postStudent(body);
-          return new Response(JSON.stringify(s), { status: 201, headers: { 'Content-Type': 'application/json' } });
-        } catch (e: any) {
-          return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        // 4. GET /api/grades
+        if (path === '/api/grades' && method === 'GET') {
+          const g = await firebaseApi.getGrades();
+          return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
-      }
 
-      // PUT /api/students/:id
-      if (path.startsWith('/api/students/') && method === 'PUT') {
-        const id = path.split('/').pop() || "";
-        const s = await firebaseApi.putStudent(id, body);
-        return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // POST /api/grades
+        if (path === '/api/grades' && method === 'POST') {
+          const g = await firebaseApi.postGrade(body);
+          return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // DELETE /api/students/:id
-      if (path.startsWith('/api/students/') && method === 'DELETE') {
-        const id = path.split('/').pop() || "";
-        const res = await firebaseApi.deleteStudent(id);
-        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // 5. GET /api/walikelas/notes
+        if (path === '/api/walikelas/notes' && method === 'GET') {
+          const n = await firebaseApi.getWaliKelasNotes();
+          return new Response(JSON.stringify(n), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // 4. GET /api/grades
-      if (path === '/api/grades' && method === 'GET') {
-        const g = await firebaseApi.getGrades();
-        return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // POST /api/walikelas/notes
+        if (path === '/api/walikelas/notes' && method === 'POST') {
+          const n = await firebaseApi.postWaliKelasNotes(body);
+          return new Response(JSON.stringify(n), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // POST /api/grades
-      if (path === '/api/grades' && method === 'POST') {
-        const g = await firebaseApi.postGrade(body);
-        return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // 6. GET /api/tps
+        if (path === '/api/tps' && method === 'GET') {
+          const tps = await firebaseApi.getTPs();
+          return new Response(JSON.stringify(tps), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // 5. GET /api/walikelas/notes
-      if (path === '/api/walikelas/notes' && method === 'GET') {
-        const n = await firebaseApi.getWaliKelasNotes();
-        return new Response(JSON.stringify(n), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // POST /api/tps
+        if (path === '/api/tps' && method === 'POST') {
+          const tp = await firebaseApi.postTP(body);
+          return new Response(JSON.stringify(tp), { status: 201, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // POST /api/walikelas/notes
-      if (path === '/api/walikelas/notes' && method === 'POST') {
-        const n = await firebaseApi.postWaliKelasNotes(body);
-        return new Response(JSON.stringify(n), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // DELETE /api/tps/:subject/:tpId
+        if (path.startsWith('/api/tps/') && method === 'DELETE') {
+          const parts = path.split('/');
+          const tpId = parts.pop() || "";
+          const subject = decodeURIComponent(parts.pop() || '');
+          const res = await firebaseApi.deleteTP(subject, tpId);
+          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // 6. GET /api/tps
-      if (path === '/api/tps' && method === 'GET') {
-        const tps = await firebaseApi.getTPs();
-        return new Response(JSON.stringify(tps), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // 7. GET /api/settings
+        if (path === '/api/settings' && method === 'GET') {
+          const s = await firebaseApi.getSettings();
+          return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // POST /api/tps
-      if (path === '/api/tps' && method === 'POST') {
-        const tp = await firebaseApi.postTP(body);
-        return new Response(JSON.stringify(tp), { status: 201, headers: { 'Content-Type': 'application/json' } });
-      }
+        // POST /api/settings
+        if (path === '/api/settings' && method === 'POST') {
+          const s = await firebaseApi.postSettings(body);
+          return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // DELETE /api/tps/:subject/:tpId
-      if (path.startsWith('/api/tps/') && method === 'DELETE') {
-        const parts = path.split('/');
-        const tpId = parts.pop() || "";
-        const subject = decodeURIComponent(parts.pop() || '');
-        const res = await firebaseApi.deleteTP(subject, tpId);
-        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // 8. GET /api/summary
+        if (path === '/api/summary' && method === 'GET') {
+          const sum = await firebaseApi.getSummary();
+          return new Response(JSON.stringify(sum), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // 7. GET /api/settings
-      if (path === '/api/settings' && method === 'GET') {
-        const s = await firebaseApi.getSettings();
-        return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        // 9. GET, POST, DELETE /api/ekskul for Firebase
+        if (path === '/api/ekskul' && method === 'GET') {
+          const e = await firebaseApi.getEkskul();
+          return new Response(JSON.stringify(e), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // POST /api/settings
-      if (path === '/api/settings' && method === 'POST') {
-        const s = await firebaseApi.postSettings(body);
-        return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
+        if (path === '/api/ekskul' && method === 'POST') {
+          const e = await firebaseApi.postEkskul(body);
+          return new Response(JSON.stringify(e), { status: 201, headers: { 'Content-Type': 'application/json' } });
+        }
 
-      // 8. GET /api/summary
-      if (path === '/api/summary' && method === 'GET') {
-        const sum = await firebaseApi.getSummary();
-        return new Response(JSON.stringify(sum), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        if (path.startsWith('/api/ekskul/') && method === 'DELETE') {
+          const id = path.split('/').pop() || "";
+          const res = await firebaseApi.deleteEkskul(id);
+          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+      } catch (firebaseErr) {
+        console.warn("Firestore call failed, falling back to local database storage:", firebaseErr);
       }
-
-      // 9. GET, POST, DELETE /api/ekskul for Firebase
-      if (path === '/api/ekskul' && method === 'GET') {
-        const e = await firebaseApi.getEkskul();
-        return new Response(JSON.stringify(e), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-
-      if (path === '/api/ekskul' && method === 'POST') {
-        const e = await firebaseApi.postEkskul(body);
-        return new Response(JSON.stringify(e), { status: 201, headers: { 'Content-Type': 'application/json' } });
-      }
-
-      if (path.startsWith('/api/ekskul/') && method === 'DELETE') {
-        const id = path.split('/').pop() || "";
-        const res = await firebaseApi.deleteEkskul(id);
-        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-
-      return new Response(JSON.stringify({ error: "Endpoint not found in client-side Firebase mock" }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // 1. POST /api/login
@@ -629,23 +664,24 @@ const customFetch = async function (input: RequestInfo | URL, init?: RequestInit
     return originalFetch(input, init);
   }
 
-  // If Firebase is configured or we're on a static host like GitHub Pages, go straight to mock (which uses Firebase)
+  // If Firebase is configured or on static hosting without backend, route directly to Firestore / client database
   if (isFirebaseConfigured || isStaticHost) {
     return localFetchInterception(input, init);
   }
 
-  // Otherwise try the real API - if it fails with network error or returns a 404/Not Found indicating static server fallback, intercept
+  // Always try real backend first, seamlessly fallback if static host serves index.html fallback
   try {
     const res = await originalFetch(input, init);
-    // Express dev server/production is fine, but the user's hosting might serve static 404 HTML for missing API routes
-    const contentType = res.headers.get('content-type') || '';
-    if (res.status === 404 || contentType.includes('text/html')) {
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+    
+    // If the server returned HTML (e.g. index.html SPA fallback), or non-200 non-JSON, intercept immediately
+    if (contentType.includes('text/html') || res.status === 404 || (!res.ok && !contentType.includes('json'))) {
       return localFetchInterception(input, init);
     }
     return res;
   } catch (error) {
-    // Connection refused / Network error -> transparently fallback to LocalStorage!
-    console.warn("Failed to reach real API, falling back to client-side localStorage simulation:", error);
+    // Server down or offline -> fallback to client-side database
+    console.warn("Server API offline, falling back to client-side database:", error);
     return localFetchInterception(input, init);
   }
 };

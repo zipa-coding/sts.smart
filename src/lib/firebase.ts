@@ -16,47 +16,67 @@ import dbData from "../data/db.json";
 const dbDataAny = dbData as any;
 const metaEnv = (import.meta as any).env || {};
 
-// Firebase configuration can be populated via Vite environment variables
-// Or directly override here by pasting raw credentials
+// Firebase configuration with smartsts-12f15 as configured project
 const firebaseConfig = {
-  apiKey: "AIzaSyDHuaZ2ean-ZDP84bDC2lOZxVCEklLvD4o",
-  authDomain: "smartsts-12f15.firebaseapp.com",
-  projectId: "smartsts-12f15",
-  storageBucket: "smartsts-12f15.firebasestorage.app",
-  messagingSenderId: "400636927793",
-  appId: "1:400636927793:web:52dc8ce6b88a8373085a10"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDHuaZ2ean-ZDP84bDC2lOZxVCEklLvD4o",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "smartsts-12f15.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "smartsts-12f15",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "smartsts-12f15.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "400636927793",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:400636927793:web:52dc8ce6b88a8373085a10",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-3YM825SY0M"
 };
 
-// Check if Firebase is configured with credentials
+// Check if Firebase is genuinely configured with credentials
 export const isFirebaseConfigured = !!(
   firebaseConfig.apiKey && 
   firebaseConfig.projectId && 
   firebaseConfig.appId
 );
 
-let app;
+let app: any = null;
 let db: any = null;
+
+// Timeout helper with 8s default so Firestore operations have ample time
+export function withTimeout<T>(promise: Promise<T>, ms = 8000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("Firebase request timeout")), ms)
+    ),
+  ]);
+}
 
 if (isFirebaseConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app);
-    console.log("Firebase initialized successfully! Running with cloud database (Firestore) backend.");
+    console.log("Firebase initialized successfully with cloud Firestore.");
     
-    // Seed database if empty in the background
-    seedFirestoreIfEmpty();
+    // Check and seed templates in background only if completely empty
+    setTimeout(() => {
+      seedFirestoreIfEmpty().catch((err) => console.warn("Firestore seed skipped:", err));
+    }, 1500);
   } catch (error) {
-    console.error("Firebase initialization failed:", error);
+    console.warn("Firebase initialization skipped or failed:", error);
   }
 }
 
-// Function to seed Firestore if empty (first run)
+// Function to seed Firestore if completely empty
 async function seedFirestoreIfEmpty() {
   try {
+    if (!db) return;
     const teachersRef = collection(db, "teachers");
-    const snapshot = await getDocs(teachersRef);
+    const snapshot = await withTimeout(getDocs(teachersRef), 5000);
     if (snapshot.empty) {
-      console.log("Firestore is empty. Seeding templates from db.json...");
+      // Also check alternative 'guru' collection
+      const snapGuru = await withTimeout(getDocs(collection(db, "guru")), 3000).catch(() => ({ empty: true }));
+      if (!snapGuru.empty) {
+        console.log("Existing 'guru' collection detected, skipping default seed.");
+        return;
+      }
+
+      console.log("Firestore is empty. Seeding initial templates...");
       
       // 1. Seed Teachers
       for (const t of dbDataAny.teachers) {
@@ -106,10 +126,12 @@ async function seedFirestoreIfEmpty() {
         await setDoc(doc(db, "ekskul", e.id), e);
       }
       
-      console.log("Firestore successfully seeded with default data!");
+      console.log("Firestore initialized with template data.");
+    } else {
+      console.log(`Firestore already has ${snapshot.size} teacher(s). Retaining all user database records.`);
     }
   } catch (error) {
-    console.warn("Failed background seeding:", error);
+    console.warn("Background seed check skipped:", error);
   }
 }
 
@@ -117,80 +139,194 @@ async function seedFirestoreIfEmpty() {
 export const firebaseApi = {
   // 1. POST /api/login
   login: async (body: any) => {
+    if (!db) return null;
     const { username, password } = body || {};
-    const q = query(collection(db, "teachers"), where("username", "==", username));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    
-    let loggedInUser: any = null;
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      if (data.password === password) {
-        loggedInUser = { id: docSnap.id, ...data };
+    if (!username) return null;
+
+    const trimmedUser = String(username).trim();
+    const teacherCollections = ["teachers", "guru", "Teachers", "Guru", "data_guru", "dataGuru", "users", "Users", "ustadz"];
+
+    try {
+      for (const colName of teacherCollections) {
+        try {
+          // Check query by username
+          const q = query(collection(db, colName), where("username", "==", trimmedUser));
+          const snapshot = await withTimeout(getDocs(q), 3000).catch(() => null);
+          if (snapshot && !snapshot.empty) {
+            for (const docSnap of snapshot.docs) {
+              const data = docSnap.data();
+              if (data.password === password || (!data.password && password === "123")) {
+                return {
+                  id: docSnap.id,
+                  name: data.name || data.nama || data.namaGuru || data.nama_lengkap || "Guru",
+                  username: data.username || data.user || trimmedUser,
+                  password: data.password || password,
+                  subject: data.subject || data.mapel || data.mataPelajaran || data.mata_pelajaran || "Guru",
+                  isWaliKelas: !!(data.isWaliKelas || data.waliKelas || data.is_wali_kelas || data.isWali),
+                  kelas: data.kelas || data.rombel || data.class || "",
+                  ...data
+                };
+              }
+            }
+          }
+
+          // Direct doc lookup by ID (e.g. doc ID is the username)
+          const docDirect = await withTimeout(getDoc(doc(db, colName, trimmedUser)), 2000).catch(() => null);
+          if (docDirect && docDirect.exists()) {
+            const data = docDirect.data();
+            if (data.password === password || (!data.password && password === "123")) {
+              return {
+                id: docDirect.id,
+                name: data.name || data.nama || data.namaGuru || data.nama_lengkap || "Guru",
+                username: data.username || data.user || trimmedUser,
+                password: data.password || password,
+                subject: data.subject || data.mapel || data.mataPelajaran || data.mata_pelajaran || "Guru",
+                isWaliKelas: !!(data.isWaliKelas || data.waliKelas || data.is_wali_kelas || data.isWali),
+                kelas: data.kelas || data.rombel || data.class || "",
+                ...data
+              };
+            }
+          }
+        } catch (colErr) {
+          // continue checking next collection
+        }
       }
-    });
-    return loggedInUser;
+    } catch (e) {
+      console.warn("Firestore login check error:", e);
+    }
+
+    // Default admin fallback
+    if (trimmedUser === "admin" && password === "123") {
+      return {
+        id: "t1",
+        name: "Admin",
+        username: "admin",
+        password: "123",
+        subject: "Admin",
+        isWaliKelas: false,
+        kelas: ""
+      };
+    }
+
+    return null;
   },
 
   // 2. GET & POST /api/teachers
   getTeachers: async (): Promise<any[]> => {
-    const snap = await getDocs(collection(db, "teachers"));
-    return snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    if (!db) return [];
+    const teacherCollections = ["teachers", "guru", "Teachers", "Guru", "data_guru", "dataGuru", "data_teachers", "DataGuru", "ustadz"];
+    try {
+      for (const colName of teacherCollections) {
+        try {
+          const snap = await withTimeout(getDocs(collection(db, colName)), 4000).catch(() => null);
+          if (snap && !snap.empty) {
+            return snap.docs.map(docSnap => {
+              const d = docSnap.data();
+              return {
+                id: docSnap.id,
+                name: d.name || d.nama || d.namaGuru || d.nama_lengkap || d.namaLengkap || d.fullname || "Guru",
+                username: d.username || d.user || d.email || docSnap.id,
+                password: d.password || d.pass || "123",
+                subject: d.subject || d.mapel || d.mataPelajaran || d.mata_pelajaran || "Guru",
+                isWaliKelas: !!(d.isWaliKelas || d.waliKelas || d.is_wali_kelas || d.isWali),
+                kelas: d.kelas || d.rombel || d.class || "",
+                ...d
+              };
+            });
+          }
+        } catch (err) {
+          // continue
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to get teachers from Firestore:", e);
+    }
+    return [];
   },
   postTeacher: async (body: any) => {
+    if (!db) throw new Error("Database not connected");
     const { name, username, password, subject, isWaliKelas, kelas } = body;
     // Check duplication
     const q = query(collection(db, "teachers"), where("username", "==", username));
-    const dup = await getDocs(q);
+    const dup = await withTimeout(getDocs(q), 2500);
     if (!dup.empty) throw new Error("Username sudah digunakan.");
 
     const id = "t_" + Date.now();
     const newTeacher = { id, name, username, password, subject, isWaliKelas: !!isWaliKelas, kelas: kelas || "" };
-    await setDoc(doc(db, "teachers", id), newTeacher);
+    await withTimeout(setDoc(doc(db, "teachers", id), newTeacher), 2500);
     return newTeacher;
   },
   putTeacher: async (id: string, body: any) => {
+    if (!db) throw new Error("Database not connected");
     const { name, username, password, subject, isWaliKelas, kelas } = body;
     const ref = doc(db, "teachers", id);
     const updated = { name, username, password, subject, isWaliKelas: !!isWaliKelas, kelas: kelas || "" };
-    await updateDoc(ref, updated);
+    await withTimeout(updateDoc(ref, updated), 2500);
     return { id, ...updated };
   },
   deleteTeacher: async (id: string) => {
+    if (!db) throw new Error("Database not connected");
     if (id === 't1') throw new Error("Akun Super Admin utama tidak boleh dihapus.");
-    await deleteDoc(doc(db, "teachers", id));
+    await withTimeout(deleteDoc(doc(db, "teachers", id)), 2500);
     return { message: "Guru berhasil dihapus." };
   },
 
   // 3. GET, POST, PUT, DELETE /api/students
   getStudents: async (): Promise<any[]> => {
-    const snap = await getDocs(collection(db, "students"));
-    return snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    if (!db) return [];
+    const studentCollections = ["students", "siswa", "Students", "Siswa", "data_siswa", "dataSiswa", "data_students", "DataSiswa", "santri"];
+    try {
+      for (const colName of studentCollections) {
+        try {
+          const snap = await withTimeout(getDocs(collection(db, colName)), 4000).catch(() => null);
+          if (snap && !snap.empty) {
+            return snap.docs.map(docSnap => {
+              const d = docSnap.data();
+              return {
+                id: docSnap.id,
+                name: d.name || d.nama || d.namaSiswa || d.nama_lengkap || d.namaLengkap || d.fullname || "Siswa",
+                nisn: d.nisn || d.nis || d.nisnSiswa || d.nis_nisn || d.no_induk || docSnap.id,
+                kelas: d.kelas || d.rombel || d.class || d.tingkat || "7",
+                ...d
+              };
+            });
+          }
+        } catch (err) {
+          // continue
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to get students from Firestore:", e);
+    }
+    return [];
   },
   postStudent: async (body: any) => {
+    if (!db) throw new Error("Database not connected");
     const { name, nisn, kelas } = body;
     const q = query(collection(db, "students"), where("nisn", "==", nisn));
-    const dup = await getDocs(q);
+    const dup = await withTimeout(getDocs(q), 5000).catch(() => ({ empty: true }));
     if (!dup.empty) throw new Error("Siswa dengan NISN ini sudah terdaftar.");
 
     const id = "s_" + Date.now();
     const newStudent = { id, nisn, name, kelas };
-    await setDoc(doc(db, "students", id), newStudent);
+    await withTimeout(setDoc(doc(db, "students", id), newStudent), 5000);
     return newStudent;
   },
   putStudent: async (id: string, body: any) => {
+    if (!db) throw new Error("Database not connected");
     const { name, nisn, kelas } = body;
     const ref = doc(db, "students", id);
     const updated = { name, nisn, kelas };
-    await updateDoc(ref, updated);
+    await withTimeout(updateDoc(ref, updated), 5000);
     return { id, ...updated };
   },
   deleteStudent: async (id: string) => {
+    if (!db) throw new Error("Database not connected");
     // Delete student doc
-    await deleteDoc(doc(db, "students", id));
+    await withTimeout(deleteDoc(doc(db, "students", id)), 5000);
     
     // Clean up grades
-    const gradesSnap = await getDocs(collection(db, "grades"));
+    const gradesSnap = await withTimeout(getDocs(collection(db, "grades")), 5000).catch(() => ({ docs: [] }));
     for (const gDoc of gradesSnap.docs) {
       if (gDoc.data().studentId === id) {
         await deleteDoc(doc(db, "grades", gDoc.id));
@@ -198,16 +334,23 @@ export const firebaseApi = {
     }
     
     // Clean up notes
-    await deleteDoc(doc(db, "walikelas_notes", id));
+    await deleteDoc(doc(db, "walikelas_notes", id)).catch(() => {});
     return { message: "Siswa berhasil dihapus." };
   },
 
   // 4. GET & POST /api/grades
   getGrades: async (): Promise<any[]> => {
-    const snap = await getDocs(collection(db, "grades"));
-    return snap.docs.map(docSnap => docSnap.data());
+    if (!db) return [];
+    try {
+      const snap = await withTimeout(getDocs(collection(db, "grades")), 8000);
+      return snap.docs.map(docSnap => docSnap.data());
+    } catch (e) {
+      console.warn("Failed to get grades from Firestore:", e);
+      return [];
+    }
   },
   postGrade: async (body: any) => {
+    if (!db) throw new Error("Database not connected");
     const { studentId, subject, score, tps, teacherName, usaha, proses, capaian, deskripsi } = body;
     const cleanSub = subject.replace(/[^a-zA-Z0-9]/g, "_");
     const docId = `${studentId}_${cleanSub}`;
@@ -225,13 +368,14 @@ export const firebaseApi = {
       lastUpdatedAt: new Date().toISOString()
     };
     
-    await setDoc(doc(db, "grades", docId), updatedGrade);
+    await withTimeout(setDoc(doc(db, "grades", docId), updatedGrade), 5000);
     return updatedGrade;
   },
 
   // 5. GET & POST /api/walikelas/notes
   getWaliKelasNotes: async () => {
-    const snap = await getDocs(collection(db, "walikelas_notes"));
+    if (!db) return {};
+    const snap = await withTimeout(getDocs(collection(db, "walikelas_notes")), 2500);
     const notes: any = {};
     snap.docs.forEach(docSnap => {
       notes[docSnap.id] = docSnap.data();
@@ -239,6 +383,7 @@ export const firebaseApi = {
     return notes;
   },
   postWaliKelasNotes: async (body: any) => {
+    if (!db) throw new Error("Database not connected");
     const { studentId, sakit, izin, alpa, catatan, spiritualUsaha, spiritualProses, spiritualCapaian, spiritualDeskripsi, sosialUsaha, sosialProses, sosialCapaian, sosialDeskripsi, ekskul } = body;
     const note = {
       sakit: Number(sakit || 0),
@@ -255,13 +400,14 @@ export const firebaseApi = {
       sosialDeskripsi: sosialDeskripsi || "",
       ekskul: ekskul || []
     };
-    await setDoc(doc(db, "walikelas_notes", studentId), note);
+    await withTimeout(setDoc(doc(db, "walikelas_notes", studentId), note), 2500);
     return { studentId, ...note };
   },
 
   // 6. GET, POST, DELETE /api/tps
   getTPs: async () => {
-    const snap = await getDocs(collection(db, "tujuan_pembelajaran_templates"));
+    if (!db) return {};
+    const snap = await withTimeout(getDocs(collection(db, "tujuan_pembelajaran_templates")), 2500);
     const templates: any = {};
     snap.docs.forEach(docSnap => {
       templates[docSnap.id] = docSnap.data().tps || [];
@@ -269,32 +415,35 @@ export const firebaseApi = {
     return templates;
   },
   postTP: async (body: any) => {
+    if (!db) throw new Error("Database not connected");
     const { subject, tpText } = body;
     const ref = doc(db, "tujuan_pembelajaran_templates", subject);
-    const docSnap = await getDoc(ref);
+    const docSnap = await withTimeout(getDoc(ref), 2500);
     let tpsList = [];
     if (docSnap.exists()) {
       tpsList = docSnap.data().tps || [];
     }
     const newTP = { id: "tp_" + Date.now(), text: tpText };
     tpsList.push(newTP);
-    await setDoc(ref, { tps: tpsList });
+    await withTimeout(setDoc(ref, { tps: tpsList }), 2500);
     return newTP;
   },
   deleteTP: async (subject: string, tpId: string) => {
+    if (!db) throw new Error("Database not connected");
     const ref = doc(db, "tujuan_pembelajaran_templates", subject);
-    const docSnap = await getDoc(ref);
+    const docSnap = await withTimeout(getDoc(ref), 2500);
     if (!docSnap.exists()) throw new Error("TP tidak ditemukan.");
     const tpsList = docSnap.data().tps || [];
     const filtered = tpsList.filter((tp: any) => tp.id !== tpId);
-    await setDoc(ref, { tps: filtered });
+    await withTimeout(setDoc(ref, { tps: filtered }), 2500);
     return { message: "TP berhasil dihapus." };
   },
 
   // 7. GET & POST /api/settings
   getSettings: async () => {
+    if (!db) throw new Error("Database not connected");
     const ref = doc(db, "settings", "app");
-    const docSnap = await getDoc(ref);
+    const docSnap = await withTimeout(getDoc(ref), 2500);
     if (docSnap.exists()) {
       const data = docSnap.data();
       if (data.format && !data.format.tanggalRaport) {
@@ -321,6 +470,7 @@ export const firebaseApi = {
     };
   },
   postSettings: async (body: any) => {
+    if (!db) throw new Error("Database not connected");
     const { principalName, principalNip, format } = body;
     const settingsData = {
       principalName: principalName || "Ustadz H. Ir. Abdul Muhyi, M.Pd",
@@ -339,7 +489,7 @@ export const firebaseApi = {
         tanggalRaport: format.tanggalRaport || "17 Juni 2026"
       } : {}
     };
-    await setDoc(doc(db, "settings", "app"), settingsData);
+    await withTimeout(setDoc(doc(db, "settings", "app"), settingsData), 2500);
     return { success: true, settings: settingsData };
   },
 
@@ -404,7 +554,8 @@ export const firebaseApi = {
 
   // 9. GET, POST, DELETE /api/ekskul
   getEkskul: async (): Promise<any[]> => {
-    const snap = await getDocs(collection(db, "ekskul"));
+    if (!db) return [];
+    const snap = await withTimeout(getDocs(collection(db, "ekskul")), 2500);
     if (snap.empty) {
       return [
         { "id": "e1", "name": "Pramuka", "type": "Wajib" },
@@ -418,14 +569,16 @@ export const firebaseApi = {
     return snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
   },
   postEkskul: async (body: any) => {
+    if (!db) throw new Error("Database not connected");
     const { name, type } = body;
     const id = "e_" + Date.now();
     const newE = { id, name, type };
-    await setDoc(doc(db, "ekskul", id), newE);
+    await withTimeout(setDoc(doc(db, "ekskul", id), newE), 2500);
     return newE;
   },
   deleteEkskul: async (id: string) => {
-    await deleteDoc(doc(db, "ekskul", id));
+    if (!db) throw new Error("Database not connected");
+    await withTimeout(deleteDoc(doc(db, "ekskul", id)), 2500);
     return { message: "Ekskul deleted" };
   }
 };

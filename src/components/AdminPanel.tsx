@@ -65,6 +65,8 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   // Modals / Form States
   const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [teacherModalError, setTeacherModalError] = useState("");
+  const [isSubmittingTeacher, setIsSubmittingTeacher] = useState(false);
   const [teacherForm, setTeacherForm] = useState({
     name: "",
     username: "",
@@ -76,6 +78,8 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
 
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [studentModalError, setStudentModalError] = useState("");
+  const [isSubmittingStudent, setIsSubmittingStudent] = useState(false);
   const [studentForm, setStudentForm] = useState({
     name: "",
     nisn: "",
@@ -153,54 +157,56 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       const setData = await resSet.json();
       const eksData = await resEks.json();
 
-      setTeachers(tData);
-      setStudents(sData);
-      setTpsTemplates(tpData);
-      setEkskuls(eksData);
-      if (setData.principalName) {
-        setPrincipalName(setData.principalName);
-      }
-      if (setData.principalNip) {
-        setPrincipalNip(setData.principalNip);
-      }
-      if (setData.format) {
-        setSemesterName(setData.format.semesterName || "Ganjil");
-        setTahunPelajaran(setData.format.tahunPelajaran || "2026/2027");
-        setFontSize(setData.format.fontSize || "11pt");
-        setShowLogo(setData.format.showLogo || false);
-        setShowSpiritual(
-          setData.format.showSpiritual !== undefined
-            ? setData.format.showSpiritual
-            : true,
-        );
-        setShowSosial(
-          setData.format.showSosial !== undefined
-            ? setData.format.showSosial
-            : true,
-        );
-        setShowAttendance(
-          setData.format.showAttendance !== undefined
-            ? setData.format.showAttendance
-            : true,
-        );
-        setShowCatatan(
-          setData.format.showCatatan !== undefined
-            ? setData.format.showCatatan
-            : true,
-        );
-        setFontFamily(setData.format.fontFamily || "Times New Roman");
-        setPaperSize(setData.format.paperSize || "A4");
-        setTanggalRaport(setData.format.tanggalRaport || "17 Juni 2026");
-        setWatermarkSize(
-          setData.format.watermarkSize !== undefined
-            ? Number(setData.format.watermarkSize)
-            : 440,
-        );
-        setWatermarkOpacity(
-          setData.format.watermarkOpacity !== undefined
-            ? Number(setData.format.watermarkOpacity)
-            : 0.05,
-        );
+      if (Array.isArray(tData)) setTeachers(tData);
+      if (Array.isArray(sData)) setStudents(sData);
+      if (tpData && typeof tpData === "object" && !Array.isArray(tpData)) setTpsTemplates(tpData);
+      if (Array.isArray(eksData)) setEkskuls(eksData);
+      if (setData && typeof setData === "object") {
+        if (setData.principalName) {
+          setPrincipalName(setData.principalName);
+        }
+        if (setData.principalNip) {
+          setPrincipalNip(setData.principalNip);
+        }
+        if (setData.format) {
+          setSemesterName(setData.format.semesterName || "Ganjil");
+          setTahunPelajaran(setData.format.tahunPelajaran || "2026/2027");
+          setFontSize(setData.format.fontSize || "11pt");
+          setShowLogo(setData.format.showLogo || false);
+          setShowSpiritual(
+            setData.format.showSpiritual !== undefined
+              ? setData.format.showSpiritual
+              : true,
+          );
+          setShowSosial(
+            setData.format.showSosial !== undefined
+              ? setData.format.showSosial
+              : true,
+          );
+          setShowAttendance(
+            setData.format.showAttendance !== undefined
+              ? setData.format.showAttendance
+              : true,
+          );
+          setShowCatatan(
+            setData.format.showCatatan !== undefined
+              ? setData.format.showCatatan
+              : true,
+          );
+          setFontFamily(setData.format.fontFamily || "Times New Roman");
+          setPaperSize(setData.format.paperSize || "A4");
+          setTanggalRaport(setData.format.tanggalRaport || "17 Juni 2026");
+          setWatermarkSize(
+            setData.format.watermarkSize !== undefined
+              ? Number(setData.format.watermarkSize)
+              : 440,
+          );
+          setWatermarkOpacity(
+            setData.format.watermarkOpacity !== undefined
+              ? Number(setData.format.watermarkOpacity)
+              : 0.05,
+          );
+        }
       }
     } catch (err) {
       setError("Gagal memuat database dari server.");
@@ -221,8 +227,40 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   // TEACHER CRUD
   const handleTeacherSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTeacherModalError("");
     setError("");
 
+    const payload = {
+      ...teacherForm,
+      name: teacherForm.name.trim(),
+      username: teacherForm.username.trim().toLowerCase(),
+      password: teacherForm.password.trim(),
+      subject: teacherForm.subject.trim(),
+      kelas: teacherForm.isWaliKelas ? teacherForm.kelas : "",
+    };
+
+    if (!payload.name) {
+      setTeacherModalError("Nama lengkap guru wajib diisi.");
+      return;
+    }
+    if (!payload.username) {
+      setTeacherModalError("Login username guru wajib diisi.");
+      return;
+    }
+    if (!payload.password) {
+      setTeacherModalError("Kata sandi akun guru wajib diisi.");
+      return;
+    }
+    if (!payload.subject) {
+      setTeacherModalError("Mata pelajaran guru wajib dipilih.");
+      return;
+    }
+    if (payload.isWaliKelas && !payload.kelas) {
+      setTeacherModalError("Silakan pilih kelas asuhan untuk wali kelas (Kelas 7, 8, atau 9).");
+      return;
+    }
+
+    setIsSubmittingTeacher(true);
     try {
       const url = editingTeacher
         ? `/api/teachers/${editingTeacher.id}`
@@ -232,17 +270,19 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(teacherForm),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
-      if (!response.ok)
+      if (!response.ok) {
         throw new Error(data.error || "Gagal menyimpan rincian guru.");
+      }
 
       await fetchAllData();
       onRefreshTrigger();
       setIsTeacherModalOpen(false);
       setEditingTeacher(null);
+      setTeacherModalError("");
       setTeacherForm({
         name: "",
         username: "",
@@ -257,12 +297,16 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           : "Guru baru berhasil ditambahkan!",
       );
     } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan.");
+      setTeacherModalError(err.message || "Terjadi kesalahan saat menyimpan data guru.");
+      setError(err.message || "Terjadi kesalahan saat menyimpan data guru.");
+    } finally {
+      setIsSubmittingTeacher(false);
     }
   };
 
   const startEditTeacher = (t: Teacher) => {
     setEditingTeacher(t);
+    setTeacherModalError("");
     setTeacherForm({
       name: t.name,
       username: t.username,
@@ -294,8 +338,30 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   // STUDENT CRUD
   const handleStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStudentModalError("");
     setError("");
 
+    const payload = {
+      ...studentForm,
+      name: studentForm.name.trim(),
+      nisn: studentForm.nisn.trim().replace(/\D/g, ""),
+      kelas: studentForm.kelas.trim(),
+    };
+
+    if (!payload.name) {
+      setStudentModalError("Nama lengkap siswa wajib diisi.");
+      return;
+    }
+    if (!payload.nisn) {
+      setStudentModalError("NISN siswa wajib diisi (numerik angka).");
+      return;
+    }
+    if (!payload.kelas) {
+      setStudentModalError("Kelas siswa wajib dipilih (7, 8, atau 9).");
+      return;
+    }
+
+    setIsSubmittingStudent(true);
     try {
       const url = editingStudent
         ? `/api/students/${editingStudent.id}`
@@ -305,17 +371,19 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(studentForm),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
-      if (!response.ok)
+      if (!response.ok) {
         throw new Error(data.error || "Gagal menyimpan rincian siswa.");
+      }
 
       await fetchAllData();
       onRefreshTrigger();
       setIsStudentModalOpen(false);
       setEditingStudent(null);
+      setStudentModalError("");
       setStudentForm({
         name: "",
         nisn: "",
@@ -327,12 +395,16 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           : "Siswa baru berhasil ditambahkan!",
       );
     } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan.");
+      setStudentModalError(err.message || "Terjadi kesalahan saat menyimpan data siswa.");
+      setError(err.message || "Terjadi kesalahan saat menyimpan data siswa.");
+    } finally {
+      setIsSubmittingStudent(false);
     }
   };
 
   const startEditStudent = (s: Student) => {
     setEditingStudent(s);
+    setStudentModalError("");
     setStudentForm({
       name: s.name,
       nisn: s.nisn,
@@ -513,7 +585,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-sm font-bold text-slate-900">
-                Dafar Guru & Hak Akses
+                Daftar Guru & Hak Akses
               </h2>
               <p className="text-[10px] text-slate-400">
                 Kelola akun guru mata pelajaran, hak wali kelas, dan sandi
@@ -523,11 +595,12 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
             <button
               onClick={() => {
                 setEditingTeacher(null);
+                setTeacherModalError("");
                 setTeacherForm({
                   name: "",
                   username: "",
-                  password: "",
-                  subject: "IPA",
+                  password: "123",
+                  subject: SUBJECT_LIST[0] || "PAI",
                   isWaliKelas: false,
                   kelas: "",
                 });
@@ -1269,6 +1342,13 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
             </div>
 
             <form onSubmit={handleTeacherSubmit} className="p-6 space-y-4">
+              {teacherModalError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex gap-2 items-start animate-fade-in">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+                  <span className="font-semibold">{teacherModalError}</span>
+                </div>
+              )}
+
               {/* Petunjuk Guru Multi-Mapel */}
               <div className="bg-emerald-50 border-l-4 border-emerald-600 p-3 rounded-r-lg text-2xs md:text-xs text-emerald-800 leading-relaxed space-y-1">
                 <p className="font-bold uppercase tracking-wider text-[10px]">
@@ -1299,41 +1379,23 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   required
                   value={teacherForm.name}
                   onChange={(e) => {
-                    const val = e.target.value;
+                    const newName = e.target.value;
                     setTeacherForm((prev) => {
-                      const updated = { ...prev, name: val };
-                      if (!editingTeacher) {
-                        const cleanName = val
+                      const updated = { ...prev, name: newName };
+                      // If adding new teacher and username is still empty or default, suggest clean username
+                      if (!editingTeacher && (!prev.username || prev.username === "")) {
+                        const clean = newName
                           .toLowerCase()
                           .replace(/[^a-z0-9]/g, "")
-                          .substring(0, 15);
-                        const cleanSubject = prev.subject
-                          .toLowerCase()
-                          .replace(/[^a-z0-9]/g, "");
-                        if (cleanName) {
-                          let base = `${cleanName}_${cleanSubject}`;
-                          let unique = base;
-                          let suffix = 2;
-                          while (
-                            teachers.some(
-                              (t) =>
-                                t.username.toLowerCase() ===
-                                unique.toLowerCase(),
-                            )
-                          ) {
-                            unique = `${base}${suffix}`;
-                            suffix++;
-                          }
-                          updated.username = unique;
-                        } else {
-                          updated.username = "";
-                        }
+                          .substring(0, 12);
+                        if (clean) updated.username = clean;
                       }
                       return updated;
                     });
                   }}
                   placeholder="Contoh: Dr. H. Slamet, M.Pd"
                   className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="teacher-name-input"
                 />
               </div>
 
@@ -1349,11 +1411,12 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                     onChange={(e) =>
                       setTeacherForm((prev) => ({
                         ...prev,
-                        username: e.target.value.toLowerCase(),
+                        username: e.target.value.toLowerCase().replace(/\s+/g, ""),
                       }))
                     }
                     placeholder="nama_panggil"
-                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white font-mono text-xs"
+                    id="teacher-username-input"
                   />
                 </div>
                 <div>
@@ -1370,8 +1433,9 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                         password: e.target.value,
                       }))
                     }
-                    placeholder="Sandi Aman"
+                    placeholder="Sandi Akun"
                     className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                    id="teacher-password-input"
                   />
                 </div>
               </div>
@@ -1382,41 +1446,14 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 </label>
                 <select
                   value={teacherForm.subject}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setTeacherForm((prev) => {
-                      const updated = { ...prev, subject: val };
-                      if (!editingTeacher) {
-                        const cleanName = prev.name
-                          .toLowerCase()
-                          .replace(/[^a-z0-9]/g, "")
-                          .substring(0, 15);
-                        const cleanSubject = val
-                          .toLowerCase()
-                          .replace(/[^a-z0-9]/g, "");
-                        if (cleanName) {
-                          let base = `${cleanName}_${cleanSubject}`;
-                          let unique = base;
-                          let suffix = 2;
-                          while (
-                            teachers.some(
-                              (t) =>
-                                t.username.toLowerCase() ===
-                                unique.toLowerCase(),
-                            )
-                          ) {
-                            unique = `${base}${suffix}`;
-                            suffix++;
-                          }
-                          updated.username = unique;
-                        } else {
-                          updated.username = "";
-                        }
-                      }
-                      return updated;
-                    });
-                  }}
+                  onChange={(e) =>
+                    setTeacherForm((prev) => ({
+                      ...prev,
+                      subject: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="teacher-subject-select"
                 >
                   {SUBJECT_LIST.map((sub, i) => (
                     <option key={i} value={sub}>
@@ -1470,16 +1507,28 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
+                  disabled={isSubmittingTeacher}
                   onClick={() => setIsTeacherModalOpen(false)}
-                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer"
+                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1"
+                  disabled={isSubmittingTeacher}
+                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60"
                 >
-                  <Save className="w-4 h-4" /> Simpan Data
+                  {isSubmittingTeacher ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Simpan Data</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -1504,6 +1553,13 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
             </div>
 
             <form onSubmit={handleStudentSubmit} className="p-6 space-y-4">
+              {studentModalError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex gap-2 items-start animate-fade-in">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+                  <span className="font-semibold">{studentModalError}</span>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-gray-750 mb-1.5">
                   Nama Lengkap Siswa
@@ -1520,6 +1576,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   }
                   placeholder="Contoh: Muhammad Al-Farabi"
                   className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="student-name-input"
                 />
               </div>
 
@@ -1534,11 +1591,12 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   onChange={(e) =>
                     setStudentForm((prev) => ({
                       ...prev,
-                      nisn: e.target.value.replace(/\D/g, ""),
+                      nisn: e.target.value,
                     }))
                   }
-                  placeholder="Contoh: 0134988712 (10 digit numerik)"
+                  placeholder="Contoh: 0134988712"
                   className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="student-nisn-input"
                 />
               </div>
 
@@ -1555,6 +1613,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                     }))
                   }
                   className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="student-class-select"
                 >
                   <option value="7">Kelas 7</option>
                   <option value="8">Kelas 8</option>
@@ -1565,16 +1624,28 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
+                  disabled={isSubmittingStudent}
                   onClick={() => setIsStudentModalOpen(false)}
-                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer"
+                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1"
+                  disabled={isSubmittingStudent}
+                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60"
                 >
-                  <Save className="w-4 h-4" /> Simpan Data
+                  {isSubmittingStudent ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Simpan Data</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
