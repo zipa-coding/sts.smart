@@ -250,18 +250,20 @@ app.post("/api/login", async (req, res) => {
   }
 
   const db = await readDB();
-  const targetSchoolId = schoolId || DEFAULT_SCHOOL_ID;
 
-  // Search within selected school first
-  let teacher = db.teachers.find(
-    (t: any) =>
-      isRecordForSchool(t, targetSchoolId) &&
-      t.username.toLowerCase() === username.toLowerCase() &&
-      t.password === password,
-  );
+  let teacher = null;
+  // If schoolId is explicitly provided, look in that school first
+  if (schoolId) {
+    teacher = db.teachers.find(
+      (t: any) =>
+        isRecordForSchool(t, schoolId) &&
+        t.username.toLowerCase() === username.toLowerCase() &&
+        t.password === password,
+    );
+  }
 
-  // If not found and no specific school provided or fallback search
-  if (!teacher && !schoolId) {
+  // If no schoolId provided or not found, look across all registered teachers
+  if (!teacher) {
     teacher = db.teachers.find(
       (t: any) =>
         t.username.toLowerCase() === username.toLowerCase() &&
@@ -304,14 +306,16 @@ app.post("/api/verify-session", async (req, res) => {
   }
 
   const db = await readDB();
-  const targetSchoolId = schoolId || getSchoolId(req);
 
-  let teacher = db.teachers.find(
-    (t: any) =>
-      isRecordForSchool(t, targetSchoolId) &&
-      t.username.toLowerCase() === username.toLowerCase() &&
-      t.password === password,
-  );
+  let teacher = null;
+  if (schoolId) {
+    teacher = db.teachers.find(
+      (t: any) =>
+        isRecordForSchool(t, schoolId) &&
+        t.username.toLowerCase() === username.toLowerCase() &&
+        t.password === password,
+    );
+  }
 
   if (!teacher) {
     teacher = db.teachers.find(

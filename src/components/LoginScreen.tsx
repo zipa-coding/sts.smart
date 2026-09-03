@@ -4,18 +4,15 @@ import {
   ShieldAlert,
   Key,
   User,
-  School as SchoolIcon,
   PlusCircle,
   Building2,
   CheckCircle2,
   MapPin,
   Hash,
   Sparkles,
-  ArrowRight,
 } from "lucide-react";
-import { Teacher, School } from "../types";
+import { Teacher } from "../types";
 import SmpIslamSmartLogo from "./SmpIslamSmartLogo";
-import { PWAInstallButton } from "./PWAInstallButton";
 
 interface LoginScreenProps {
   onLoginSuccess: (user: Teacher) => void;
@@ -26,17 +23,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [activeTab, setActiveTab] = useState<"login" | "register_school">(
     "login",
   );
-
-  // List of registered schools
-  const [schools, setSchools] = useState<School[]>([
-    {
-      id: "smp-islam-smart",
-      name: "SMP ISLAM SMART PANGKALPINANG",
-      city: "Pangkalpinang",
-    },
-  ]);
-  const [selectedSchoolId, setSelectedSchoolId] =
-    useState<string>("smp-islam-smart");
 
   // Login form state
   const [username, setUsername] = useState("");
@@ -57,31 +43,9 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fetch registered schools on mount
-  const loadSchools = async () => {
-    try {
-      const res = await fetch("/api/schools");
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setSchools(data);
-        // If current selectedSchoolId is not in list, fallback
-        if (!data.some((s) => s.id === selectedSchoolId)) {
-          setSelectedSchoolId(data[0].id);
-        }
-      }
-    } catch (err) {
-      console.error("Gagal memuat daftar sekolah:", err);
-    }
-  };
-
+  // Fetch teachers for username recommendations
   useEffect(() => {
-    loadSchools();
-  }, []);
-
-  // Fetch teachers for recommendations whenever selected school changes
-  useEffect(() => {
-    if (!selectedSchoolId) return;
-    fetch(`/api/teachers?schoolId=${encodeURIComponent(selectedSchoolId)}`)
+    fetch("/api/teachers")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -91,11 +55,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       .catch((err) =>
         console.error("Gagal memuat daftar guru untuk rekomendasi", err),
       );
-  }, [selectedSchoolId]);
-
-  // Selected school object
-  const activeSchool =
-    schools.find((s) => s.id === selectedSchoolId) || schools[0];
+  }, []);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,9 +73,8 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username,
+          username: username.trim(),
           password,
-          schoolId: selectedSchoolId,
         }),
       });
 
@@ -185,9 +144,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         `Sekolah "${data.school.name}" berhasil didaftarkan! Menyiapkan dashboard mandiri...`,
       );
 
-      // Reload schools list
-      await loadSchools();
-
       // Automatically log the new admin in after a brief pause
       setTimeout(() => {
         onLoginSuccess(data.admin);
@@ -223,23 +179,17 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         className="w-full max-w-md bg-[#0d1527] rounded-2xl shadow-2xl border border-[#1e2e4a] overflow-hidden relative z-10"
         id="login-card"
       >
-        {/* Header Section with dynamic school branding */}
+        {/* Header Section */}
         <div className="bg-gradient-to-b from-[#111c34] to-[#0d1527] px-6 pt-7 pb-5 text-center text-white relative border-b border-[#1e2e4a]">
-          {activeSchool?.id === "smp-islam-smart" ? (
-            <div className="mx-auto w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-3 p-1.5 shadow-lg ring-1 ring-blue-400/20">
-              <SmpIslamSmartLogo size="100%" />
-            </div>
-          ) : (
-            <div className="mx-auto w-16 h-16 bg-blue-950/80 border border-blue-500/40 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-blue-400">
-              <Building2 className="w-8 h-8" />
-            </div>
-          )}
+          <div className="mx-auto w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-3 p-1.5 shadow-lg ring-1 ring-blue-400/20">
+            <SmpIslamSmartLogo size="100%" />
+          </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-300 text-[11px] font-semibold tracking-wide mb-2 max-w-full truncate">
-            <SchoolIcon className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-            <span className="truncate">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-300 text-[11px] font-bold tracking-wide mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <span>
               {activeTab === "login"
-                ? activeSchool?.name || "SMP ISLAM SMART PANGKALPINANG"
+                ? "KURIKULUM MERDEKA • STS"
                 : "PENDAFTARAN SEKOLAH BARU"}
             </span>
           </div>
@@ -320,55 +270,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           {/* ================= TAB 1: MASUK (LOGIN) ================= */}
           {activeTab === "login" && (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
-              {/* School Selector */}
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono flex items-center justify-between">
-                  <span>Nama Sekolah</span>
-                  <span className="text-[10px] font-normal text-slate-400 normal-case">
-                    Pilih sekolah Anda
-                  </span>
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-blue-400">
-                    <Building2 className="h-4 w-4" />
-                  </span>
-                  <select
-                    value={selectedSchoolId}
-                    onChange={(e) => {
-                      setSelectedSchoolId(e.target.value);
-                      setUsername("");
-                      setPassword("");
-                    }}
-                    className="w-full pl-10 pr-8 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium appearance-none cursor-pointer"
-                    id="school-select"
-                  >
-                    {schools.map((s) => (
-                      <option
-                        key={s.id}
-                        value={s.id}
-                        className="bg-[#0d1527] text-slate-100"
-                      >
-                        {s.name} {s.city ? `(${s.city})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-500 text-xs">
-                    ▼
-                  </span>
-                </div>
-                {selectedSchoolId === "smp-islam-smart" ? (
-                  <p className="text-[11px] text-emerald-400/90 mt-1 flex items-center gap-1 font-medium">
-                    <CheckCircle2 className="w-3 h-3" /> Database lengkap &
-                    aktif (data siswa & guru tersedia)
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-blue-400/90 mt-1 flex items-center gap-1 font-medium">
-                    <Sparkles className="w-3 h-3" /> Database sekolah terdaftar
-                    mandiri
-                  </p>
-                )}
-              </div>
-
               {/* Username Input */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono">
@@ -389,17 +290,17 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                     onBlur={() => {
                       setTimeout(() => setShowSuggestions(false), 200);
                     }}
-                    placeholder="Masukkan username..."
+                    placeholder="Masukkan username Anda..."
                     className="w-full pl-10 pr-4 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
                     id="username-input"
                     autoComplete="off"
                   />
 
-                  {/* Suggestions Dropdown for the selected school */}
+                  {/* Suggestions Dropdown */}
                   {showSuggestions && filteredSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1.5 bg-[#0a101f] border border-[#1e2e4a] rounded-xl shadow-2xl max-h-52 overflow-y-auto divide-y divide-[#15233c]">
                       <div className="p-2 text-[10px] font-bold text-slate-400 bg-[#070c18] uppercase tracking-wider font-mono">
-                        Pilihan Pengguna di {activeSchool?.name}
+                        Pilihan Pengguna Terdaftar
                       </div>
                       {filteredSuggestions.map((t) => (
                         <button
@@ -421,7 +322,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                             <span className="text-[10px] text-slate-400">
                               •{" "}
                               {t.subject === "Admin"
-                                ? "Administrator Sekolah"
+                                ? "Administrator"
                                 : `Mapel ${t.subject} ${t.isWaliKelas ? `(Kelas ${t.kelas})` : ""}`}
                             </span>
                           </div>
@@ -654,16 +555,12 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               </div>
             </form>
           )}
-
-          {/* PWA Install Button for Fast Laptop Access */}
-          <PWAInstallButton variant="login" />
         </div>
       </div>
 
       {/* Footer Info */}
       <div className="mt-6 text-center text-xs text-slate-500 font-medium max-w-sm">
-        Sistem Raport STS Terpadu &bull; SMP Islam Smart Pangkalpinang & Sekolah
-        Terdaftar
+        Sistem Raport STS Terpadu &bull; Kurikulum Merdeka
       </div>
     </div>
   );

@@ -577,6 +577,9 @@ export default function App() {
             )}
           </div>
         </main>
+
+        {/* Floating Download / Install App CTA in Browser & Website */}
+        <PWAInstallButton variant="floating" />
       </div>
     </div>
   );

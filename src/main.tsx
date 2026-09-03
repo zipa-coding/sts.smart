@@ -341,29 +341,37 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // 1. POST /api/login
     if (path === '/api/login' && method === 'POST') {
       const { username, password, schoolId } = body || {};
-      const targetSchoolId = schoolId || reqSchoolId || 'smp-islam-smart';
       const db = getDB();
-      const school = (db.schools || []).find((s: any) => s.id === targetSchoolId);
-      const isTargetRecord = (item: any) => {
-        if (!item) return false;
-        if (targetSchoolId === 'smp-islam-smart') {
-          return !item.schoolId || item.schoolId === 'smp-islam-smart';
-        }
-        return item.schoolId === targetSchoolId;
-      };
-      const teacher = (db.teachers || []).find(
-        (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
-      );
+      let teacher: any = null;
+      if (schoolId) {
+        const isTargetRecord = (item: any) => {
+          if (!item) return false;
+          if (schoolId === 'smp-islam-smart') {
+            return !item.schoolId || item.schoolId === 'smp-islam-smart';
+          }
+          return item.schoolId === schoolId;
+        };
+        teacher = (db.teachers || []).find(
+          (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
+        );
+      }
       if (!teacher) {
-        return new Response(JSON.stringify({ error: "Kombinasi pengguna dan kata sandi salah untuk sekolah yang dipilih." }), {
+        teacher = (db.teachers || []).find(
+          (t: any) => t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
+        );
+      }
+      if (!teacher) {
+        return new Response(JSON.stringify({ error: "Kombinasi pengguna dan kata sandi salah." }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' }
         });
       }
+      const targetSchoolId = teacher.schoolId || 'smp-islam-smart';
+      const school = (db.schools || []).find((s: any) => s.id === targetSchoolId);
       return new Response(JSON.stringify({
         id: teacher.id,
         schoolId: targetSchoolId,
-        schoolName: school?.name || "SMP ISLAM SMART PANGKALPINANG",
+        schoolName: school?.name || teacher.schoolName || "SMP ISLAM SMART PANGKALPINANG",
         name: teacher.name,
         username: teacher.username,
         subject: teacher.subject,
@@ -375,29 +383,37 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // POST /api/verify-session
     if (path === '/api/verify-session' && method === 'POST') {
       const { username, password, schoolId } = body || {};
-      const targetSchoolId = schoolId || reqSchoolId || 'smp-islam-smart';
       const db = getDB();
-      const school = (db.schools || []).find((s: any) => s.id === targetSchoolId);
-      const isTargetRecord = (item: any) => {
-        if (!item) return false;
-        if (targetSchoolId === 'smp-islam-smart') {
-          return !item.schoolId || item.schoolId === 'smp-islam-smart';
-        }
-        return item.schoolId === targetSchoolId;
-      };
-      const teacher = (db.teachers || []).find(
-        (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
-      );
+      let teacher: any = null;
+      if (schoolId) {
+        const isTargetRecord = (item: any) => {
+          if (!item) return false;
+          if (schoolId === 'smp-islam-smart') {
+            return !item.schoolId || item.schoolId === 'smp-islam-smart';
+          }
+          return item.schoolId === schoolId;
+        };
+        teacher = (db.teachers || []).find(
+          (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
+        );
+      }
+      if (!teacher) {
+        teacher = (db.teachers || []).find(
+          (t: any) => t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
+        );
+      }
       if (!teacher) {
         return new Response(JSON.stringify({ error: "Sesi tidak valid." }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' }
         });
       }
+      const targetSchoolId = teacher.schoolId || 'smp-islam-smart';
+      const school = (db.schools || []).find((s: any) => s.id === targetSchoolId);
       return new Response(JSON.stringify({
         id: teacher.id,
         schoolId: targetSchoolId,
-        schoolName: school?.name || "SMP ISLAM SMART PANGKALPINANG",
+        schoolName: school?.name || teacher.schoolName || "SMP ISLAM SMART PANGKALPINANG",
         name: teacher.name,
         username: teacher.username,
         subject: teacher.subject,
