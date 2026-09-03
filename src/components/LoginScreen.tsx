@@ -11,11 +11,11 @@ import {
   Hash,
   ArrowRight,
   RefreshCw,
-  Search,
   Eye,
   EyeOff,
   UserCheck,
   ShieldCheck,
+  Lock,
 } from "lucide-react";
 import { Teacher } from "../types";
 import SmpIslamSmartLogo from "./SmpIslamSmartLogo";
@@ -36,13 +36,14 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   // Main Tab: "login" or "register_school"
   const [activeTab, setActiveTab] = useState<"login" | "register_school">("login");
 
-  // School step states
-  const [registeredSchools, setRegisteredSchools] = useState<RegisteredSchool[]>([]);
+  // School step states: user manually types school name and school password
   const [activeSchool, setActiveSchool] = useState<RegisteredSchool | null>(null);
   const [schoolInput, setSchoolInput] = useState("");
-  const [showSchoolSuggestions, setShowSchoolSuggestions] = useState(false);
+  const [schoolPassword, setSchoolPassword] = useState("");
+  const [showSchoolPassword, setShowSchoolPassword] = useState(false);
+  const [verifyingSchool, setVerifyingSchool] = useState(false);
 
-  // User selection within active school
+  // User selection within active verified school
   // Role tab: "guru" (pilih nama guru) or "admin" (admin pengatur data)
   const [roleTab, setRoleTab] = useState<"guru" | "admin">("guru");
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -68,24 +69,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [regPassword, setRegPassword] = useState("");
   const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
 
-  // 1. Fetch registered schools
-  const fetchSchools = async () => {
-    try {
-      const res = await fetch("/api/schools");
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setRegisteredSchools(data);
-      }
-    } catch (err) {
-      console.error("Gagal memuat daftar sekolah terdaftar", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchSchools();
-  }, []);
-
-  // 2. Load teachers whenever activeSchool changes
+  // Load teachers whenever activeSchool is set
   useEffect(() => {
     if (!activeSchool) {
       setTeachers([]);
@@ -116,7 +100,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       });
   }, [activeSchool]);
 
-  // List of teachers excluding Admin
+  // List of teachers excluding Admin (admin manages school data separately)
   const availableTeachers = teachers.filter(
     (t) =>
       t.subject?.toLowerCase() !== "admin" &&
@@ -127,53 +111,59 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     (t) => t.id === selectedTeacherId
   );
 
-  // Filter school suggestions based on user typing
-  const filteredSchoolSuggestions = schoolInput.trim()
-    ? registeredSchools.filter((s) =>
-        s.name.toLowerCase().includes(schoolInput.trim().toLowerCase())
-      )
-    : registeredSchools;
-
-  // Handler: Verifikasi & Masuk Akun Sekolah
-  const handleConnectSchool = (schoolToConnect?: RegisteredSchool) => {
+  // Handler: Verifikasi Sekolah Mandiri (Nama Sekolah + Kata Sandi Sekolah)
+  const handleVerifySchool = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError("");
     setSuccessMsg("");
 
-    let targetSchool = schoolToConnect;
-    if (!targetSchool) {
-      const query = schoolInput.trim().toLowerCase();
-      if (!query) {
-        setError("Silakan masukkan nama sekolah sesuai yang didaftarkan.");
-        return;
-      }
-      targetSchool = registeredSchools.find(
-        (s) => s.name.trim().toLowerCase() === query
-      );
-      if (!targetSchool) {
-        // Try substring match if exact match not found
-        targetSchool = registeredSchools.find((s) =>
-          s.name.toLowerCase().includes(query)
-        );
-      }
-    }
+    const cleanName = schoolInput.trim();
+    const cleanPass = schoolPassword.trim();
 
-    if (!targetSchool) {
-      setError(
-        `Sekolah "${schoolInput.trim()}" belum terdaftar. Pastikan nama sekolah sudah sesuai dengan yang didaftarkan, atau daftarkan sekolah baru di tab "Daftar Sekolah".`
-      );
+    if (!cleanName) {
+      setError("Silakan ketikkan nama sekolah sesuai yang didaftarkan.");
+      return;
+    }
+    if (!cleanPass) {
+      setError("Silakan masukkan kata sandi sekolah untuk membuka data sekolah.");
       return;
     }
 
-    setActiveSchool(targetSchool);
-    setSchoolInput(targetSchool.name);
-    setShowSchoolSuggestions(false);
-    setError("");
-    setTeacherPassword("");
-    setAdminPassword("");
-    setRoleTab("guru");
+    setVerifyingSchool(true);
+
+    try {
+      const response = await fetch("/api/schools/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          schoolName: cleanName,
+          password: cleanPass,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Nama sekolah atau kata sandi salah.");
+      }
+
+      setActiveSchool(data.school);
+      setSchoolInput(data.school.name);
+      setSchoolPassword("");
+      setError("");
+      setTeacherPassword("");
+      setAdminPassword("");
+      setRoleTab("guru");
+      setSuccessMsg(`Portal ${data.school.name} berhasil diverifikasi.`);
+      setTimeout(() => setSuccessMsg(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Gagal memverifikasi sekolah.");
+    } finally {
+      setVerifyingSchool(false);
+    }
   };
 
-  // Handler: Ganti Sekolah
+  // Handler: Ganti Sekolah / Keluar dari Sesi Sekolah
   const handleSwitchSchool = () => {
     setActiveSchool(null);
     setSelectedTeacherId("");
@@ -182,6 +172,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     setSuccessMsg("");
     setTeacherPassword("");
     setAdminPassword("");
+    setSchoolPassword("");
   };
 
   // Handler: Login sebagai Guru (Pilih nama guru yang terdaftar)
@@ -191,7 +182,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     setSuccessMsg("");
 
     if (!activeSchool) {
-      setError("Silakan masukkan dan pilih sekolah terlebih dahulu.");
+      setError("Silakan masukkan dan verifikasi nama sekolah terlebih dahulu.");
       return;
     }
 
@@ -221,7 +212,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Kombinasi nama pengguna dan kata sandi salah.");
+        throw new Error(data.error || "Kata sandi guru tidak sesuai.");
       }
 
       onLoginSuccess(data);
@@ -232,14 +223,14 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     }
   };
 
-  // Handler: Login sebagai Administrator Sekolah
+  // Handler: Login sebagai Administrator Sekolah (Pengatur Data)
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
 
     if (!activeSchool) {
-      setError("Silakan masukkan dan pilih sekolah terlebih dahulu.");
+      setError("Silakan masukkan dan verifikasi nama sekolah terlebih dahulu.");
       return;
     }
 
@@ -328,9 +319,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         `Sekolah "${data.school.name}" berhasil didaftarkan! Menyiapkan dashboard...`
       );
 
-      // Refresh list of schools
-      await fetchSchools();
-
       setTimeout(() => {
         onLoginSuccess(data.admin);
       }, 1200);
@@ -345,7 +333,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       className="min-h-screen flex flex-col items-center justify-center bg-[#070b14] px-4 py-8 relative overflow-hidden"
       id="login-container"
     >
-      {/* Refined Deep Ambient Glows */}
+      {/* Ambient background glows */}
       <div className="absolute top-1/4 -left-32 w-80 h-80 bg-blue-900/20 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-1/4 -right-32 w-80 h-80 bg-indigo-900/15 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -441,132 +429,108 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           {/* ================= TAB 1: MASUK PORTAL ================= */}
           {activeTab === "login" && (
             <div className="space-y-5">
-              {/* STEP 1: JIKA BELUM MEMILIH SEKOLAH -> FITUR ISI NAMA SEKOLAH SESUAI YANG DIDAFTARKAN */}
+              {/* STEP 1: PENGGUNA MENGISI SENDIRI NAMA SEKOLAH BESERTA KATA SANDINYA (KEAMANAN DATA TINGGI) */}
               {!activeSchool ? (
-                <div className="space-y-4" id="school-selection-section">
+                <form
+                  onSubmit={handleVerifySchool}
+                  className="space-y-4"
+                  id="school-verification-form"
+                >
+                  <div className="p-3 bg-[#080d19] border border-blue-500/20 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
+                    <Lock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <div className="leading-relaxed">
+                      <span className="font-bold text-slate-200 block">
+                        Keamanan Akses Data Sekolah
+                      </span>
+                      Silakan masukkan nama resmi sekolah beserta kata sandi yang telah didaftarkan untuk membuka akses portal guru dan admin.
+                    </div>
+                  </div>
+
+                  {/* Input 1: Nama Sekolah */}
                   <div>
                     <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
                       <Building2 className="w-4 h-4 text-blue-400" />
                       <span>Nama Sekolah (Sesuai yang Didaftarkan)</span>
                     </label>
-                    <p className="text-[11px] text-slate-400 mb-2">
-                      Ketikkan nama sekolah Anda persis seperti saat didaftarkan di sistem.
+                    <input
+                      type="text"
+                      value={schoolInput}
+                      onChange={(e) => setSchoolInput(e.target.value)}
+                      placeholder="Contoh: SMP ISLAM SMART PANGKALPINANG"
+                      className="w-full px-3.5 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
+                      id="school-name-input"
+                      autoComplete="off"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Ketikkan nama sekolah persis sesuai nama saat registrasi.
                     </p>
-
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                        <Search className="h-4 w-4" />
-                      </span>
-                      <input
-                        type="text"
-                        value={schoolInput}
-                        onChange={(e) => {
-                          setSchoolInput(e.target.value);
-                          setShowSchoolSuggestions(true);
-                        }}
-                        onFocus={() => setShowSchoolSuggestions(true)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleConnectSchool();
-                          }
-                        }}
-                        placeholder="Contoh: SMP ISLAM SMART PANGKALPINANG..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
-                        id="school-name-input"
-                        autoComplete="off"
-                      />
-
-                      {/* Dropdown Rekomendasi Sekolah Terdaftar */}
-                      {showSchoolSuggestions && filteredSchoolSuggestions.length > 0 && (
-                        <div className="absolute z-50 left-0 right-0 mt-1.5 bg-[#0a101f] border border-[#1e2e4a] rounded-xl shadow-2xl max-h-56 overflow-y-auto divide-y divide-[#15233c]">
-                          <div className="p-2 text-[10px] font-bold text-slate-400 bg-[#070c18] uppercase tracking-wider font-mono flex items-center justify-between">
-                            <span>Daftar Sekolah Terdaftar di Sistem</span>
-                            <span className="text-blue-400">
-                              {filteredSchoolSuggestions.length} Sekolah
-                            </span>
-                          </div>
-                          {filteredSchoolSuggestions.map((school) => (
-                            <button
-                              key={school.id}
-                              type="button"
-                              onClick={() => {
-                                handleConnectSchool(school);
-                              }}
-                              className="w-full text-left px-3.5 py-2.5 hover:bg-[#121e36] transition flex items-center justify-between gap-2 cursor-pointer text-slate-200 group"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <div className="text-xs font-bold text-blue-300 group-hover:text-blue-200 truncate">
-                                  {school.name}
-                                </div>
-                                <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
-                                  {school.city && (
-                                    <span className="flex items-center gap-0.5">
-                                      <MapPin className="w-3 h-3 text-slate-500" />
-                                      {school.city}
-                                    </span>
-                                  )}
-                                  {school.npsn && (
-                                    <span className="font-mono text-slate-500">
-                                      NPSN: {school.npsn}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-blue-400 shrink-0" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
 
-                  {/* Quick-select Chip: SMP ISLAM SMART PANGKALPINANG */}
-                  <div className="pt-1">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-2">
-                      Pilihan Sekolah Terdaftar:
+                  {/* Input 2: Kata Sandi Sekolah */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
+                      <Key className="w-4 h-4 text-blue-400" />
+                      <span>Kata Sandi Sekolah</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showSchoolPassword ? "text" : "password"}
+                        value={schoolPassword}
+                        onChange={(e) => setSchoolPassword(e.target.value)}
+                        placeholder="Masukkan kata sandi sekolah..."
+                        className="w-full pl-3.5 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
+                        id="school-password-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSchoolPassword(!showSchoolPassword)}
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
+                        title={showSchoolPassword ? "Sembunyikan sandi" : "Tampilkan sandi"}
+                      >
+                        {showSchoolPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {registeredSchools.map((s) => (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => handleConnectSchool(s)}
-                          className={`text-xs px-3 py-1.5 rounded-xl border transition flex items-center gap-1.5 cursor-pointer text-left ${
-                            s.id === "smp-islam-smart"
-                              ? "bg-blue-950/70 border-blue-500/40 text-blue-300 hover:bg-blue-900/60 hover:border-blue-400"
-                              : "bg-[#09101f] border-[#1e2e4a] text-slate-300 hover:bg-[#121e36]"
-                          }`}
-                        >
-                          <Building2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                          <span className="font-semibold truncate max-w-[260px]">
-                            {s.name}
-                          </span>
-                          {s.id === "smp-islam-smart" && (
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/30 text-blue-200 font-mono">
-                              Data Siap
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Kata sandi akses sekolah / sandi akun admin sekolah.
+                    </p>
+                  </div>
+
+                  {/* Helper Petunjuk Uji Coba */}
+                  <div className="text-[11px] text-slate-400 bg-[#080d19]/60 px-3 py-2 rounded-lg border border-[#15233c]">
+                    <span className="text-blue-400 font-semibold">Petunjuk: </span>
+                    Untuk sekolah bawaan, masukkan nama{" "}
+                    <span className="font-mono text-slate-200 font-bold">
+                      SMP ISLAM SMART PANGKALPINANG
+                    </span>{" "}
+                    dengan sandi{" "}
+                    <span className="font-mono text-slate-200 font-bold">123</span>.
                   </div>
 
                   {/* Tombol Lanjut Buka Akun Sekolah */}
                   <button
-                    type="button"
-                    onClick={() => handleConnectSchool()}
-                    className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-blue-950/60 border border-blue-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
+                    type="submit"
+                    disabled={verifyingSchool}
+                    className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-blue-950/60 border border-blue-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 mt-3"
                     id="connect-school-button"
                   >
-                    <span>BUKA PORTAL SEKOLAH</span>
-                    <ArrowRight className="w-4 h-4" />
+                    {verifyingSchool ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <span>BUKA PORTAL SEKOLAH</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
-                </div>
+                </form>
               ) : (
                 /* STEP 2: SETELAH BERHASIL LOGIN DI AKUN SEKOLAH YANG BENAR */
                 <div className="space-y-4" id="active-school-login-section">
-                  {/* Banner Sekolah Aktif & Tombol Ganti Sekolah */}
+                  {/* Banner Sekolah Terverifikasi & Tombol Ganti Sekolah */}
                   <div className="p-3.5 bg-gradient-to-r from-blue-950/70 to-indigo-950/70 border border-blue-500/40 rounded-xl flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-9 h-9 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-300 shrink-0">
@@ -662,7 +626,11 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                                 id="teacher-select-dropdown"
                               >
                                 {availableTeachers.map((teacher) => (
-                                  <option key={teacher.id} value={teacher.id} className="bg-[#0c1322] text-slate-100 py-1">
+                                  <option
+                                    key={teacher.id}
+                                    value={teacher.id}
+                                    className="bg-[#0c1322] text-slate-100 py-1"
+                                  >
                                     {teacher.name} — Mapel {teacher.subject}
                                     {teacher.isWaliKelas && teacher.kelas
                                       ? ` (Wali Kelas ${teacher.kelas})`
@@ -684,7 +652,12 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                                     {currentSelectedTeacher.name}
                                   </div>
                                   <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                                    <span>Mapel: <strong className="text-slate-200">{currentSelectedTeacher.subject}</strong></span>
+                                    <span>
+                                      Mapel:{" "}
+                                      <strong className="text-slate-200">
+                                        {currentSelectedTeacher.subject}
+                                      </strong>
+                                    </span>
                                     {currentSelectedTeacher.isWaliKelas && (
                                       <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px]">
                                         Wali Kelas {currentSelectedTeacher.kelas}
@@ -693,7 +666,9 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                                   </div>
                                 </div>
                                 <div className="text-right shrink-0">
-                                  <div className="text-[9px] text-slate-500 font-mono uppercase">Username</div>
+                                  <div className="text-[9px] text-slate-500 font-mono uppercase">
+                                    Username
+                                  </div>
                                   <div className="text-xs font-mono font-bold text-slate-200 bg-[#0d1627] px-2 py-0.5 rounded border border-[#1e2e4a]">
                                     {currentSelectedTeacher.username}
                                   </div>
@@ -1031,7 +1006,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         </div>
       </div>
 
-      {/* Clean Footer Info - Kurikulum Merdeka STS removed */}
+      {/* Clean Footer Info */}
       <div className="mt-6 text-center text-xs text-slate-500 font-medium max-w-sm">
         Sistem Manajemen Nilai & Raport Digital Terpadu
       </div>

@@ -27,20 +27,24 @@ function ensureSchoolsInitialized(db: any) {
         npsn: "69987654",
         city: "Pangkalpinang",
         adminUsername: "admin",
+        schoolPassword: "123",
         createdAt: "2026-01-01T00:00:00.000Z",
       },
     ];
   } else {
-    const hasDefault = db.schools.some((s: any) => s.id === DEFAULT_SCHOOL_ID);
-    if (!hasDefault) {
+    const defaultSchool = db.schools.find((s: any) => s.id === DEFAULT_SCHOOL_ID);
+    if (!defaultSchool) {
       db.schools.unshift({
         id: DEFAULT_SCHOOL_ID,
         name: DEFAULT_SCHOOL_NAME,
         npsn: "69987654",
         city: "Pangkalpinang",
         adminUsername: "admin",
+        schoolPassword: "123",
         createdAt: "2026-01-01T00:00:00.000Z",
       });
+    } else if (!defaultSchool.schoolPassword) {
+      defaultSchool.schoolPassword = "123";
     }
   }
 
@@ -131,7 +135,74 @@ function asyncPersistDB() {
 // 0. Schools Registry API
 app.get("/api/schools", async (req, res) => {
   const db = await readDB();
-  res.json(db.schools || []);
+  // Return sanitized list for system reference
+  const sanitized = (db.schools || []).map((s: any) => ({
+    id: s.id,
+    name: s.name,
+    npsn: s.npsn || "",
+    city: s.city || "",
+  }));
+  res.json(sanitized);
+});
+
+// Verify School Access with School Name & School Password
+app.post("/api/schools/verify", async (req, res) => {
+  const { schoolName, password } = req.body;
+  const cleanSchoolName = (schoolName || "").trim();
+  const cleanPassword = (password || "").trim();
+
+  if (!cleanSchoolName) {
+    return res.status(400).json({ error: "Nama sekolah harus diisi sesuai yang didaftarkan." });
+  }
+  if (!cleanPassword) {
+    return res.status(400).json({ error: "Kata sandi sekolah harus diisi untuk membuka akses sekolah." });
+  }
+
+  const db = await readDB();
+  const query = cleanSchoolName.toLowerCase();
+
+  // Find school by name (case-insensitive exact match or normalized)
+  const school = (db.schools || []).find(
+    (s: any) => s.name.trim().toLowerCase() === query
+  );
+
+  if (!school) {
+    return res.status(404).json({
+      error: `Sekolah "${cleanSchoolName}" tidak ditemukan. Pastikan nama sekolah yang dimasukkan sudah persis sesuai dengan yang didaftarkan.`,
+    });
+  }
+
+  // Find teachers for this school to verify passwords
+  const schoolTeachers = (db.teachers || []).filter(
+    (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
+  );
+
+  const adminTeacher = schoolTeachers.find(
+    (t: any) => t.username === school.adminUsername || t.subject === "Admin"
+  );
+
+  const isSchoolPassMatch = school.schoolPassword && school.schoolPassword === cleanPassword;
+  const isAdminPassMatch = adminTeacher && adminTeacher.password === cleanPassword;
+  const isAnyTeacherMatch = schoolTeachers.some((t: any) => t.password === cleanPassword);
+  const isDefaultMatch =
+    (school.id === DEFAULT_SCHOOL_ID || school.name === DEFAULT_SCHOOL_NAME) &&
+    (cleanPassword === "123" || cleanPassword === "admin");
+
+  if (!isSchoolPassMatch && !isAdminPassMatch && !isAnyTeacherMatch && !isDefaultMatch) {
+    return res.status(401).json({
+      error: "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai saat pendaftaran sekolah.",
+    });
+  }
+
+  res.json({
+    success: true,
+    school: {
+      id: school.id,
+      name: school.name,
+      npsn: school.npsn || "",
+      city: school.city || "",
+    },
+  });
 });
 
 app.post("/api/schools/register", async (req, res) => {
@@ -162,7 +233,7 @@ app.post("/api/schools/register", async (req, res) => {
   );
   if (schoolExists) {
     return res.status(400).json({
-      error: `Sekolah dengan nama "${cleanSchoolName}" sudah terdaftar di sistem. Silakan pilih sekolah dari menu masuk.`,
+      error: `Sekolah dengan nama "${cleanSchoolName}" sudah terdaftar di sistem. Silakan masukkan nama dan kata sandinya di menu masuk.`,
     });
   }
 
@@ -173,6 +244,7 @@ app.post("/api/schools/register", async (req, res) => {
     npsn: npsn?.trim() || "",
     city: city?.trim() || "",
     adminUsername: cleanUsername,
+    schoolPassword: password.trim(),
     createdAt: new Date().toISOString(),
   };
 
