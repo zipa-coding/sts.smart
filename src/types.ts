@@ -1,3 +1,12 @@
+export interface School {
+  id: string;
+  name: string;
+  npsn?: string;
+  city?: string;
+  adminUsername?: string;
+  createdAt?: string;
+}
+
 export interface Teacher {
   id: string;
   name: string;
@@ -6,6 +15,8 @@ export interface Teacher {
   subject: string;
   isWaliKelas: boolean;
   kelas: string;
+  schoolId?: string;
+  schoolName?: string;
 }
 
 export interface Student {
@@ -13,6 +24,7 @@ export interface Student {
   nisn: string;
   name: string;
   kelas: string;
+  schoolId?: string;
 }
 
 export interface TPItem {

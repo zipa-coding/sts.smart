@@ -41,8 +41,8 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'n
             className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-950/60 border border-blue-400/40 transition cursor-pointer group"
             title="Download & Pasang Aplikasi di Laptop"
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <img src="/icon.svg" alt="App Icon" className="w-5 h-5 rounded-md object-cover shadow border border-amber-400/40 shrink-0 group-hover:scale-110 transition-transform" referrerPolicy="no-referrer" />
+            <div className="flex items-center gap-2 min-w-0">
+              <Laptop className="w-4 h-4 text-amber-300 shrink-0 group-hover:scale-110 transition-transform" />
               <span className="truncate font-semibold">Download Aplikasi</span>
             </div>
             <span className="px-1.5 py-0.5 rounded bg-white/20 text-[9px] font-mono uppercase font-bold shrink-0">
@@ -63,10 +63,10 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'n
           <button
             type="button"
             onClick={handleInstallClick}
-            className="w-full py-2.5 px-4 rounded-xl bg-[#111d35] hover:bg-[#162544] border border-blue-500/40 text-blue-300 hover:text-white transition flex items-center justify-center gap-2.5 text-xs font-bold font-mono shadow-md cursor-pointer group"
+            className="w-full py-2.5 px-4 rounded-xl bg-[#111d35] hover:bg-[#162544] border border-blue-500/40 text-blue-300 hover:text-white transition flex items-center justify-center gap-2.5 text-xs font-bold font-mono shadow-md cursor-pointer"
           >
-            <img src="/icon.svg" alt="App Icon" className="w-4 h-4 rounded object-cover shadow border border-amber-400/40 shrink-0 group-hover:scale-110 transition-transform" referrerPolicy="no-referrer" />
-            <span>PASANG APLIKASI DI LAPTOP</span>
+            <Laptop className="w-4 h-4 text-blue-400" />
+            <span>DOWNLOAD / PASANG DI LAPTOP</span>
             <span className="ml-auto px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded text-[9px]">
               Offline Ready
             </span>
@@ -105,8 +105,8 @@ export const PWAInstallModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
         {/* Modal Header */}
         <div className="p-5 bg-[#090e1c] border-b border-[#1a2948] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl border border-amber-400/40 p-0.5 bg-[#0b1329] shadow-lg shadow-blue-950/60 overflow-hidden shrink-0">
-              <img src="/icon.svg" alt="Raport STS App Icon" className="w-full h-full object-cover rounded-[10px]" referrerPolicy="no-referrer" />
+            <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+              <Laptop className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-sm font-black uppercase font-mono tracking-tight text-white">
