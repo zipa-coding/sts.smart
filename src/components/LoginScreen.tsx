@@ -80,9 +80,8 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       <div className="w-full max-w-md bg-[#0d1527] rounded-2xl shadow-2xl border border-[#1e2e4a] overflow-hidden relative z-10" id="login-card">
         {/* Header Section */}
         <div className="bg-gradient-to-b from-[#111c34] to-[#0d1527] px-6 pt-8 pb-6 text-center text-white relative border-b border-[#1e2e4a]">
-          <div className="mx-auto w-24 h-24 mb-4 relative flex items-center justify-center">
-            <div className="absolute inset-0 bg-blue-600/30 rounded-2xl blur-xl transform scale-110 pointer-events-none"></div>
-            <SmpIslamSmartLogo size="100%" className="w-24 h-24 rounded-2xl relative z-10 shadow-2xl" />
+          <div className="mx-auto w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-4 p-1.5 shadow-lg ring-1 ring-blue-400/20">
+            <SmpIslamSmartLogo size="100%" />
           </div>
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-300 text-[11px] font-semibold tracking-wide mb-2.5">

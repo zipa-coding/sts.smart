@@ -276,8 +276,8 @@ export default function App() {
         {/* Sidebar Header Logo */}
         <div className="p-4 border-b border-[#1a2948] bg-[#0c1322] flex items-center justify-between gap-2.5">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 shrink-0 flex items-center justify-center">
-              <SmpIslamSmartLogo size="100%" className="w-11 h-11 rounded-xl shadow-md" />
+            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md ring-1 ring-blue-500/30">
+              <SmpIslamSmartLogo size="100%" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
