@@ -160,15 +160,61 @@ app.post("/api/schools/verify", async (req, res) => {
 
   const db = await readDB();
   const query = cleanSchoolName.toLowerCase();
+  const queryNoSpace = query.replace(/[^a-z0-9]/g, "");
 
-  // Find school by name (case-insensitive exact match or normalized)
-  const school = (db.schools || []).find(
+  // 1. Exact match (case-insensitive)
+  let school = (db.schools || []).find(
     (s: any) => s.name.trim().toLowerCase() === query
   );
 
+  // 2. Normalized without non-alphanumeric (e.g. Pangkal Pinang vs Pangkalpinang)
+  if (!school) {
+    school = (db.schools || []).find((s: any) => {
+      const sNoSpace = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      return sNoSpace === queryNoSpace;
+    });
+  }
+
+  // 3. Substring / partial match (e.g. "SMP ISLAM SMART" is inside "SMP ISLAM SMART PANGKALPINANG")
+  if (!school && queryNoSpace.length >= 4) {
+    school = (db.schools || []).find((s: any) => {
+      const sNoSpace = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      return sNoSpace.includes(queryNoSpace) || queryNoSpace.includes(sNoSpace);
+    });
+  }
+
+  // 4. Token match: all words in query (e.g. ["smp", "islam", "smart"]) are in school name
+  if (!school) {
+    const tokens = query.split(/\s+/).filter((t: string) => t.length > 2);
+    if (tokens.length > 0) {
+      school = (db.schools || []).find((s: any) => {
+        const sLower = (s.name || "").toLowerCase();
+        return tokens.every((token: string) => sLower.includes(token));
+      });
+    }
+  }
+
+  // 5. NPSN match
+  if (!school && /^\d+$/.test(query)) {
+    school = (db.schools || []).find((s: any) => s.npsn && s.npsn.trim() === query);
+  }
+
+  // 6. Direct username match: if user typed "admin" or their teacher username into the school box!
+  if (!school) {
+    const matchedTeacher = (db.teachers || []).find(
+      (t: any) =>
+        t.username.toLowerCase().trim() === query &&
+        (t.password === cleanPassword || t.password === password)
+    );
+    if (matchedTeacher) {
+      const teacherSchoolId = matchedTeacher.schoolId || DEFAULT_SCHOOL_ID;
+      school = (db.schools || []).find((s: any) => s.id === teacherSchoolId);
+    }
+  }
+
   if (!school) {
     return res.status(404).json({
-      error: `Sekolah "${cleanSchoolName}" tidak ditemukan. Pastikan nama sekolah yang dimasukkan sudah persis sesuai dengan yang didaftarkan.`,
+      error: `Sekolah "${cleanSchoolName}" tidak ditemukan. Pastikan nama sekolah yang dimasukkan sudah sesuai (contoh: SMP ISLAM SMART atau nama sekolah yang didaftarkan).`,
     });
   }
 
@@ -181,16 +227,22 @@ app.post("/api/schools/verify", async (req, res) => {
     (t: any) => t.username === school.adminUsername || t.subject === "Admin"
   );
 
-  const isSchoolPassMatch = school.schoolPassword && school.schoolPassword === cleanPassword;
-  const isAdminPassMatch = adminTeacher && adminTeacher.password === cleanPassword;
-  const isAnyTeacherMatch = schoolTeachers.some((t: any) => t.password === cleanPassword);
+  const isSchoolPassMatch =
+    school.schoolPassword &&
+    (school.schoolPassword === cleanPassword || school.schoolPassword === password);
+  const isAdminPassMatch =
+    adminTeacher &&
+    (adminTeacher.password === cleanPassword || adminTeacher.password === password);
+  const isAnyTeacherMatch = schoolTeachers.some(
+    (t: any) => t.password === cleanPassword || t.password === password
+  );
   const isDefaultMatch =
     (school.id === DEFAULT_SCHOOL_ID || school.name === DEFAULT_SCHOOL_NAME) &&
     (cleanPassword === "123" || cleanPassword === "admin");
 
   if (!isSchoolPassMatch && !isAdminPassMatch && !isAnyTeacherMatch && !isDefaultMatch) {
     return res.status(401).json({
-      error: "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai saat pendaftaran sekolah.",
+      error: "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai.",
     });
   }
 
@@ -314,11 +366,13 @@ app.post("/api/schools/register", async (req, res) => {
 // 1. Auth Endpoints
 app.post("/api/login", async (req, res) => {
   const { username, password, schoolId } = req.body;
+  const cleanUsername = (username || "").trim();
+  const cleanPassword = (password || "").trim();
 
-  if (!username || !password) {
+  if (!cleanUsername || !cleanPassword) {
     return res
       .status(400)
-      .json({ error: "Username and password are required." });
+      .json({ error: "Username dan kata sandi harus diisi." });
   }
 
   const db = await readDB();
@@ -329,8 +383,8 @@ app.post("/api/login", async (req, res) => {
     teacher = db.teachers.find(
       (t: any) =>
         isRecordForSchool(t, schoolId) &&
-        t.username.toLowerCase() === username.toLowerCase() &&
-        t.password === password,
+        t.username.toLowerCase().trim() === cleanUsername.toLowerCase() &&
+        (t.password === cleanPassword || t.password === password),
     );
   }
 
@@ -338,8 +392,8 @@ app.post("/api/login", async (req, res) => {
   if (!teacher) {
     teacher = db.teachers.find(
       (t: any) =>
-        t.username.toLowerCase() === username.toLowerCase() &&
-        t.password === password,
+        t.username.toLowerCase().trim() === cleanUsername.toLowerCase() &&
+        (t.password === cleanPassword || t.password === password),
     );
   }
 

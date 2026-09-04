@@ -43,6 +43,12 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [showSchoolPassword, setShowSchoolPassword] = useState(false);
   const [verifyingSchool, setVerifyingSchool] = useState(false);
 
+  // Sub-mode for activeTab === "login": "direct" (Username + Password) or "school" (Verifikasi Sekolah)
+  const [loginMode, setLoginMode] = useState<"direct" | "school">("direct");
+  const [directUsername, setDirectUsername] = useState("");
+  const [directPassword, setDirectPassword] = useState("");
+  const [showDirectPassword, setShowDirectPassword] = useState(false);
+
   // User selection within active verified school
   // Role tab: "guru" (pilih nama guru) or "admin" (admin pengatur data)
   const [roleTab, setRoleTab] = useState<"guru" | "admin">("guru");
@@ -173,6 +179,51 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     setTeacherPassword("");
     setAdminPassword("");
     setSchoolPassword("");
+  };
+
+  // Handler: Login Langsung dengan Username & Kata Sandi
+  const handleDirectLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccessMsg("");
+
+    const cleanUsername = directUsername.trim();
+    const cleanPassword = directPassword.trim();
+
+    if (!cleanUsername) {
+      setError("Silakan masukkan username pengguna atau administrator.");
+      return;
+    }
+
+    if (!cleanPassword) {
+      setError("Silakan masukkan kata sandi akun Anda.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: cleanUsername,
+          password: cleanPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Kombinasi username atau kata sandi tidak cocok.");
+      }
+
+      onLoginSuccess(data);
+    } catch (err: any) {
+      setError(err.message || "Gagal menghubungi server.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handler: Login sebagai Guru (Pilih nama guru yang terdaftar)
@@ -429,104 +480,214 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           {/* ================= TAB 1: MASUK PORTAL ================= */}
           {activeTab === "login" && (
             <div className="space-y-5">
-              {/* STEP 1: PENGGUNA MENGISI SENDIRI NAMA SEKOLAH BESERTA KATA SANDINYA (KEAMANAN DATA TINGGI) */}
               {!activeSchool ? (
-                <form
-                  onSubmit={handleVerifySchool}
-                  className="space-y-4"
-                  id="school-verification-form"
-                >
-                  <div className="p-3 bg-[#080d19] border border-blue-500/20 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
-                    <Lock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                    <div className="leading-relaxed">
-                      <span className="font-bold text-slate-200 block">
-                        Keamanan Akses Data Sekolah
-                      </span>
-                      Silakan masukkan nama resmi sekolah beserta kata sandi yang telah didaftarkan untuk membuka akses portal guru dan admin.
-                    </div>
+                <div className="space-y-4">
+                  {/* Sub-Tabs: Masuk Akun Pengguna vs Buka Portal Sekolah */}
+                  <div className="flex items-center bg-[#080d19] p-1 rounded-xl border border-[#1e2e4a]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginMode("direct");
+                        setError("");
+                      }}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                        loginMode === "direct"
+                          ? "bg-blue-600 text-white shadow"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                      id="subtab-direct-login"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Masuk Akun Pengguna</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginMode("school");
+                        setError("");
+                      }}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                        loginMode === "school"
+                          ? "bg-indigo-600 text-white shadow"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                      id="subtab-school-login"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>Buka Akses Sekolah</span>
+                    </button>
                   </div>
 
-                  {/* Input 1: Nama Sekolah */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-blue-400" />
-                      <span>Nama Sekolah (Sesuai yang Didaftarkan)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={schoolInput}
-                      onChange={(e) => setSchoolInput(e.target.value)}
-                      placeholder="Contoh: SMP ISLAM SMART PANGKALPINANG"
-                      className="w-full px-3.5 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
-                      id="school-name-input"
-                      autoComplete="off"
-                    />
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      Ketikkan nama sekolah persis sesuai nama saat registrasi.
-                    </p>
-                  </div>
+                  {/* MODE 1: MASUK LANGSUNG DENGAN USERNAME & KATA SANDI */}
+                  {loginMode === "direct" && (
+                    <form
+                      onSubmit={handleDirectLogin}
+                      className="space-y-4 pt-1"
+                      id="direct-login-form"
+                    >
+                      <div className="p-3 bg-[#080d19] border border-blue-500/20 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
+                        <Lock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                        <div className="leading-relaxed">
+                          <span className="font-bold text-slate-200 block">
+                            Masuk Akun Guru / Administrator
+                          </span>
+                          Masukkan username dan kata sandi akun Anda. Sistem akan langsung mengarahkan Anda ke dashboard sekolah terkait.
+                        </div>
+                      </div>
 
-                  {/* Input 2: Kata Sandi Sekolah */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
-                      <Key className="w-4 h-4 text-blue-400" />
-                      <span>Kata Sandi Sekolah</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showSchoolPassword ? "text" : "password"}
-                        value={schoolPassword}
-                        onChange={(e) => setSchoolPassword(e.target.value)}
-                        placeholder="Masukkan kata sandi sekolah..."
-                        className="w-full pl-3.5 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
-                        id="school-password-input"
-                      />
+                      {/* Input: Username Pengguna / Admin */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
+                          <User className="w-4 h-4 text-blue-400" />
+                          <span>Username Akun</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={directUsername}
+                          onChange={(e) => setDirectUsername(e.target.value)}
+                          placeholder="Masukkan username (contoh: admin atau username guru)"
+                          className="w-full px-3.5 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
+                          id="direct-username-input"
+                          autoComplete="username"
+                        />
+                      </div>
+
+                      {/* Input: Kata Sandi Akun */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
+                          <Key className="w-4 h-4 text-blue-400" />
+                          <span>Kata Sandi Akun</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showDirectPassword ? "text" : "password"}
+                            value={directPassword}
+                            onChange={(e) => setDirectPassword(e.target.value)}
+                            placeholder="Masukkan kata sandi..."
+                            className="w-full pl-3.5 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
+                            id="direct-password-input"
+                            autoComplete="current-password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowDirectPassword(!showDirectPassword)}
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
+                            title={showDirectPassword ? "Sembunyikan sandi" : "Tampilkan sandi"}
+                          >
+                            {showDirectPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Tombol Masuk Langsung */}
                       <button
-                        type="button"
-                        onClick={() => setShowSchoolPassword(!showSchoolPassword)}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
-                        title={showSchoolPassword ? "Sembunyikan sandi" : "Tampilkan sandi"}
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-blue-950/60 border border-blue-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 mt-3"
+                        id="direct-login-button"
                       >
-                        {showSchoolPassword ? (
-                          <EyeOff className="w-4 h-4" />
+                        {loading ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                         ) : (
-                          <Eye className="w-4 h-4" />
+                          <>
+                            <LogIn className="w-4 h-4" />
+                            <span>MASUK KE SISTEM RAPORT</span>
+                          </>
                         )}
                       </button>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      Kata sandi akses sekolah / sandi akun admin sekolah.
-                    </p>
-                  </div>
+                    </form>
+                  )}
 
-                  {/* Helper Petunjuk Uji Coba */}
-                  <div className="text-[11px] text-slate-400 bg-[#080d19]/60 px-3 py-2 rounded-lg border border-[#15233c]">
-                    <span className="text-blue-400 font-semibold">Petunjuk: </span>
-                    Untuk sekolah bawaan, masukkan nama{" "}
-                    <span className="font-mono text-slate-200 font-bold">
-                      SMP ISLAM SMART PANGKALPINANG
-                    </span>{" "}
-                    dengan sandi{" "}
-                    <span className="font-mono text-slate-200 font-bold">123</span>.
-                  </div>
+                  {/* MODE 2: BUKA AKSES SEKOLAH DULU DENGAN NAMA SEKOLAH & KATA SANDI */}
+                  {loginMode === "school" && (
+                    <form
+                      onSubmit={handleVerifySchool}
+                      className="space-y-4 pt-1"
+                      id="school-verification-form"
+                    >
+                      <div className="p-3 bg-[#080d19] border border-indigo-500/20 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
+                        <Lock className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                        <div className="leading-relaxed">
+                          <span className="font-bold text-slate-200 block">
+                            Keamanan Akses Data Sekolah
+                          </span>
+                          Silakan masukkan nama sekolah (misal: SMP ISLAM SMART) beserta kata sandi sekolah untuk membuka daftar guru dan admin sekolah tersebut.
+                        </div>
+                      </div>
 
-                  {/* Tombol Lanjut Buka Akun Sekolah */}
-                  <button
-                    type="submit"
-                    disabled={verifyingSchool}
-                    className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-blue-950/60 border border-blue-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 mt-3"
-                    id="connect-school-button"
-                  >
-                    {verifyingSchool ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ) : (
-                      <>
-                        <span>BUKA PORTAL SEKOLAH</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </form>
+                      {/* Input 1: Nama Sekolah */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
+                          <Building2 className="w-4 h-4 text-indigo-400" />
+                          <span>Nama Sekolah (Sesuai yang Didaftarkan)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={schoolInput}
+                          onChange={(e) => setSchoolInput(e.target.value)}
+                          placeholder="Contoh: SMP ISLAM SMART atau SMP ISLAM SMART PANGKALPINANG"
+                          className="w-full px-3.5 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition font-medium"
+                          id="school-name-input"
+                          autoComplete="off"
+                        />
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Ketikkan nama sekolah atau NPSN yang didaftarkan.
+                        </p>
+                      </div>
+
+                      {/* Input 2: Kata Sandi Sekolah */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
+                          <Key className="w-4 h-4 text-indigo-400" />
+                          <span>Kata Sandi Sekolah</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showSchoolPassword ? "text" : "password"}
+                            value={schoolPassword}
+                            onChange={(e) => setSchoolPassword(e.target.value)}
+                            placeholder="Masukkan kata sandi sekolah..."
+                            className="w-full pl-3.5 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition font-medium"
+                            id="school-password-input"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSchoolPassword(!showSchoolPassword)}
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
+                            title={showSchoolPassword ? "Sembunyikan sandi" : "Tampilkan sandi"}
+                          >
+                            {showSchoolPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Tombol Lanjut Buka Akun Sekolah */}
+                      <button
+                        type="submit"
+                        disabled={verifyingSchool}
+                        className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-indigo-950/60 border border-indigo-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 mt-3"
+                        id="connect-school-button"
+                      >
+                        {verifyingSchool ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        ) : (
+                          <>
+                            <span>BUKA PORTAL SEKOLAH</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
+                </div>
               ) : (
                 /* STEP 2: SETELAH BERHASIL LOGIN DI AKUN SEKOLAH YANG BENAR */
                 <div className="space-y-4" id="active-school-login-section">
