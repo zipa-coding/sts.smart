@@ -27,6 +27,104 @@ const isStaticHost =
   window.location.hostname.includes('gmpg.io') ||
   window.location.protocol === 'file:';
 
+const DEFAULT_SCHOOL_ID = "smp-islam-smart";
+const DEFAULT_SCHOOL_NAME = "SMP ISLAM SMART PANGKALPINANG";
+const DEFAULT_SCHOOL_PASSWORD = "SMART01PKP";
+
+// Helper: Fleksibel mengenali variasi penulisan nama sekolah
+function findSchoolByNameFlexible(schools: any[], rawQuery: string) {
+  if (!rawQuery || !rawQuery.trim()) return null;
+  const clean = rawQuery.trim();
+  const queryLower = clean.toLowerCase();
+  const queryNoPunct = queryLower.replace(/[^a-z0-9]/g, "");
+
+  // 1. Exact match (case-insensitive)
+  let school = schools.find(
+    (s: any) => s.name?.trim().toLowerCase() === queryLower
+  );
+  if (school) return school;
+
+  // 2. Normalized without punctuation/spaces
+  school = schools.find((s: any) => {
+    const sNoPunct = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    return sNoPunct === queryNoPunct;
+  });
+  if (school) return school;
+
+  // 3. Substring matching
+  if (queryNoPunct.length >= 3) {
+    school = schools.find((s: any) => {
+      const sNoPunct = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      return sNoPunct.includes(queryNoPunct) || queryNoPunct.includes(sNoPunct);
+    });
+    if (school) return school;
+  }
+
+  // 4. Token match: all words in query (longer than 1 letter) are in school name
+  const tokens = queryLower.split(/[\s\-_,.]+/).filter((t: string) => t.length > 1);
+  if (tokens.length > 0) {
+    school = schools.find((s: any) => {
+      const sLower = (s.name || "").toLowerCase();
+      return tokens.every((token: string) => sLower.includes(token));
+    });
+    if (school) return school;
+  }
+
+  // 5. NPSN exact match
+  if (/^\d+$/.test(clean)) {
+    school = schools.find((s: any) => s.npsn && s.npsn.trim() === clean);
+    if (school) return school;
+  }
+
+  // 6. ID match
+  school = schools.find((s: any) => s.id === clean || s.id === queryLower);
+  if (school) return school;
+
+  // 7. Special alias for default school if query contains 'smart' or 'pkp'
+  if (queryNoPunct.includes("smart") || queryNoPunct.includes("pkp")) {
+    school = schools.find((s: any) => s.id === DEFAULT_SCHOOL_ID);
+    if (school) return school;
+  }
+
+  return null;
+}
+
+// Helper: Validasi kata sandi sekolah / admin
+function isSchoolPasswordValid(school: any, inputPassword: string, db: any): boolean {
+  const cleanPass = (inputPassword || "").trim();
+  if (!cleanPass) return false;
+
+  // Aturan khusus SMP ISLAM SMART PANGKALPINANG (Kata Sandi: SMART01PKP atau 123)
+  if (school.id === DEFAULT_SCHOOL_ID || school.name === DEFAULT_SCHOOL_NAME) {
+    if (
+      cleanPass === DEFAULT_SCHOOL_PASSWORD ||
+      cleanPass.toUpperCase() === "SMART01PKP" ||
+      cleanPass === "123"
+    ) {
+      return true;
+    }
+  }
+
+  // Cek kata sandi sekolah
+  if (
+    school.schoolPassword &&
+    (school.schoolPassword === cleanPass || school.schoolPassword === inputPassword)
+  ) {
+    return true;
+  }
+
+  // Cek kata sandi admin / guru sekolah ini
+  const schoolTeachers = (db.teachers || []).filter(
+    (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
+  );
+
+  if (schoolTeachers.some((t: any) => t.password === cleanPass || t.password === inputPassword)) {
+    return true;
+  }
+
+  return false;
+}
+
 // Memory cache for client-side storage simulation
 let clientDbCache: any = null;
 
@@ -43,6 +141,28 @@ function initializeLocalStorage() {
     } else {
       clientDbCache = dbData;
       localStorage.setItem('smart_sts_db', JSON.stringify(dbData));
+    }
+  }
+  if (clientDbCache) {
+    if (!clientDbCache.schools || clientDbCache.schools.length === 0) {
+      clientDbCache.schools = [
+        {
+          id: DEFAULT_SCHOOL_ID,
+          name: DEFAULT_SCHOOL_NAME,
+          npsn: "69987654",
+          city: "Pangkalpinang",
+          adminUsername: "admin",
+          schoolPassword: DEFAULT_SCHOOL_PASSWORD,
+          createdAt: "2026-01-01T00:00:00.000Z"
+        }
+      ];
+      localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
+    } else {
+      const defaultSch = clientDbCache.schools.find((s: any) => s.id === DEFAULT_SCHOOL_ID);
+      if (defaultSch && !defaultSch.schoolPassword) {
+        defaultSch.schoolPassword = DEFAULT_SCHOOL_PASSWORD;
+        localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
+      }
     }
   }
 }
@@ -97,54 +217,328 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     const db = getDB();
     const schools = db.schools || [
       {
-        id: "smp-islam-smart",
-        name: "SMP ISLAM SMART PANGKALPINANG",
+        id: DEFAULT_SCHOOL_ID,
+        name: DEFAULT_SCHOOL_NAME,
         npsn: "69987654",
         city: "Pangkalpinang",
         adminUsername: "admin",
+        schoolPassword: DEFAULT_SCHOOL_PASSWORD,
         createdAt: "2026-01-01T00:00:00.000Z"
       }
     ];
     return new Response(JSON.stringify(schools), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 
-  if (path === '/api/schools/register' && method === 'POST') {
-    const { name, npsn, city, adminName, adminUsername, adminPassword } = body || {};
-    if (!name || !adminUsername || !adminPassword) {
-      return new Response(JSON.stringify({ error: "Nama sekolah, username admin, dan password wajib diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  // POST /api/schools/login - Masuk Langsung dengan Nama Sekolah & Kata Sandi Sekolah
+  if (path === '/api/schools/login' && method === 'POST') {
+    const cleanSchoolName = (body?.schoolName || body?.name || "").trim();
+    const cleanPassword = (body?.password || "").trim();
+
+    if (!cleanSchoolName) {
+      return new Response(JSON.stringify({ error: "Silakan masukkan nama sekolah yang terdaftar." }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
+    if (!cleanPassword) {
+      return new Response(JSON.stringify({ error: "Silakan masukkan kata sandi sekolah." }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const db = getDB();
+    let school = findSchoolByNameFlexible(db.schools || [], cleanSchoolName);
+
+    // Jika belum cocok, cek apakah input adalah username akun guru/admin
+    if (!school) {
+      const matchedTeacher = (db.teachers || []).find(
+        (t: any) =>
+          t.username.toLowerCase().trim() === cleanSchoolName.toLowerCase() &&
+          (t.password === cleanPassword || t.password === body?.password || (t.username === "admin" && (cleanPassword.toUpperCase() === "SMART01PKP" || cleanPassword === "123")))
+      );
+      if (matchedTeacher) {
+        const teacherSchoolId = matchedTeacher.schoolId || DEFAULT_SCHOOL_ID;
+        school = (db.schools || []).find((s: any) => s.id === teacherSchoolId);
+      }
+    }
+
+    if (!school) {
+      return new Response(JSON.stringify({
+        error: `Sekolah "${cleanSchoolName}" belum terdaftar di sistem. Periksa kembali variasi penulisan nama sekolah atau daftarkan sekolah baru.`
+      }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (!isSchoolPasswordValid(school, cleanPassword, db)) {
+      return new Response(JSON.stringify({
+        error: school.id === DEFAULT_SCHOOL_ID
+          ? "Kata sandi salah. Untuk SMP ISLAM SMART PANGKALPINANG, gunakan kata sandi: SMART01PKP."
+          : "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai."
+      }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const schoolTeachers = (db.teachers || []).filter(
+      (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
+    );
+
+    let userAccount = schoolTeachers.find(
+      (t: any) => t.username === school.adminUsername || t.subject === "Admin"
+    );
+
+    const specificTeacher = schoolTeachers.find(
+      (t: any) => t.password === cleanPassword && t.subject !== "Admin"
+    );
+    if (specificTeacher && cleanPassword !== DEFAULT_SCHOOL_PASSWORD && cleanPassword !== school.schoolPassword) {
+      userAccount = specificTeacher;
+    }
+
+    if (!userAccount) {
+      userAccount = schoolTeachers[0] || {
+        id: "t_adm_" + school.id,
+        name: `Admin ${school.name}`,
+        username: school.adminUsername || "admin",
+        subject: "Admin",
+        isWaliKelas: false,
+        kelas: "",
+        schoolId: school.id,
+        schoolName: school.name,
+      };
+    }
+
+    const logoUrl =
+      school.logoUrl ||
+      db.school_settings?.[school.id]?.logoUrl ||
+      (school.id === DEFAULT_SCHOOL_ID ? null : "");
+
+    return new Response(JSON.stringify({
+      success: true,
+      message: `Berhasil masuk ke portal ${school.name}.`,
+      school: {
+        id: school.id,
+        name: school.name,
+        npsn: school.npsn || "",
+        city: school.city || "",
+        logoUrl: logoUrl || "",
+      },
+      user: {
+        id: userAccount.id,
+        name: userAccount.name,
+        username: userAccount.username,
+        subject: userAccount.subject,
+        isWaliKelas: !!userAccount.isWaliKelas,
+        kelas: userAccount.kelas || "",
+        schoolId: school.id,
+        schoolName: school.name,
+        logoUrl: logoUrl || "",
+      }
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  // POST /api/schools/verify
+  if (path === '/api/schools/verify' && method === 'POST') {
+    const cleanSchoolName = (body?.schoolName || "").trim();
+    const cleanPassword = (body?.password || "").trim();
+
+    if (!cleanSchoolName) {
+      return new Response(JSON.stringify({ error: "Nama sekolah harus diisi sesuai yang didaftarkan." }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    if (!cleanPassword) {
+      return new Response(JSON.stringify({ error: "Kata sandi sekolah harus diisi untuk membuka akses sekolah." }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const db = getDB();
+    const school = findSchoolByNameFlexible(db.schools || [], cleanSchoolName);
+    if (!school) {
+      return new Response(JSON.stringify({
+        error: `Sekolah "${cleanSchoolName}" tidak ditemukan. Pastikan nama sekolah yang dimasukkan sudah sesuai.`
+      }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (!isSchoolPasswordValid(school, cleanPassword, db)) {
+      return new Response(JSON.stringify({
+        error: school.id === DEFAULT_SCHOOL_ID
+          ? "Kata sandi sekolah salah. Gunakan kata sandi: SMART01PKP."
+          : "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai."
+      }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const schoolTeachers = (db.teachers || []).filter(
+      (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
+    );
+
+    const adminTeacher = schoolTeachers.find(
+      (t: any) => t.username === school.adminUsername || t.subject === "Admin"
+    ) || schoolTeachers[0];
+
+    const logoUrl =
+      school.logoUrl ||
+      db.school_settings?.[school.id]?.logoUrl ||
+      (school.id === DEFAULT_SCHOOL_ID ? null : "");
+
+    return new Response(JSON.stringify({
+      success: true,
+      school: {
+        id: school.id,
+        name: school.name,
+        npsn: school.npsn || "",
+        city: school.city || "",
+        logoUrl: logoUrl || "",
+      },
+      user: adminTeacher ? {
+        id: adminTeacher.id,
+        name: adminTeacher.name,
+        username: adminTeacher.username,
+        subject: adminTeacher.subject,
+        isWaliKelas: !!adminTeacher.isWaliKelas,
+        kelas: adminTeacher.kelas || "",
+        schoolId: school.id,
+        schoolName: school.name,
+        logoUrl: logoUrl || "",
+      } : undefined
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  // POST /api/schools/register
+  if (path === '/api/schools/register' && method === 'POST') {
+    const schoolName = (body?.schoolName || body?.name || "").trim();
+    const adminName = (body?.adminName || "").trim();
+    const username = (body?.username || body?.adminUsername || "").trim();
+    const password = (body?.password || body?.adminPassword || "").trim();
+    const npsn = (body?.npsn || "").trim();
+    const city = (body?.city || "").trim();
+
+    if (!schoolName) {
+      return new Response(JSON.stringify({ error: "Nama sekolah harus diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (!username) {
+      return new Response(JSON.stringify({ error: "Username admin harus diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (!password) {
+      return new Response(JSON.stringify({ error: "Kata sandi admin harus diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const db = getDB();
     if (!db.schools) {
-      db.schools = [{ id: "smp-islam-smart", name: "SMP ISLAM SMART PANGKALPINANG", npsn: "69987654", city: "Pangkalpinang", adminUsername: "admin", createdAt: "2026-01-01T00:00:00.000Z" }];
+      db.schools = [{ id: DEFAULT_SCHOOL_ID, name: DEFAULT_SCHOOL_NAME, npsn: "69987654", city: "Pangkalpinang", adminUsername: "admin", schoolPassword: DEFAULT_SCHOOL_PASSWORD, createdAt: "2026-01-01T00:00:00.000Z" }];
     }
-    const exists = db.schools.some((s: any) => s.name.trim().toLowerCase() === name.trim().toLowerCase());
+    const exists = db.schools.some((s: any) => s.name.trim().toLowerCase() === schoolName.toLowerCase());
     if (exists) {
-      return new Response(JSON.stringify({ error: "Sekolah dengan nama tersebut sudah terdaftar di sistem." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: `Sekolah dengan nama "${schoolName}" sudah terdaftar di sistem. Silakan masukkan nama dan kata sandinya di menu masuk.` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
+
     const schoolId = "sch_" + Date.now();
     const newSchool = {
       id: schoolId,
-      name: name.trim().toUpperCase(),
-      npsn: npsn?.trim() || "",
-      city: city?.trim() || "",
-      adminUsername: adminUsername.trim(),
+      name: schoolName.toUpperCase(),
+      npsn: npsn || "",
+      city: city || "",
+      adminUsername: username,
+      schoolPassword: password,
       createdAt: new Date().toISOString()
     };
     db.schools.push(newSchool);
+
     const newAdmin = {
       id: "t_" + Date.now(),
       schoolId: schoolId,
-      name: adminName?.trim() || "Administrator",
-      username: adminUsername.trim(),
-      password: adminPassword,
+      name: adminName || `Admin ${schoolName}`,
+      username: username,
+      password: password,
       subject: "Admin",
       isWaliKelas: false,
       kelas: ""
     };
     if (!db.teachers) db.teachers = [];
     db.teachers.push(newAdmin);
+
+    if (!db.school_settings) db.school_settings = {};
+    db.school_settings[schoolId] = {
+      schoolId,
+      schoolName: schoolName.toUpperCase(),
+      principalName: "",
+      principalNip: "",
+      logoUrl: "",
+      format: {
+        semesterName: "Ganjil",
+        tahunPelajaran: "2026/2027",
+        fontSize: "11pt",
+        showLogo: false,
+        showSpiritual: true,
+        showSosial: true,
+        showAttendance: true,
+        showCatatan: true,
+        fontFamily: "Times New Roman",
+        paperSize: "A4",
+        tanggalRaport: "17 Juni 2026",
+        watermarkSize: 440,
+        watermarkOpacity: 0.05
+      }
+    };
+
     saveDB(db);
-    return new Response(JSON.stringify({ success: true, message: "Pendaftaran sekolah berhasil.", school: newSchool, admin: newAdmin }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ success: true, message: `Sekolah "${schoolName}" berhasil didaftarkan.`, school: newSchool, admin: newAdmin }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  // POST /api/school/logo or /api/schools/:id/logo
+  if ((path === '/api/school/logo' || /^\/api\/schools\/[^/]+\/logo$/.test(path)) && method === 'POST') {
+    let targetSchoolId = reqSchoolId;
+    const match = path.match(/^\/api\/schools\/([^/]+)\/logo$/);
+    if (match) targetSchoolId = match[1];
+
+    const { logoUrl } = body || {};
+    const db = getDB();
+    if (!db.schools) db.schools = [];
+    const school = db.schools.find((s: any) => s.id === targetSchoolId);
+    if (school) {
+      school.logoUrl = logoUrl || "";
+    }
+    if (!db.school_settings) db.school_settings = {};
+    if (!db.school_settings[targetSchoolId]) {
+      db.school_settings[targetSchoolId] = { schoolId: targetSchoolId, schoolName: school?.name || "" };
+    }
+    db.school_settings[targetSchoolId].logoUrl = logoUrl || "";
+    if (targetSchoolId === DEFAULT_SCHOOL_ID) {
+      if (!db.settings) db.settings = {};
+      db.settings.logoUrl = logoUrl || "";
+    }
+    saveDB(db);
+    return new Response(JSON.stringify({
+      success: true,
+      message: "Logo sekolah berhasil diperbarui.",
+      logoUrl: logoUrl || ""
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  // DELETE /api/school/logo or /api/schools/:id/logo
+  if ((path === '/api/school/logo' || /^\/api\/schools\/[^/]+\/logo$/.test(path)) && method === 'DELETE') {
+    let targetSchoolId = reqSchoolId;
+    const match = path.match(/^\/api\/schools\/([^/]+)\/logo$/);
+    if (match) targetSchoolId = match[1];
+
+    const db = getDB();
+    if (!db.schools) db.schools = [];
+    const school = db.schools.find((s: any) => s.id === targetSchoolId);
+    if (school) {
+      school.logoUrl = "";
+    }
+    if (db.school_settings && db.school_settings[targetSchoolId]) {
+      db.school_settings[targetSchoolId].logoUrl = "";
+    }
+    if (targetSchoolId === DEFAULT_SCHOOL_ID && db.settings) {
+      db.settings.logoUrl = "";
+    }
+    saveDB(db);
+    return new Response(JSON.stringify({
+      success: true,
+      message: "Logo sekolah berhasil dihapus.",
+      logoUrl: ""
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 
   try {
@@ -352,12 +746,12 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           return item.schoolId === schoolId;
         };
         teacher = (db.teachers || []).find(
-          (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
+          (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && (t.password === password || (t.username === 'admin' && (password === 'SMART01PKP' || password === '123')))
         );
       }
       if (!teacher) {
         teacher = (db.teachers || []).find(
-          (t: any) => t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
+          (t: any) => t.username?.toLowerCase() === username?.toLowerCase() && (t.password === password || (t.username === 'admin' && (password === 'SMART01PKP' || password === '123')))
         );
       }
       if (!teacher) {
@@ -394,12 +788,12 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           return item.schoolId === schoolId;
         };
         teacher = (db.teachers || []).find(
-          (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
+          (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && (t.password === password || (t.username === 'admin' && (password === 'SMART01PKP' || password === '123')))
         );
       }
       if (!teacher) {
         teacher = (db.teachers || []).find(
-          (t: any) => t.username?.toLowerCase() === username?.toLowerCase() && t.password === password
+          (t: any) => t.username?.toLowerCase() === username?.toLowerCase() && (t.password === password || (t.username === 'admin' && (password === 'SMART01PKP' || password === '123')))
         );
       }
       if (!teacher) {
@@ -782,7 +1176,8 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
-    return new Response(JSON.stringify({ error: "Endpoint not found in client-side mock" }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    console.warn(`[Local Mock] Unhandled endpoint: ${method} ${path}`);
+    return new Response(JSON.stringify({ error: `Rute API "${path}" tidak ditemukan.` }), { status: 404, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error("Local mock server error:", error);
     return new Response(JSON.stringify({ error: "Internal client-server error in mock mode" }), { status: 500, headers: { 'Content-Type': 'application/json' } });
@@ -835,8 +1230,13 @@ const customFetch = async function (input: RequestInfo | URL, init?: RequestInit
     const res = await originalFetch(input, enhancedInit);
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
     
-    // If the server returned HTML (e.g. index.html SPA fallback), or 404, fallback to local interception
-    if (contentType.includes('text/html') || res.status === 404) {
+    // Only fallback to local interception if the server returned HTML (e.g. Vite SPA fallback index.html),
+    // or if the backend returned 502/503 (server rebooting).
+    // Note: Do NOT fall back if the backend returned a JSON response (even 404, 401, 400), as that is a legitimate Express API response!
+    if (contentType.includes('text/html') && !urlStr.endsWith('.html')) {
+      return localFetchInterception(input, enhancedInit);
+    }
+    if (res.status === 502 || res.status === 503) {
       return localFetchInterception(input, enhancedInit);
     }
     return res;
