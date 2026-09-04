@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Teacher, Student, SUBJECT_LIST } from "../types";
-import SmpIslamSmartLogo from "./SmpIslamSmartLogo";
 import {
   Users,
   GraduationCap,
@@ -15,24 +14,13 @@ import {
   X,
   AlertCircle,
   Award,
-  Upload,
-  Image as ImageIcon,
-  Building2,
 } from "lucide-react";
 
 interface AdminPanelProps {
   onRefreshTrigger: () => void;
-  currentUser?: Teacher;
-  currentSchoolLogo?: string;
-  onLogoUpdate?: (newLogo: string) => void;
 }
 
-export default function AdminPanel({
-  onRefreshTrigger,
-  currentUser,
-  currentSchoolLogo,
-  onLogoUpdate,
-}: AdminPanelProps) {
+export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<
     "teachers" | "students" | "tps" | "settings" | "ekskul"
@@ -54,11 +42,6 @@ export default function AdminPanel({
   );
   const [principalNip, setPrincipalNip] = useState("19780512 200501 1 002");
   const [settingsLoading, setSettingsLoading] = useState(false);
-
-  // Logo management state
-  const [schoolLogo, setSchoolLogo] = useState<string>(currentSchoolLogo || "");
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [logoDeleting, setLogoDeleting] = useState(false);
 
   // Raport formatting settings state
   const [semesterName, setSemesterName] = useState("Ganjil");
@@ -179,10 +162,6 @@ export default function AdminPanel({
       if (tpData && typeof tpData === "object" && !Array.isArray(tpData)) setTpsTemplates(tpData);
       if (Array.isArray(eksData)) setEkskuls(eksData);
       if (setData && typeof setData === "object") {
-        if (setData.logoUrl !== undefined) {
-          setSchoolLogo(setData.logoUrl);
-          if (onLogoUpdate) onLogoUpdate(setData.logoUrl);
-        }
         if (setData.principalName) {
           setPrincipalName(setData.principalName);
         }
@@ -541,96 +520,6 @@ export default function AdminPanel({
       setError(err.message || "Terjadi kesalahan.");
     } finally {
       setSettingsLoading(false);
-    }
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 8 * 1024 * 1024) {
-      setError("Ukuran file logo maksimal 8MB.");
-      return;
-    }
-
-    setLogoUploading(true);
-    setError("");
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64Data = reader.result as string;
-        const schoolId = currentUser?.schoolId || "smp-islam-smart";
-
-        const response = await fetch("/api/school/logo", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-school-id": schoolId,
-          },
-          body: JSON.stringify({
-            logoUrl: base64Data,
-            schoolId,
-          }),
-        });
-
-        const resData = await response.json();
-        if (!response.ok) {
-          throw new Error(resData.error || "Gagal mengunggah logo.");
-        }
-
-        setSchoolLogo(base64Data);
-        if (onLogoUpdate) onLogoUpdate(base64Data);
-        showSuccess("Logo sekolah berhasil diperbarui dan disimpan!");
-        onRefreshTrigger();
-        setLogoUploading(false);
-      };
-
-      reader.onerror = () => {
-        setError("Gagal membaca file gambar logo.");
-        setLogoUploading(false);
-      };
-
-      reader.readAsDataURL(file);
-    } catch (err: any) {
-      setError(err.message || "Gagal mengunggah logo.");
-      setLogoUploading(false);
-    } finally {
-      e.target.value = "";
-    }
-  };
-
-  const handleLogoDelete = async () => {
-    const confirmDelete = window.confirm(
-      "Apakah Anda yakin ingin menghapus logo sekolah ini? Logo akan digantikan dengan lambang/inisial sekolah."
-    );
-    if (!confirmDelete) return;
-
-    setLogoDeleting(true);
-    setError("");
-
-    try {
-      const schoolId = currentUser?.schoolId || "smp-islam-smart";
-      const response = await fetch("/api/school/logo", {
-        method: "DELETE",
-        headers: {
-          "x-school-id": schoolId,
-        },
-      });
-
-      const resData = await response.json();
-      if (!response.ok) {
-        throw new Error(resData.error || "Gagal menghapus logo.");
-      }
-
-      setSchoolLogo("");
-      if (onLogoUpdate) onLogoUpdate("");
-      showSuccess("Logo sekolah berhasil dihapus!");
-      onRefreshTrigger();
-    } catch (err: any) {
-      setError(err.message || "Gagal menghapus logo.");
-    } finally {
-      setLogoDeleting(false);
     }
   };
 
@@ -1037,89 +926,6 @@ export default function AdminPanel({
           </div>
 
           <form onSubmit={handleSettingsSubmit} className="space-y-6">
-            {/* Bagian 0: Logo & Identitas Sekolah */}
-            <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200 space-y-4" id="school-logo-manager">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Identitas & Logo Sekolah</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Kelola logo resmi sekolah untuk kop cetak raport, watermark, dan portal.
-                  </p>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-mono max-w-[200px] truncate" title={currentUser?.schoolName || "SMP ISLAM SMART"}>
-                  {currentUser?.schoolName || "SMP ISLAM SMART"}
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-5 pt-1">
-                {/* Logo Preview Box */}
-                <div className="w-24 h-24 rounded-2xl bg-white border border-slate-300 shadow-sm p-2 flex items-center justify-center shrink-0">
-                  <SmpIslamSmartLogo
-                    size="100%"
-                    logoUrl={schoolLogo}
-                    schoolName={currentUser?.schoolName || "SMP ISLAM SMART PANGKALPINANG"}
-                  />
-                </div>
-
-                {/* Controls */}
-                <div className="flex-1 space-y-2 text-center sm:text-left">
-                  <div>
-                    <div className="text-xs font-bold text-slate-800">
-                      {schoolLogo
-                        ? "Logo Kustom Sekolah Aktif"
-                        : currentUser?.schoolId && currentUser.schoolId !== "smp-islam-smart"
-                        ? "Logo Belum Diunggah (Menggunakan Inisial Sekolah)"
-                        : "Logo Bawaan SMP Islam Smart"}
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                      Format: PNG, JPG, JPEG, WEBP, atau SVG (Maks. 8MB). Disarankan logo bulat atau transparan.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start pt-1">
-                    {/* File Input trigger */}
-                    <label
-                      className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm select-none ${
-                        logoUploading
-                          ? "bg-slate-300 text-slate-600 cursor-not-allowed"
-                          : "bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white"
-                      }`}
-                      id="upload-logo-label"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>{logoUploading ? "Mengunggah..." : schoolLogo ? "Ganti Logo Sekolah" : "Unggah Logo Baru"}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        disabled={logoUploading || logoDeleting}
-                        className="hidden"
-                        id="upload-logo-input"
-                      />
-                    </label>
-
-                    {/* Delete Logo button */}
-                    {(schoolLogo || currentUser?.schoolId === "smp-islam-smart") && (
-                      <button
-                        type="button"
-                        onClick={handleLogoDelete}
-                        disabled={logoDeleting || logoUploading}
-                        className="px-3 py-2 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 select-none"
-                        id="delete-logo-button"
-                        title="Hapus Logo Sekolah"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                        <span>{logoDeleting ? "Menghapus..." : "Hapus Logo"}</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Bagian 1: Identitas Kepala Sekolah */}
             <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-4">
               <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-1">

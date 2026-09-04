@@ -21,12 +21,10 @@ import {
 
 interface DashboardProgressProps {
   onRefreshTrigger?: number;
-  schoolName?: string;
 }
 
 export default function DashboardProgress({
   onRefreshTrigger,
-  schoolName,
 }: DashboardProgressProps) {
   const [summary, setSummary] = useState<SchoolSummary | null>(null);
   const [loading, setLoading] = useState(false);
@@ -185,11 +183,11 @@ export default function DashboardProgress({
             </div>
 
             {/* Main Title */}
-            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight uppercase">
-              Dashboard Pemantauan Raport {schoolName ? schoolName.replace(/^SMP\s*/i, "") : "SMP ISLAM SMART"}
+            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">
+              Dashboard Pemantauan Raport STS SMP
             </h1>
             <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-              {schoolName || "SMP ISLAM SMART PANGKALPINANG"} - Visualisasi real-time sebaran nilai mata pelajaran, rasio ketuntasan TP, dan kesiapan cetak raport seluruh kelas.
+              Pangkalpinang - Visualisasi real-time sebaran nilai 15 mata pelajaran, rasio ketuntasan TP, dan kesiapan cetak raport seluruh kelas.
             </p>
           </div>
 
@@ -440,36 +438,30 @@ export default function DashboardProgress({
 
             {/* Quick mini-table list */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1">
-              {filteredSubjects.length === 0 ? (
-                <div className="col-span-1 sm:col-span-2 py-8 text-center text-xs text-slate-400 bg-[#080d1a] rounded-xl border border-dashed border-[#1a2948]">
-                  Belum ada mata pelajaran yang diinputkan untuk sekolah ini. Silakan input melalui menu Admin.
-                </div>
-              ) : (
-                filteredSubjects.map((sub, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#080d1a] border border-[#1a2948] hover:border-blue-500/40 transition text-xs"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <div className="font-bold text-slate-200 truncate">{sub.subject}</div>
-                      <div className="text-[10px] text-slate-400 truncate">{sub.teacherName}</div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                          sub.percent === 100
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                            : sub.percent > 0
-                            ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
-                            : "bg-slate-800 text-slate-400 border border-slate-700"
-                        }`}
-                      >
-                        {sub.percent}%
-                      </span>
-                    </div>
+              {filteredSubjects.map((sub, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-[#080d1a] border border-[#1a2948] hover:border-blue-500/40 transition text-xs"
+                >
+                  <div className="min-w-0 pr-2">
+                    <div className="font-bold text-slate-200 truncate">{sub.subject}</div>
+                    <div className="text-[10px] text-slate-400 truncate">{sub.teacherName}</div>
                   </div>
-                ))
-              )}
+                  <div className="text-right shrink-0">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                        sub.percent === 100
+                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          : sub.percent > 0
+                          ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                          : "bg-slate-800 text-slate-400 border border-slate-700"
+                      }`}
+                    >
+                      {sub.percent}%
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -1,92 +1,44 @@
 import React from "react";
-import defaultLogoUrl from "../assets/images/smp_logo_exact_match_revised_1783840969621.jpg";
+import logoUrl from "../assets/images/smp_logo_exact_match_revised_1783840969621.jpg";
 
-export { defaultLogoUrl };
-
-export interface SchoolLogoProps {
+interface SmpIslamSmartLogoProps {
   className?: string;
   size?: number | string;
-  logoUrl?: string | null;
-  schoolName?: string;
-  id?: string;
+  variant?: "app-icon" | "school-crest";
 }
 
-export function getInitials(name?: string): string {
-  if (!name || !name.trim()) return "SCH";
-  const words = name
-    .trim()
-    .replace(/^(smp|sma|smk|sd|mi|mts|ma)\s+/i, "")
-    .split(/\s+/)
-    .filter(Boolean);
-  if (words.length === 0) return name.slice(0, 3).toUpperCase();
-  if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
-  return (words[0][0] + (words[1]?.[0] || "") + (words[2]?.[0] || "")).toUpperCase();
-}
-
+/**
+ * SmpIslamSmartLogo:
+ * Renders either the luxury App Icon (for App headers, Login screen, PWA)
+ * or the official School Crest (for official printed report card documents).
+ */
 export default function SmpIslamSmartLogo({
   className = "",
   size = "100%",
-  logoUrl,
-  schoolName = "SMP ISLAM SMART PANGKALPINANG",
-  id = "school-logo-img",
-}: SchoolLogoProps) {
-  // 1. If custom logoUrl is given and non-empty
-  if (logoUrl && typeof logoUrl === "string" && logoUrl.trim() !== "") {
+  variant = "app-icon",
+}: SmpIslamSmartLogoProps) {
+  if (variant === "school-crest") {
     return (
       <img
         src={logoUrl}
-        alt={schoolName || "Logo Sekolah"}
-        className={`select-none object-cover rounded-full ${className}`}
-        style={{ width: size, height: size }}
-        referrerPolicy="no-referrer"
-        id={id}
-      />
-    );
-  }
-
-  // 2. If logo was explicitly deleted / set to empty string
-  if (logoUrl === "") {
-    return (
-      <div
-        className={`select-none rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-emerald-600 to-teal-800 shadow-inner ${className}`}
-        style={{ width: size, height: size, minWidth: size, minHeight: size }}
-        id={id}
-        title={schoolName}
-      >
-        <span className="text-xs uppercase tracking-wider">{getInitials(schoolName)}</span>
-      </div>
-    );
-  }
-
-  // 3. Default fallback for SMP Islam Smart
-  const isDefaultSchool =
-    !schoolName ||
-    schoolName.toLowerCase().includes("smart") ||
-    schoolName.toLowerCase().includes("smp islam smart");
-
-  if (isDefaultSchool) {
-    return (
-      <img
-        src={defaultLogoUrl}
         alt="SMP Islam Smart Logo"
         className={`select-none object-cover rounded-full ${className}`}
         style={{ width: size, height: size }}
         referrerPolicy="no-referrer"
-        id={id}
+        id="smp-islam-smart-crest"
       />
     );
   }
 
-  // 4. Fallback badge for other schools without logo
+  // Modern Luxury App Icon with SVG high-fidelity vector rendering
   return (
-    <div
-      className={`select-none rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-blue-600 to-indigo-800 shadow-inner ${className}`}
-      style={{ width: size, height: size, minWidth: size, minHeight: size }}
-      id={id}
-      title={schoolName}
-    >
-      <span className="text-xs uppercase tracking-wider">{getInitials(schoolName)}</span>
-    </div>
+    <img
+      src="/icon.svg?v=2026"
+      alt="Raport STS SMP Islam Smart Icon"
+      className={`select-none object-cover rounded-xl shadow-lg border border-amber-400/30 ${className}`}
+      style={{ width: size, height: size }}
+      referrerPolicy="no-referrer"
+      id="smp-islam-smart-logo"
+    />
   );
 }
-

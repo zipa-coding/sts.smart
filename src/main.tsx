@@ -27,104 +27,6 @@ const isStaticHost =
   window.location.hostname.includes('gmpg.io') ||
   window.location.protocol === 'file:';
 
-const DEFAULT_SCHOOL_ID = "smp-islam-smart";
-const DEFAULT_SCHOOL_NAME = "SMP ISLAM SMART PANGKALPINANG";
-const DEFAULT_SCHOOL_PASSWORD = "SMART01PKP";
-
-// Helper: Fleksibel mengenali variasi penulisan nama sekolah
-function findSchoolByNameFlexible(schools: any[], rawQuery: string) {
-  if (!rawQuery || !rawQuery.trim()) return null;
-  const clean = rawQuery.trim();
-  const queryLower = clean.toLowerCase();
-  const queryNoPunct = queryLower.replace(/[^a-z0-9]/g, "");
-
-  // 1. Exact match (case-insensitive)
-  let school = schools.find(
-    (s: any) => s.name?.trim().toLowerCase() === queryLower
-  );
-  if (school) return school;
-
-  // 2. Normalized without punctuation/spaces
-  school = schools.find((s: any) => {
-    const sNoPunct = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    return sNoPunct === queryNoPunct;
-  });
-  if (school) return school;
-
-  // 3. Substring matching
-  if (queryNoPunct.length >= 3) {
-    school = schools.find((s: any) => {
-      const sNoPunct = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-      return sNoPunct.includes(queryNoPunct) || queryNoPunct.includes(sNoPunct);
-    });
-    if (school) return school;
-  }
-
-  // 4. Token match: all words in query (longer than 1 letter) are in school name
-  const tokens = queryLower.split(/[\s\-_,.]+/).filter((t: string) => t.length > 1);
-  if (tokens.length > 0) {
-    school = schools.find((s: any) => {
-      const sLower = (s.name || "").toLowerCase();
-      return tokens.every((token: string) => sLower.includes(token));
-    });
-    if (school) return school;
-  }
-
-  // 5. NPSN exact match
-  if (/^\d+$/.test(clean)) {
-    school = schools.find((s: any) => s.npsn && s.npsn.trim() === clean);
-    if (school) return school;
-  }
-
-  // 6. ID match
-  school = schools.find((s: any) => s.id === clean || s.id === queryLower);
-  if (school) return school;
-
-  // 7. Special alias for default school if query contains 'smart' or 'pkp'
-  if (queryNoPunct.includes("smart") || queryNoPunct.includes("pkp")) {
-    school = schools.find((s: any) => s.id === DEFAULT_SCHOOL_ID);
-    if (school) return school;
-  }
-
-  return null;
-}
-
-// Helper: Validasi kata sandi sekolah / admin
-function isSchoolPasswordValid(school: any, inputPassword: string, db: any): boolean {
-  const cleanPass = (inputPassword || "").trim();
-  if (!cleanPass) return false;
-
-  // Aturan khusus SMP ISLAM SMART PANGKALPINANG (Kata Sandi: SMART01PKP atau 123)
-  if (school.id === DEFAULT_SCHOOL_ID || school.name === DEFAULT_SCHOOL_NAME) {
-    if (
-      cleanPass === DEFAULT_SCHOOL_PASSWORD ||
-      cleanPass.toUpperCase() === "SMART01PKP" ||
-      cleanPass === "123"
-    ) {
-      return true;
-    }
-  }
-
-  // Cek kata sandi sekolah
-  if (
-    school.schoolPassword &&
-    (school.schoolPassword === cleanPass || school.schoolPassword === inputPassword)
-  ) {
-    return true;
-  }
-
-  // Cek kata sandi admin / guru sekolah ini
-  const schoolTeachers = (db.teachers || []).filter(
-    (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
-  );
-
-  if (schoolTeachers.some((t: any) => t.password === cleanPass || t.password === inputPassword)) {
-    return true;
-  }
-
-  return false;
-}
-
 // Memory cache for client-side storage simulation
 let clientDbCache: any = null;
 
@@ -141,28 +43,6 @@ function initializeLocalStorage() {
     } else {
       clientDbCache = dbData;
       localStorage.setItem('smart_sts_db', JSON.stringify(dbData));
-    }
-  }
-  if (clientDbCache) {
-    if (!clientDbCache.schools || clientDbCache.schools.length === 0) {
-      clientDbCache.schools = [
-        {
-          id: DEFAULT_SCHOOL_ID,
-          name: DEFAULT_SCHOOL_NAME,
-          npsn: "69987654",
-          city: "Pangkalpinang",
-          adminUsername: "admin",
-          schoolPassword: DEFAULT_SCHOOL_PASSWORD,
-          createdAt: "2026-01-01T00:00:00.000Z"
-        }
-      ];
-      localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
-    } else {
-      const defaultSch = clientDbCache.schools.find((s: any) => s.id === DEFAULT_SCHOOL_ID);
-      if (defaultSch && !defaultSch.schoolPassword) {
-        defaultSch.schoolPassword = DEFAULT_SCHOOL_PASSWORD;
-        localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
-      }
     }
   }
 }
@@ -189,357 +69,6 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     
   const method = init?.method?.toUpperCase() || 'GET';
   const body = init?.body ? JSON.parse(init.body as string) : null;
-
-  // Extract schoolId from query, headers, or body
-  let reqSchoolId = 'smp-islam-smart';
-  const urlObj = urlStr.startsWith('http') ? new URL(urlStr) : null;
-  if (urlObj && urlObj.searchParams.get('schoolId')) {
-    reqSchoolId = urlObj.searchParams.get('schoolId')!;
-  } else if (urlStr.includes('schoolId=')) {
-    const m = urlStr.match(/schoolId=([^&]+)/);
-    if (m) reqSchoolId = decodeURIComponent(m[1]);
-  }
-  if (init?.headers) {
-    if (init.headers instanceof Headers) {
-      const h = init.headers.get('x-school-id') || init.headers.get('x-school');
-      if (h) reqSchoolId = h;
-    } else if (typeof init.headers === 'object') {
-      const h = (init.headers as any)['x-school-id'] || (init.headers as any)['x-school'];
-      if (h) reqSchoolId = h;
-    }
-  }
-  if (body?.schoolId) {
-    reqSchoolId = body.schoolId;
-  }
-
-  // Multi-school API endpoints in local simulation
-  if (path === '/api/schools' && method === 'GET') {
-    const db = getDB();
-    const schools = db.schools || [
-      {
-        id: DEFAULT_SCHOOL_ID,
-        name: DEFAULT_SCHOOL_NAME,
-        npsn: "69987654",
-        city: "Pangkalpinang",
-        adminUsername: "admin",
-        schoolPassword: DEFAULT_SCHOOL_PASSWORD,
-        createdAt: "2026-01-01T00:00:00.000Z"
-      }
-    ];
-    return new Response(JSON.stringify(schools), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // POST /api/schools/login - Masuk Langsung dengan Nama Sekolah & Kata Sandi Sekolah
-  if (path === '/api/schools/login' && method === 'POST') {
-    const cleanSchoolName = (body?.schoolName || body?.name || "").trim();
-    const cleanPassword = (body?.password || "").trim();
-
-    if (!cleanSchoolName) {
-      return new Response(JSON.stringify({ error: "Silakan masukkan nama sekolah yang terdaftar." }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    if (!cleanPassword) {
-      return new Response(JSON.stringify({ error: "Silakan masukkan kata sandi sekolah." }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    const db = getDB();
-    let school = findSchoolByNameFlexible(db.schools || [], cleanSchoolName);
-
-    // Jika belum cocok, cek apakah input adalah username akun guru/admin
-    if (!school) {
-      const matchedTeacher = (db.teachers || []).find(
-        (t: any) =>
-          t.username.toLowerCase().trim() === cleanSchoolName.toLowerCase() &&
-          (t.password === cleanPassword || t.password === body?.password || (t.username === "admin" && (cleanPassword.toUpperCase() === "SMART01PKP" || cleanPassword === "123")))
-      );
-      if (matchedTeacher) {
-        const teacherSchoolId = matchedTeacher.schoolId || DEFAULT_SCHOOL_ID;
-        school = (db.schools || []).find((s: any) => s.id === teacherSchoolId);
-      }
-    }
-
-    if (!school) {
-      return new Response(JSON.stringify({
-        error: `Sekolah "${cleanSchoolName}" belum terdaftar di sistem. Periksa kembali variasi penulisan nama sekolah atau daftarkan sekolah baru.`
-      }), { status: 404, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    if (!isSchoolPasswordValid(school, cleanPassword, db)) {
-      return new Response(JSON.stringify({
-        error: school.id === DEFAULT_SCHOOL_ID
-          ? "Kata sandi salah. Untuk SMP ISLAM SMART PANGKALPINANG, gunakan kata sandi: SMART01PKP."
-          : "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai."
-      }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    const schoolTeachers = (db.teachers || []).filter(
-      (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
-    );
-
-    let userAccount = schoolTeachers.find(
-      (t: any) => t.username === school.adminUsername || t.subject === "Admin"
-    );
-
-    const specificTeacher = schoolTeachers.find(
-      (t: any) => t.password === cleanPassword && t.subject !== "Admin"
-    );
-    if (specificTeacher && cleanPassword !== DEFAULT_SCHOOL_PASSWORD && cleanPassword !== school.schoolPassword) {
-      userAccount = specificTeacher;
-    }
-
-    if (!userAccount) {
-      userAccount = schoolTeachers[0] || {
-        id: "t_adm_" + school.id,
-        name: `Admin ${school.name}`,
-        username: school.adminUsername || "admin",
-        subject: "Admin",
-        isWaliKelas: false,
-        kelas: "",
-        schoolId: school.id,
-        schoolName: school.name,
-      };
-    }
-
-    const logoUrl =
-      school.logoUrl ||
-      db.school_settings?.[school.id]?.logoUrl ||
-      (school.id === DEFAULT_SCHOOL_ID ? null : "");
-
-    return new Response(JSON.stringify({
-      success: true,
-      message: `Berhasil masuk ke portal ${school.name}.`,
-      school: {
-        id: school.id,
-        name: school.name,
-        npsn: school.npsn || "",
-        city: school.city || "",
-        logoUrl: logoUrl || "",
-      },
-      user: {
-        id: userAccount.id,
-        name: userAccount.name,
-        username: userAccount.username,
-        subject: userAccount.subject,
-        isWaliKelas: !!userAccount.isWaliKelas,
-        kelas: userAccount.kelas || "",
-        schoolId: school.id,
-        schoolName: school.name,
-        logoUrl: logoUrl || "",
-      }
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // POST /api/schools/verify
-  if (path === '/api/schools/verify' && method === 'POST') {
-    const cleanSchoolName = (body?.schoolName || "").trim();
-    const cleanPassword = (body?.password || "").trim();
-
-    if (!cleanSchoolName) {
-      return new Response(JSON.stringify({ error: "Nama sekolah harus diisi sesuai yang didaftarkan." }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    if (!cleanPassword) {
-      return new Response(JSON.stringify({ error: "Kata sandi sekolah harus diisi untuk membuka akses sekolah." }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    const db = getDB();
-    const school = findSchoolByNameFlexible(db.schools || [], cleanSchoolName);
-    if (!school) {
-      return new Response(JSON.stringify({
-        error: `Sekolah "${cleanSchoolName}" tidak ditemukan. Pastikan nama sekolah yang dimasukkan sudah sesuai.`
-      }), { status: 404, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    if (!isSchoolPasswordValid(school, cleanPassword, db)) {
-      return new Response(JSON.stringify({
-        error: school.id === DEFAULT_SCHOOL_ID
-          ? "Kata sandi sekolah salah. Gunakan kata sandi: SMART01PKP."
-          : "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai."
-      }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    const schoolTeachers = (db.teachers || []).filter(
-      (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
-    );
-
-    const adminTeacher = schoolTeachers.find(
-      (t: any) => t.username === school.adminUsername || t.subject === "Admin"
-    ) || schoolTeachers[0];
-
-    const logoUrl =
-      school.logoUrl ||
-      db.school_settings?.[school.id]?.logoUrl ||
-      (school.id === DEFAULT_SCHOOL_ID ? null : "");
-
-    return new Response(JSON.stringify({
-      success: true,
-      school: {
-        id: school.id,
-        name: school.name,
-        npsn: school.npsn || "",
-        city: school.city || "",
-        logoUrl: logoUrl || "",
-      },
-      user: adminTeacher ? {
-        id: adminTeacher.id,
-        name: adminTeacher.name,
-        username: adminTeacher.username,
-        subject: adminTeacher.subject,
-        isWaliKelas: !!adminTeacher.isWaliKelas,
-        kelas: adminTeacher.kelas || "",
-        schoolId: school.id,
-        schoolName: school.name,
-        logoUrl: logoUrl || "",
-      } : undefined
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // POST /api/schools/register
-  if (path === '/api/schools/register' && method === 'POST') {
-    const schoolName = (body?.schoolName || body?.name || "").trim();
-    const adminName = (body?.adminName || "").trim();
-    const username = (body?.username || body?.adminUsername || "").trim();
-    const password = (body?.password || body?.adminPassword || "").trim();
-    const npsn = (body?.npsn || "").trim();
-    const city = (body?.city || "").trim();
-
-    if (!schoolName) {
-      return new Response(JSON.stringify({ error: "Nama sekolah harus diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
-    if (!username) {
-      return new Response(JSON.stringify({ error: "Username admin harus diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
-    if (!password) {
-      return new Response(JSON.stringify({ error: "Kata sandi admin harus diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    const db = getDB();
-    if (!db.schools) {
-      db.schools = [{ id: DEFAULT_SCHOOL_ID, name: DEFAULT_SCHOOL_NAME, npsn: "69987654", city: "Pangkalpinang", adminUsername: "admin", schoolPassword: DEFAULT_SCHOOL_PASSWORD, createdAt: "2026-01-01T00:00:00.000Z" }];
-    }
-    const exists = db.schools.some((s: any) => s.name.trim().toLowerCase() === schoolName.toLowerCase());
-    if (exists) {
-      return new Response(JSON.stringify({ error: `Sekolah dengan nama "${schoolName}" sudah terdaftar di sistem. Silakan masukkan nama dan kata sandinya di menu masuk.` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    const schoolId = "sch_" + Date.now();
-    const newSchool = {
-      id: schoolId,
-      name: schoolName.toUpperCase(),
-      npsn: npsn || "",
-      city: city || "",
-      adminUsername: username,
-      schoolPassword: password,
-      createdAt: new Date().toISOString()
-    };
-    db.schools.push(newSchool);
-
-    const newAdmin = {
-      id: "t_" + Date.now(),
-      schoolId: schoolId,
-      name: adminName || `Admin ${schoolName}`,
-      username: username,
-      password: password,
-      subject: "Admin",
-      isWaliKelas: false,
-      kelas: ""
-    };
-    if (!db.teachers) db.teachers = [];
-    db.teachers.push(newAdmin);
-
-    if (!db.school_settings) db.school_settings = {};
-    db.school_settings[schoolId] = {
-      schoolId,
-      schoolName: schoolName.toUpperCase(),
-      principalName: "",
-      principalNip: "",
-      logoUrl: "",
-      format: {
-        semesterName: "Ganjil",
-        tahunPelajaran: "2026/2027",
-        fontSize: "11pt",
-        showLogo: false,
-        showSpiritual: true,
-        showSosial: true,
-        showAttendance: true,
-        showCatatan: true,
-        fontFamily: "Times New Roman",
-        paperSize: "A4",
-        tanggalRaport: "17 Juni 2026",
-        watermarkSize: 440,
-        watermarkOpacity: 0.05
-      }
-    };
-
-    saveDB(db);
-    return new Response(JSON.stringify({ success: true, message: `Sekolah "${schoolName}" berhasil didaftarkan.`, school: newSchool, admin: newAdmin }), { status: 201, headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // POST /api/school/logo or /api/schools/:id/logo
-  if ((path === '/api/school/logo' || /^\/api\/schools\/[^/]+\/logo$/.test(path)) && method === 'POST') {
-    let targetSchoolId = reqSchoolId;
-    const match = path.match(/^\/api\/schools\/([^/]+)\/logo$/);
-    if (match) targetSchoolId = match[1];
-
-    const { logoUrl } = body || {};
-    const db = getDB();
-    if (!db.schools) db.schools = [];
-    const school = db.schools.find((s: any) => s.id === targetSchoolId);
-    if (school) {
-      school.logoUrl = logoUrl || "";
-    }
-    if (!db.school_settings) db.school_settings = {};
-    if (!db.school_settings[targetSchoolId]) {
-      db.school_settings[targetSchoolId] = { schoolId: targetSchoolId, schoolName: school?.name || "" };
-    }
-    db.school_settings[targetSchoolId].logoUrl = logoUrl || "";
-    if (targetSchoolId === DEFAULT_SCHOOL_ID) {
-      if (!db.settings) db.settings = {};
-      db.settings.logoUrl = logoUrl || "";
-    }
-    saveDB(db);
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Logo sekolah berhasil diperbarui.",
-      logoUrl: logoUrl || ""
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // DELETE /api/school/logo or /api/schools/:id/logo
-  if ((path === '/api/school/logo' || /^\/api\/schools\/[^/]+\/logo$/.test(path)) && method === 'DELETE') {
-    let targetSchoolId = reqSchoolId;
-    const match = path.match(/^\/api\/schools\/([^/]+)\/logo$/);
-    if (match) targetSchoolId = match[1];
-
-    const db = getDB();
-    if (!db.schools) db.schools = [];
-    const school = db.schools.find((s: any) => s.id === targetSchoolId);
-    if (school) {
-      school.logoUrl = "";
-    }
-    if (db.school_settings && db.school_settings[targetSchoolId]) {
-      db.school_settings[targetSchoolId].logoUrl = "";
-    }
-    if (targetSchoolId === DEFAULT_SCHOOL_ID && db.settings) {
-      db.settings.logoUrl = "";
-    }
-    saveDB(db);
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Logo sekolah berhasil dihapus.",
-      logoUrl: ""
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
 
   try {
     if (isFirebaseConfigured) {
@@ -724,48 +253,21 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       }
     }
 
-    const isItemForSchool = (item: any) => {
-      if (!item) return false;
-      if (reqSchoolId === 'smp-islam-smart') {
-        return !item.schoolId || item.schoolId === 'smp-islam-smart';
-      }
-      return item.schoolId === reqSchoolId;
-    };
-
     // 1. POST /api/login
     if (path === '/api/login' && method === 'POST') {
-      const { username, password, schoolId } = body || {};
+      const { username, password } = body || {};
       const db = getDB();
-      let teacher: any = null;
-      if (schoolId) {
-        const isTargetRecord = (item: any) => {
-          if (!item) return false;
-          if (schoolId === 'smp-islam-smart') {
-            return !item.schoolId || item.schoolId === 'smp-islam-smart';
-          }
-          return item.schoolId === schoolId;
-        };
-        teacher = (db.teachers || []).find(
-          (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && (t.password === password || (t.username === 'admin' && (password === 'SMART01PKP' || password === '123')))
-        );
-      }
-      if (!teacher) {
-        teacher = (db.teachers || []).find(
-          (t: any) => t.username?.toLowerCase() === username?.toLowerCase() && (t.password === password || (t.username === 'admin' && (password === 'SMART01PKP' || password === '123')))
-        );
-      }
+      const teacher = db.teachers.find(
+        (t: any) => t.username.toLowerCase() === username?.toLowerCase() && t.password === password
+      );
       if (!teacher) {
         return new Response(JSON.stringify({ error: "Kombinasi pengguna dan kata sandi salah." }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      const targetSchoolId = teacher.schoolId || 'smp-islam-smart';
-      const school = (db.schools || []).find((s: any) => s.id === targetSchoolId);
       return new Response(JSON.stringify({
         id: teacher.id,
-        schoolId: targetSchoolId,
-        schoolName: school?.name || teacher.schoolName || "SMP ISLAM SMART PANGKALPINANG",
         name: teacher.name,
         username: teacher.username,
         subject: teacher.subject,
@@ -776,38 +278,19 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
 
     // POST /api/verify-session
     if (path === '/api/verify-session' && method === 'POST') {
-      const { username, password, schoolId } = body || {};
+      const { username, password } = body || {};
       const db = getDB();
-      let teacher: any = null;
-      if (schoolId) {
-        const isTargetRecord = (item: any) => {
-          if (!item) return false;
-          if (schoolId === 'smp-islam-smart') {
-            return !item.schoolId || item.schoolId === 'smp-islam-smart';
-          }
-          return item.schoolId === schoolId;
-        };
-        teacher = (db.teachers || []).find(
-          (t: any) => isTargetRecord(t) && t.username?.toLowerCase() === username?.toLowerCase() && (t.password === password || (t.username === 'admin' && (password === 'SMART01PKP' || password === '123')))
-        );
-      }
-      if (!teacher) {
-        teacher = (db.teachers || []).find(
-          (t: any) => t.username?.toLowerCase() === username?.toLowerCase() && (t.password === password || (t.username === 'admin' && (password === 'SMART01PKP' || password === '123')))
-        );
-      }
+      const teacher = db.teachers.find(
+        (t: any) => t.username.toLowerCase() === username?.toLowerCase() && t.password === password
+      );
       if (!teacher) {
         return new Response(JSON.stringify({ error: "Sesi tidak valid." }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      const targetSchoolId = teacher.schoolId || 'smp-islam-smart';
-      const school = (db.schools || []).find((s: any) => s.id === targetSchoolId);
       return new Response(JSON.stringify({
         id: teacher.id,
-        schoolId: targetSchoolId,
-        schoolName: school?.name || teacher.schoolName || "SMP ISLAM SMART PANGKALPINANG",
         name: teacher.name,
         username: teacher.username,
         subject: teacher.subject,
@@ -819,21 +302,19 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // 2. GET /api/teachers
     if (path === '/api/teachers' && method === 'GET') {
       const db = getDB();
-      const filtered = (db.teachers || []).filter(isItemForSchool);
-      return new Response(JSON.stringify(filtered), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(db.teachers), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // POST /api/teachers
     if (path === '/api/teachers' && method === 'POST') {
       const { name, username, password, subject, isWaliKelas, kelas } = body || {};
       const db = getDB();
-      const exists = (db.teachers || []).some((t: any) => isItemForSchool(t) && t.username.toLowerCase() === username?.toLowerCase());
+      const exists = db.teachers.some((t: any) => t.username.toLowerCase() === username?.toLowerCase());
       if (exists) {
-        return new Response(JSON.stringify({ error: "Username sudah digunakan di sekolah ini." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: "Username sudah digunakan." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
       const newTeacher = {
         id: "t_" + Date.now(),
-        schoolId: reqSchoolId,
         name,
         username,
         password,
@@ -841,7 +322,6 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         isWaliKelas: !!isWaliKelas,
         kelas: kelas || ""
       };
-      if (!db.teachers) db.teachers = [];
       db.teachers.push(newTeacher);
       saveDB(db);
       return new Response(JSON.stringify(newTeacher), { status: 201, headers: { 'Content-Type': 'application/json' } });
@@ -876,20 +356,18 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // 3. GET /api/students
     if (path === '/api/students' && method === 'GET') {
       const db = getDB();
-      const filtered = (db.students || []).filter(isItemForSchool);
-      return new Response(JSON.stringify(filtered), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(db.students), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // POST /api/students
     if (path === '/api/students' && method === 'POST') {
       const { name, nisn, kelas } = body || {};
       const db = getDB();
-      const exists = (db.students || []).some((s: any) => isItemForSchool(s) && s.nisn === nisn);
+      const exists = db.students.some((s: any) => s.nisn === nisn);
       if (exists) {
-        return new Response(JSON.stringify({ error: "Siswa dengan NISN ini sudah terdaftar di sekolah ini." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: "Siswa dengan NISN ini sudah terdaftar." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
-      const newStudent = { id: "s_" + Date.now(), schoolId: reqSchoolId, nisn, name, kelas };
-      if (!db.students) db.students = [];
+      const newStudent = { id: "s_" + Date.now(), nisn, name, kelas };
       db.students.push(newStudent);
       saveDB(db);
       return new Response(JSON.stringify(newStudent), { status: 201, headers: { 'Content-Type': 'application/json' } });
@@ -900,7 +378,7 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       const id = path.split('/').pop();
       const { name, nisn, kelas } = body || {};
       const db = getDB();
-      const index = (db.students || []).findIndex((s: any) => s.id === id);
+      const index = db.students.findIndex((s: any) => s.id === id);
       if (index === -1) {
         return new Response(JSON.stringify({ error: "Siswa tidak ditemukan." }), { status: 404, headers: { 'Content-Type': 'application/json' } });
       }
@@ -913,8 +391,8 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     if (path.startsWith('/api/students/') && method === 'DELETE') {
       const id = path.split('/').pop();
       const db = getDB();
-      db.students = (db.students || []).filter((s: any) => s.id !== id);
-      db.grades = (db.grades || []).filter((g: any) => g.studentId !== id);
+      db.students = db.students.filter((s: any) => s.id !== id);
+      db.grades = db.grades.filter((g: any) => g.studentId !== id);
       if (db.walikelas_notes && db.walikelas_notes[id!]) {
         delete db.walikelas_notes[id!];
       }
@@ -925,18 +403,15 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // 4. GET /api/grades
     if (path === '/api/grades' && method === 'GET') {
       const db = getDB();
-      const filtered = (db.grades || []).filter(isItemForSchool);
-      return new Response(JSON.stringify(filtered), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(db.grades), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // POST /api/grades
     if (path === '/api/grades' && method === 'POST') {
       const { studentId, subject, score, tps, teacherName, usaha, proses, capaian, deskripsi } = body || {};
       const db = getDB();
-      if (!db.grades) db.grades = [];
-      const index = db.grades.findIndex((g: any) => isItemForSchool(g) && g.studentId === studentId && g.subject === subject);
+      const index = db.grades.findIndex((g: any) => g.studentId === studentId && g.subject === subject);
       const updatedGrade = {
-        schoolId: reqSchoolId,
         studentId,
         subject,
         score: Number(score),
@@ -1126,15 +601,12 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         "PAI", "PPKN", "Bahasa Indonesia", "Matematika", "IPA", "IPS", "Bahasa Inggris", "PJOK", "Prakarya", "Informatika",
         "Bahasa Arab", "Tahsin ABaTaTsa", "Tahfizh Al-Qur’an", "Do’a Harian dan Hadits", "Wudhu dan Sholat"
       ];
-      const schoolStudents = (db.students || []).filter(isItemForSchool);
-      const schoolGrades = (db.grades || []).filter(isItemForSchool);
-      const schoolTeachers = (db.teachers || []).filter(isItemForSchool);
-      const totalStudents = schoolStudents.length;
+      const totalStudents = db.students.length;
       const subjectProgress = subjectsList.map(sub => {
-        const filledGradesForSub = schoolGrades.filter((g: any) => g.subject === sub);
+        const filledGradesForSub = db.grades.filter((g: any) => g.subject === sub);
         const completedCount = filledGradesForSub.length;
         const percentage = totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0;
-        const teacher = schoolTeachers.find((t: any) => t.subject === sub);
+        const teacher = db.teachers.find((t: any) => t.subject === sub);
         return {
           subject: sub,
           completed: completedCount,
@@ -1144,19 +616,19 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         };
       });
 
-      const classes = Array.from(new Set(schoolStudents.map((s: any) => s.kelas))) as string[];
+      const classes = Array.from(new Set(db.students.map((s: any) => s.kelas))) as string[];
       const classProgress = classes.map(cls => {
-        const studentsInClass = schoolStudents.filter((s: any) => s.kelas === cls);
+        const studentsInClass = db.students.filter((s: any) => s.kelas === cls);
         const totalGradesNeeded = studentsInClass.length * subjectsList.length;
         let gradesFilledCount = 0;
         const studentIds = studentsInClass.map((s: any) => s.id);
-        schoolGrades.forEach((g: any) => {
+        db.grades.forEach((g: any) => {
           if (studentIds.includes(g.studentId)) {
             gradesFilledCount++;
           }
         });
         const percent = totalGradesNeeded > 0 ? Math.round((gradesFilledCount / totalGradesNeeded) * 100) : 0;
-        const waliKelas = schoolTeachers.find((t: any) => t.isWaliKelas && t.kelas === cls);
+        const waliKelas = db.teachers.find((t: any) => t.isWaliKelas && t.kelas === cls);
         return {
           kelas: cls,
           studentCount: studentsInClass.length,
@@ -1169,15 +641,14 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
 
       return new Response(JSON.stringify({
         totalStudents,
-        totalTeachers: schoolTeachers.length,
+        totalTeachers: db.teachers.length,
         subjectProgress,
         classProgress,
         lastUpdate: new Date().toISOString()
       }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
-    console.warn(`[Local Mock] Unhandled endpoint: ${method} ${path}`);
-    return new Response(JSON.stringify({ error: `Rute API "${path}" tidak ditemukan.` }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: "Endpoint not found in client-side mock" }), { status: 404, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error("Local mock server error:", error);
     return new Response(JSON.stringify({ error: "Internal client-server error in mock mode" }), { status: 500, headers: { 'Content-Type': 'application/json' } });
@@ -1193,57 +664,25 @@ const customFetch = async function (input: RequestInfo | URL, init?: RequestInit
     return originalFetch(input, init);
   }
 
-  // Determine active schoolId from session if available
-  let activeSchoolId = 'smp-islam-smart';
+  // If Firebase is configured or on static hosting without backend, route directly to Firestore / client database
+  if (isFirebaseConfigured || isStaticHost) {
+    return localFetchInterception(input, init);
+  }
+
+  // Always try real backend first, seamlessly fallback if static host serves index.html fallback
   try {
-    const saved = sessionStorage.getItem('smp_islam_smart_user');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed?.schoolId) {
-        activeSchoolId = parsed.schoolId;
-      }
-    }
-  } catch (e) {}
-
-  // Ensure x-school-id header is included
-  const enhancedInit: RequestInit = { ...(init || {}) };
-  let headers: Headers;
-  if (enhancedInit.headers instanceof Headers) {
-    headers = new Headers(enhancedInit.headers);
-  } else if (enhancedInit.headers && typeof enhancedInit.headers === 'object') {
-    headers = new Headers(enhancedInit.headers as Record<string, string>);
-  } else {
-    headers = new Headers();
-  }
-  if (!headers.has('x-school-id')) {
-    headers.set('x-school-id', activeSchoolId);
-  }
-  enhancedInit.headers = headers;
-
-  // On static hosting without backend, route directly to local simulation
-  if (isStaticHost) {
-    return localFetchInterception(input, enhancedInit);
-  }
-
-  // Always try real backend (Express server) first
-  try {
-    const res = await originalFetch(input, enhancedInit);
+    const res = await originalFetch(input, init);
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
     
-    // Only fallback to local interception if the server returned HTML (e.g. Vite SPA fallback index.html),
-    // or if the backend returned 502/503 (server rebooting).
-    // Note: Do NOT fall back if the backend returned a JSON response (even 404, 401, 400), as that is a legitimate Express API response!
-    if (contentType.includes('text/html') && !urlStr.endsWith('.html')) {
-      return localFetchInterception(input, enhancedInit);
-    }
-    if (res.status === 502 || res.status === 503) {
-      return localFetchInterception(input, enhancedInit);
+    // If the server returned HTML (e.g. index.html SPA fallback), or non-200 non-JSON, intercept immediately
+    if (contentType.includes('text/html') || res.status === 404 || (!res.ok && !contentType.includes('json'))) {
+      return localFetchInterception(input, init);
     }
     return res;
   } catch (error) {
     // Server down or offline -> fallback to client-side database
-    console.warn("Backend server offline, falling back to client-side database:", error);
-    return localFetchInterception(input, enhancedInit);
+    console.warn("Server API offline, falling back to client-side database:", error);
+    return localFetchInterception(input, init);
   }
 };
 

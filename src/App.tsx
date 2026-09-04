@@ -43,9 +43,6 @@ export default function App() {
   // Responsive mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
-  // School logo state synced across app
-  const [schoolLogo, setSchoolLogo] = useState<string>("");
-
   // Global screen dark mode state synced with local storage
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return localStorage.getItem("smp_islam_smart_theme") === "dark";
@@ -93,15 +90,8 @@ export default function App() {
         // Non-blocking background verification with server
         fetch("/api/verify-session", {
           method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "x-school-id": u.schoolId || "smp-islam-smart"
-          },
-          body: JSON.stringify({ 
-            username: u.username, 
-            password: u.password,
-            schoolId: u.schoolId || "smp-islam-smart"
-          })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: u.username, password: u.password })
         })
           .then((res) => {
             if (!res.ok) throw new Error("Sesi tidak valid");
@@ -123,25 +113,6 @@ export default function App() {
       }
     }
   }, []);
-
-  // Fetch school logo for active user school
-  useEffect(() => {
-    if (currentUser) {
-      const sId = currentUser.schoolId || "smp-islam-smart";
-      fetch("/api/settings", {
-        headers: { "x-school-id": sId },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && data.logoUrl !== undefined) {
-            setSchoolLogo(data.logoUrl || "");
-          }
-        })
-        .catch(() => {});
-    } else {
-      setSchoolLogo("");
-    }
-  }, [currentUser]);
 
   // Live session activity & lock-out tracking hook
   useEffect(() => {
@@ -305,12 +276,8 @@ export default function App() {
         {/* Sidebar Header Logo */}
         <div className="p-4 border-b border-[#1a2948] bg-[#0c1322] flex items-center justify-between gap-2.5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md ring-1 ring-blue-500/30 overflow-hidden">
-              <SmpIslamSmartLogo
-                size="100%"
-                logoUrl={schoolLogo}
-                schoolName={currentUser.schoolName || "SMP Islam Smart Pangkalpinang"}
-              />
+            <div className="w-11 h-11 shrink-0 flex items-center justify-center">
+              <SmpIslamSmartLogo size="100%" className="w-11 h-11 rounded-xl shadow-md" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
@@ -318,11 +285,11 @@ export default function App() {
                   SMART RAPORT
                 </h1>
                 <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[8px] font-black uppercase font-mono">
-                  {currentUser.schoolId && currentUser.schoolId !== "smp-islam-smart" ? "SEKOLAH" : "SMP"}
+                  SMP
                 </span>
               </div>
-              <p className="text-[10px] font-semibold text-slate-400 truncate" title={currentUser.schoolName || "SMP Islam Smart Pangkalpinang"}>
-                {currentUser.schoolName || "SMP Islam Smart Pangkalpinang"}
+              <p className="text-[10px] font-semibold text-slate-400 truncate">
+                SMP Islam Smart Pangkalpinang
               </p>
             </div>
           </div>
@@ -474,13 +441,13 @@ export default function App() {
                 <span className="font-extrabold text-sm tracking-tight text-white hidden sm:inline">
                   SMART RAPORT
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-extrabold uppercase font-mono max-w-[200px] truncate" title={currentUser.schoolName || "SMP ISLAM SMART PANGKALPINANG"}>
-                  {currentUser.schoolName || "PANGKALPINANG"}
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-extrabold uppercase font-mono">
+                  PANGKALPINANG
                 </span>
               </div>
               <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="max-w-[190px] truncate">{currentUser.schoolName || "SMP Islam Smart"}</span>
+                <span>Keamanan Aktif</span>
               </div>
             </div>
           </div>
@@ -550,10 +517,7 @@ export default function App() {
           <div className="tab-viewport max-w-7xl mx-auto" id="tab-viewport">
             {visitedTabs["progress"] && (
               <div className={activeTab === "progress" ? "block animate-fade-in" : "hidden"}>
-                <DashboardProgress
-                  onRefreshTrigger={refreshTrigger}
-                  schoolName={currentUser?.schoolName}
-                />
+                <DashboardProgress onRefreshTrigger={refreshTrigger} />
               </div>
             )}
 
@@ -595,19 +559,11 @@ export default function App() {
             {visitedTabs["admin_panel"] && isSysAdmin && (
               <div className={activeTab === "admin_panel" ? "block animate-fade-in" : "hidden"}>
                 {/* Admin Database control hub */}
-                <AdminPanel
-                  onRefreshTrigger={triggerProgressRefresh}
-                  currentUser={currentUser}
-                  currentSchoolLogo={schoolLogo}
-                  onLogoUpdate={(newLogo) => setSchoolLogo(newLogo)}
-                />
+                <AdminPanel onRefreshTrigger={triggerProgressRefresh} />
               </div>
             )}
           </div>
         </main>
-
-        {/* Floating Download / Install App CTA in Browser & Website */}
-        <PWAInstallButton variant="floating" />
       </div>
     </div>
   );

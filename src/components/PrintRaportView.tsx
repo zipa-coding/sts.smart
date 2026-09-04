@@ -61,48 +61,15 @@ export default function PrintRaportView({
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [isIframe, setIsIframe] = useState(false);
-  const [schoolInfo, setSchoolInfo] = useState({
-    name: "SMP ISLAM SMART PANGKALPINANG",
-    city: "Pangkalpinang",
-  });
-  const [currentSchoolLogo, setCurrentSchoolLogo] = useState<string>(logoUrl);
 
   React.useEffect(() => {
     setIsIframe(window.self !== window.top);
-    let sId = "smp-islam-smart";
-    try {
-      const saved = sessionStorage.getItem("smp_islam_smart_user");
-      if (saved) {
-        const u = JSON.parse(saved);
-        if (u?.schoolName) {
-          setSchoolInfo((prev) => ({ ...prev, name: u.schoolName }));
-        }
-        if (u?.schoolId) {
-          sId = u.schoolId;
-          // If registered new school without custom logo yet, start empty so initials badge shows
-          if (sId !== "smp-islam-smart") {
-            setCurrentSchoolLogo("");
-          }
-        }
-      }
-    } catch (e) {}
+  }, []);
 
-    fetch("/api/settings", {
-      headers: {
-        "x-school-id": sId,
-      },
-    })
+  React.useEffect(() => {
+    fetch("/api/settings")
       .then((res) => res.json())
       .then((data) => {
-        if (data.logoUrl !== undefined) {
-          setCurrentSchoolLogo(data.logoUrl || "");
-        }
-        if (data.schoolName) {
-          setSchoolInfo({
-            name: data.schoolName,
-            city: data.schoolCity || "Pangkalpinang",
-          });
-        }
         if (data.principalName && data.principalNip) {
           setPrincipal({
             name: data.principalName,
@@ -385,7 +352,7 @@ export default function PrintRaportView({
     };
 
     getTransparentWatermarkBase64(
-      currentSchoolLogo || "",
+      logoUrl,
       format.watermarkOpacity || 0.05,
     ).then((watermarkBase64) => {
       // Build a completely clean, isolated HTML template for the PDF (identical to the Word template layout)
@@ -457,7 +424,7 @@ export default function PrintRaportView({
                 </div>
                 <!-- Center: School name and report metadata -->
                 <div style="text-align: center; flex-grow: 1; padding: 0 10px;">
-                  <h2 style="margin: 0; text-transform: uppercase; font-size: 11.5pt; color: #000000; font-weight: bold; line-height: 1.25;">${schoolInfo.name}</h2>
+                  <h2 style="margin: 0; text-transform: uppercase; font-size: 11.5pt; color: #000000; font-weight: bold; line-height: 1.25;">SMP ISLAM SMART PANGKAL PINANG</h2>
                   <h3 style="margin: 3px 0; text-transform: uppercase; font-size: 10pt; color: #000000; font-weight: bold; line-height: 1.25;">LAPORAN SUMATIF TENGAH SEMESTER (STS)</h3>
                   <h4 style="margin: 3px 0; font-size: 9.5pt; color: #000000; font-weight: bold; line-height: 1.25;">SEMESTER ${format.semesterName ? format.semesterName.toUpperCase() : "GANJIL"}</h4>
                   <p style="margin: 2px 0 0 0; font-size: 8.5pt; font-weight: bold; color: #000000; line-height: 1.25;">TAHUN PELAJARAN ${format.tahunPelajaran || "2026-2027"}</p>
@@ -465,18 +432,14 @@ export default function PrintRaportView({
                 <!-- Right Side: School logo -->
                 <div style="width: 165px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
                   <div style="width: 75px; height: 75px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #cccccc; border-radius: 50%; overflow: hidden; background-color: #ffffff;">
-                    ${
-                      currentSchoolLogo
-                        ? `<img src="${currentSchoolLogo}" style="width: 75px; height: 75px; object-fit: cover;" />`
-                        : `<div style="width: 100%; height: 100%; background-color: #2563eb; color: #ffffff; font-weight: bold; font-size: 13pt; display: flex; align-items: center; justify-content: center; text-align: center;">${(schoolInfo.name || "SCH").slice(0, 3).toUpperCase()}</div>`
-                    }
+                    <img src="${logoUrl}" style="width: 75px; height: 75px; object-fit: cover;" />
                   </div>
                 </div>
               </div>
               `
                 : `
               <div style="text-align: center; margin-bottom: 15px; width: 100%; border-bottom: 3px double #000000; padding-bottom: 12px;">
-                <h2 style="margin: 0; text-transform: uppercase; font-size: 14pt; color: #000000; font-weight: bold;">${schoolInfo.name}</h2>
+                <h2 style="margin: 0; text-transform: uppercase; font-size: 14pt; color: #000000; font-weight: bold;">SMP ISLAM SMART PANGKAL PINANG</h2>
                 <h3 style="margin: 3px 0; text-transform: uppercase; font-size: 12pt; color: #000000; font-weight: bold;">LAPORAN SUMATIF TENGAH SEMESTER (STS)</h3>
                 <h4 style="margin: 3px 0; font-size: 11pt; color: #000000; font-weight: bold;">SEMESTER ${format.semesterName ? format.semesterName.toUpperCase() : "GANJIL"}</h4>
                 <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; color: #000000;">TAHUN PELAJARAN ${format.tahunPelajaran || "2026-2027"}</p>
@@ -1026,7 +989,7 @@ export default function PrintRaportView({
 
     const absLogoCahayaAmalUrl = makeAbsoluteUrl(logoCahayaAmalUrl);
     const absLogoJsitUrl = makeAbsoluteUrl(logoJsitUrl);
-    const absLogoUrl = currentSchoolLogo ? makeAbsoluteUrl(currentSchoolLogo) : "";
+    const absLogoUrl = makeAbsoluteUrl(logoUrl);
 
     const htmlHeader = `
       <html xmlns:o='urn:schemas-microsoft-500-col:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -1064,18 +1027,14 @@ export default function PrintRaportView({
             </td>
             <!-- Center Title and Info -->
             <td style="width: 50%; text-align: center; vertical-align: middle; border: none; padding-bottom: 12px; font-family: 'Times New Roman', Times, serif;">
-              <h2 style="margin: 0; text-transform: uppercase; font-size: 11.5pt; font-weight: bold; color: #000000; line-height: 1.25;">${schoolInfo.name}</h2>
+              <h2 style="margin: 0; text-transform: uppercase; font-size: 11.5pt; font-weight: bold; color: #000000; line-height: 1.25;">SMP ISLAM SMART PANGKAL PINANG</h2>
               <h3 style="margin: 3px 0; text-transform: uppercase; font-size: 10pt; font-weight: bold; color: #000000; line-height: 1.25;">LAPORAN SUMATIF TENGAH SEMESTER (STS)</h3>
               <h4 style="margin: 3px 0; font-size: 9.5pt; font-weight: bold; color: #000000; line-height: 1.25;">SEMESTER ${format.semesterName ? format.semesterName.toUpperCase() : "GANJIL"}</h4>
               <p style="margin: 2px 0 0 0; font-size: 8.5pt; font-weight: bold; color: #000000; line-height: 1.25;">TAHUN PELAJARAN ${format.tahunPelajaran || "2026-2027"}</p>
             </td>
             <!-- Right Side School Logo -->
             <td style="width: 25%; text-align: center; vertical-align: middle; border: none; padding-bottom: 12px;">
-              ${
-                absLogoUrl
-                  ? `<img src="${absLogoUrl}" style="width: 55px; height: 55px; display: inline-block; border: 1px solid #cccccc; border-radius: 50%;" />`
-                  : `<div style="width: 55px; height: 55px; display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: bold; font-size: 11pt; line-height: 55px; text-align: center; border-radius: 50%;">${(schoolInfo.name || "SCH").slice(0, 3).toUpperCase()}</div>`
-              }
+              <img src="${absLogoUrl}" style="width: 55px; height: 55px; display: inline-block; border: 1px solid #cccccc; border-radius: 50%;" />
             </td>
           </tr>
         </table>
@@ -1084,7 +1043,7 @@ export default function PrintRaportView({
         <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 15px; border-bottom: 3.5px double #000000; margin-left: auto; margin-right: auto;">
           <tr>
             <td style="width: 100%; text-align: center; vertical-align: middle; border: none; padding-bottom: 12px; font-family: 'Times New Roman', Times, serif;">
-              <h2 style="margin: 0; text-transform: uppercase; font-size: 13.5pt; font-weight: bold; color: #000000;">${schoolInfo.name}</h2>
+              <h2 style="margin: 0; text-transform: uppercase; font-size: 13.5pt; font-weight: bold; color: #000000;">SMP ISLAM SMART PANGKAL PINANG</h2>
               <h3 style="margin: 3px 0; text-transform: uppercase; font-size: 11.5pt; font-weight: bold; color: #000000;">LAPORAN SUMATIF TENGAH SEMESTER (STS)</h3>
               <h4 style="margin: 3px 0; font-size: 10.5pt; font-weight: bold; color: #000000;">SEMESTER ${format.semesterName ? format.semesterName.toUpperCase() : "GANJIL"}</h4>
               <p style="margin: 2px 0 0 0; font-size: 9.5pt; font-weight: bold; color: #000000;">TAHUN PELAJARAN ${format.tahunPelajaran || "2026-2027"}</p>
@@ -1768,21 +1727,19 @@ export default function PrintRaportView({
           id="raport-watermark"
           style={{ pointerEvents: "none", zIndex: 0 }}
         >
-          {currentSchoolLogo ? (
-            <img
-              src={currentSchoolLogo}
-              alt="Watermark"
-              className="object-contain select-none transition-all duration-300"
-              style={{
-                width: `${format.watermarkSize || 440}px`,
-                height: `${format.watermarkSize || 440}px`,
-                opacity: format.watermarkOpacity || 0.05,
-                WebkitPrintColorAdjust: "exact",
-                printColorAdjust: "exact",
-              }}
-              referrerPolicy="no-referrer"
-            />
-          ) : null}
+          <img
+            src={logoUrl}
+            alt="Watermark"
+            className="object-contain select-none transition-all duration-300"
+            style={{
+              width: `${format.watermarkSize || 440}px`,
+              height: `${format.watermarkSize || 440}px`,
+              opacity: format.watermarkOpacity || 0.05,
+              WebkitPrintColorAdjust: "exact",
+              printColorAdjust: "exact",
+            }}
+            referrerPolicy="no-referrer"
+          />
         </div>
 
         <div className="relative w-full flex flex-col" style={{ zIndex: 10 }}>
@@ -1810,7 +1767,7 @@ export default function PrintRaportView({
             ) : null}
             <div className="text-center flex-1">
               <h2 className="text-sm md:text-base lg:text-lg font-extrabold uppercase mt-0.5 tracking-wide text-black leading-tight">
-                {schoolInfo.name}
+                SMP ISLAM SMART PANGKAL PINANG
               </h2>
               <h3 className="text-[10px] md:text-xs lg:text-sm font-bold tracking-wider uppercase mt-1 text-gray-800 leading-tight">
                 LAPORAN SUMATIF TENGAH SEMESTER (STS)
@@ -1828,18 +1785,12 @@ export default function PrintRaportView({
             {format.showLogo ? (
               <div className="flex items-center w-32 md:w-44 shrink-0 justify-center">
                 <div className="w-14 h-14 md:w-18 md:h-18 shrink-0 select-none overflow-hidden rounded-full border-1.5 border-gray-300 bg-white flex items-center justify-center">
-                  {currentSchoolLogo ? (
-                    <img
-                      src={currentSchoolLogo}
-                      alt="School Logo"
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center font-mono">
-                      {(schoolInfo.name || "SCH").slice(0, 3).toUpperCase()}
-                    </div>
-                  )}
+                  <img
+                    src={logoUrl}
+                    alt="School Logo"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
               </div>
             ) : null}
@@ -2366,7 +2317,7 @@ export default function PrintRaportView({
               </div>
               <div>
                 <p className="mb-16 text-black">
-                  {schoolInfo.city || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                  Pangkal Pinang, {format.tanggalRaport || "17 Juni 2026"}
                   <br />
                   <span className="font-semibold">
                     Wali Kelas Kelas {student.kelas}

@@ -1,30 +1,4 @@
 {
-  "schools": [
-    {
-      "id": "smp-islam-smart",
-      "name": "SMP ISLAM SMART PANGKALPINANG",
-      "npsn": "69987654",
-      "city": "Pangkalpinang",
-      "adminUsername": "admin",
-      "createdAt": "2026-01-01T00:00:00.000Z"
-    },
-    {
-      "id": "sch_1788409614743",
-      "name": "SMP ISLAM TERPADU INSAN MANDIRI",
-      "npsn": "10987654",
-      "city": "Pangkalpinang",
-      "adminUsername": "admininsan",
-      "createdAt": "2026-09-03T04:26:54.743Z"
-    },
-    {
-      "id": "sch_1788412354826",
-      "name": "SMP Test Mandiri 2",
-      "npsn": "",
-      "city": "Jakarta",
-      "adminUsername": "admintest2",
-      "createdAt": "2026-09-03T05:12:34.826Z"
-    }
-  ],
   "teachers": [
     {
       "id": "t1",
@@ -79,28 +53,6 @@
       "subject": "PAI",
       "isWaliKelas": true,
       "kelas": "7"
-    },
-    {
-      "id": "t_1788409614743",
-      "name": "Ustadz Ahmad",
-      "username": "admininsan",
-      "password": "insanpassword",
-      "subject": "Admin",
-      "isWaliKelas": false,
-      "kelas": "",
-      "schoolId": "sch_1788409614743",
-      "schoolName": "SMP ISLAM TERPADU INSAN MANDIRI"
-    },
-    {
-      "id": "t_1788412354826",
-      "name": "Admin SMP Test 2",
-      "username": "admintest2",
-      "password": "321",
-      "subject": "Admin",
-      "isWaliKelas": false,
-      "kelas": "",
-      "schoolId": "sch_1788412354826",
-      "schoolName": "SMP Test Mandiri 2"
     }
   ],
   "students": [
@@ -1030,51 +982,5 @@
         "text": "Memahami rukun islam dan tata cara bersuci secara sahih"
       }
     ]
-  },
-  "school_settings": {
-    "sch_1788409614743": {
-      "schoolId": "sch_1788409614743",
-      "schoolName": "SMP ISLAM TERPADU INSAN MANDIRI",
-      "principalName": "",
-      "principalNip": "",
-      "format": {
-        "semesterName": "Ganjil",
-        "tahunPelajaran": "2026/2027",
-        "fontSize": "11pt",
-        "showLogo": false,
-        "showSpiritual": true,
-        "showSosial": true,
-        "showAttendance": true,
-        "showCatatan": true,
-        "fontFamily": "Times New Roman",
-        "paperSize": "A4",
-        "tanggalRaport": "17 Juni 2026",
-        "watermarkSize": 440,
-        "watermarkOpacity": 0.05
-      }
-    },
-    "sch_1788412354826": {
-      "schoolId": "sch_1788412354826",
-      "schoolName": "SMP Test Mandiri 2",
-      "principalName": "",
-      "principalNip": "",
-      "format": {
-        "semesterName": "Ganjil",
-        "tahunPelajaran": "2026/2027",
-        "fontSize": "11pt",
-        "showLogo": false,
-        "showSpiritual": true,
-        "showSosial": true,
-        "showAttendance": true,
-        "showCatatan": true,
-        "fontFamily": "Times New Roman",
-        "paperSize": "A4",
-        "tanggalRaport": "17 Juni 2026",
-        "watermarkSize": 440,
-        "watermarkOpacity": 0.05
-      }
-    }
-  },
-  "school_tps": {},
-  "school_ekskul": {}
+  }
 }
