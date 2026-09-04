@@ -65,9 +65,11 @@ export default function PrintRaportView({
     name: "SMP ISLAM SMART PANGKALPINANG",
     city: "Pangkalpinang",
   });
+  const [currentSchoolLogo, setCurrentSchoolLogo] = useState<string>(logoUrl);
 
   React.useEffect(() => {
     setIsIframe(window.self !== window.top);
+    let sId = "smp-islam-smart";
     try {
       const saved = sessionStorage.getItem("smp_islam_smart_user");
       if (saved) {
@@ -75,14 +77,26 @@ export default function PrintRaportView({
         if (u?.schoolName) {
           setSchoolInfo((prev) => ({ ...prev, name: u.schoolName }));
         }
+        if (u?.schoolId) {
+          sId = u.schoolId;
+          // If registered new school without custom logo yet, start empty so initials badge shows
+          if (sId !== "smp-islam-smart") {
+            setCurrentSchoolLogo("");
+          }
+        }
       }
     } catch (e) {}
-  }, []);
 
-  React.useEffect(() => {
-    fetch("/api/settings")
+    fetch("/api/settings", {
+      headers: {
+        "x-school-id": sId,
+      },
+    })
       .then((res) => res.json())
       .then((data) => {
+        if (data.logoUrl !== undefined) {
+          setCurrentSchoolLogo(data.logoUrl || "");
+        }
         if (data.schoolName) {
           setSchoolInfo({
             name: data.schoolName,
@@ -371,7 +385,7 @@ export default function PrintRaportView({
     };
 
     getTransparentWatermarkBase64(
-      logoUrl,
+      currentSchoolLogo || "",
       format.watermarkOpacity || 0.05,
     ).then((watermarkBase64) => {
       // Build a completely clean, isolated HTML template for the PDF (identical to the Word template layout)
@@ -451,7 +465,11 @@ export default function PrintRaportView({
                 <!-- Right Side: School logo -->
                 <div style="width: 165px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
                   <div style="width: 75px; height: 75px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #cccccc; border-radius: 50%; overflow: hidden; background-color: #ffffff;">
-                    <img src="${logoUrl}" style="width: 75px; height: 75px; object-fit: cover;" />
+                    ${
+                      currentSchoolLogo
+                        ? `<img src="${currentSchoolLogo}" style="width: 75px; height: 75px; object-fit: cover;" />`
+                        : `<div style="width: 100%; height: 100%; background-color: #2563eb; color: #ffffff; font-weight: bold; font-size: 13pt; display: flex; align-items: center; justify-content: center; text-align: center;">${(schoolInfo.name || "SCH").slice(0, 3).toUpperCase()}</div>`
+                    }
                   </div>
                 </div>
               </div>
@@ -1008,7 +1026,7 @@ export default function PrintRaportView({
 
     const absLogoCahayaAmalUrl = makeAbsoluteUrl(logoCahayaAmalUrl);
     const absLogoJsitUrl = makeAbsoluteUrl(logoJsitUrl);
-    const absLogoUrl = makeAbsoluteUrl(logoUrl);
+    const absLogoUrl = currentSchoolLogo ? makeAbsoluteUrl(currentSchoolLogo) : "";
 
     const htmlHeader = `
       <html xmlns:o='urn:schemas-microsoft-500-col:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -1053,7 +1071,11 @@ export default function PrintRaportView({
             </td>
             <!-- Right Side School Logo -->
             <td style="width: 25%; text-align: center; vertical-align: middle; border: none; padding-bottom: 12px;">
-              <img src="${absLogoUrl}" style="width: 55px; height: 55px; display: inline-block; border: 1px solid #cccccc; border-radius: 50%;" />
+              ${
+                absLogoUrl
+                  ? `<img src="${absLogoUrl}" style="width: 55px; height: 55px; display: inline-block; border: 1px solid #cccccc; border-radius: 50%;" />`
+                  : `<div style="width: 55px; height: 55px; display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: bold; font-size: 11pt; line-height: 55px; text-align: center; border-radius: 50%;">${(schoolInfo.name || "SCH").slice(0, 3).toUpperCase()}</div>`
+              }
             </td>
           </tr>
         </table>
@@ -1746,19 +1768,21 @@ export default function PrintRaportView({
           id="raport-watermark"
           style={{ pointerEvents: "none", zIndex: 0 }}
         >
-          <img
-            src={logoUrl}
-            alt="Watermark"
-            className="object-contain select-none transition-all duration-300"
-            style={{
-              width: `${format.watermarkSize || 440}px`,
-              height: `${format.watermarkSize || 440}px`,
-              opacity: format.watermarkOpacity || 0.05,
-              WebkitPrintColorAdjust: "exact",
-              printColorAdjust: "exact",
-            }}
-            referrerPolicy="no-referrer"
-          />
+          {currentSchoolLogo ? (
+            <img
+              src={currentSchoolLogo}
+              alt="Watermark"
+              className="object-contain select-none transition-all duration-300"
+              style={{
+                width: `${format.watermarkSize || 440}px`,
+                height: `${format.watermarkSize || 440}px`,
+                opacity: format.watermarkOpacity || 0.05,
+                WebkitPrintColorAdjust: "exact",
+                printColorAdjust: "exact",
+              }}
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
         </div>
 
         <div className="relative w-full flex flex-col" style={{ zIndex: 10 }}>
@@ -1804,12 +1828,18 @@ export default function PrintRaportView({
             {format.showLogo ? (
               <div className="flex items-center w-32 md:w-44 shrink-0 justify-center">
                 <div className="w-14 h-14 md:w-18 md:h-18 shrink-0 select-none overflow-hidden rounded-full border-1.5 border-gray-300 bg-white flex items-center justify-center">
-                  <img
-                    src={logoUrl}
-                    alt="School Logo"
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
+                  {currentSchoolLogo ? (
+                    <img
+                      src={currentSchoolLogo}
+                      alt="School Logo"
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center font-mono">
+                      {(schoolInfo.name || "SCH").slice(0, 3).toUpperCase()}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : null}

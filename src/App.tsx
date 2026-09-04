@@ -43,6 +43,9 @@ export default function App() {
   // Responsive mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
+  // School logo state synced across app
+  const [schoolLogo, setSchoolLogo] = useState<string>("");
+
   // Global screen dark mode state synced with local storage
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return localStorage.getItem("smp_islam_smart_theme") === "dark";
@@ -120,6 +123,25 @@ export default function App() {
       }
     }
   }, []);
+
+  // Fetch school logo for active user school
+  useEffect(() => {
+    if (currentUser) {
+      const sId = currentUser.schoolId || "smp-islam-smart";
+      fetch("/api/settings", {
+        headers: { "x-school-id": sId },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.logoUrl !== undefined) {
+            setSchoolLogo(data.logoUrl || "");
+          }
+        })
+        .catch(() => {});
+    } else {
+      setSchoolLogo("");
+    }
+  }, [currentUser]);
 
   // Live session activity & lock-out tracking hook
   useEffect(() => {
@@ -283,14 +305,12 @@ export default function App() {
         {/* Sidebar Header Logo */}
         <div className="p-4 border-b border-[#1a2948] bg-[#0c1322] flex items-center justify-between gap-2.5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md ring-1 ring-blue-500/30">
-              {currentUser.schoolId && currentUser.schoolId !== "smp-islam-smart" ? (
-                <div className="w-full h-full rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs uppercase">
-                  {currentUser.schoolName?.slice(0, 3) || "SCH"}
-                </div>
-              ) : (
-                <SmpIslamSmartLogo size="100%" />
-              )}
+            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md ring-1 ring-blue-500/30 overflow-hidden">
+              <SmpIslamSmartLogo
+                size="100%"
+                logoUrl={schoolLogo}
+                schoolName={currentUser.schoolName || "SMP Islam Smart Pangkalpinang"}
+              />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
@@ -530,7 +550,10 @@ export default function App() {
           <div className="tab-viewport max-w-7xl mx-auto" id="tab-viewport">
             {visitedTabs["progress"] && (
               <div className={activeTab === "progress" ? "block animate-fade-in" : "hidden"}>
-                <DashboardProgress onRefreshTrigger={refreshTrigger} />
+                <DashboardProgress
+                  onRefreshTrigger={refreshTrigger}
+                  schoolName={currentUser?.schoolName}
+                />
               </div>
             )}
 
@@ -572,7 +595,12 @@ export default function App() {
             {visitedTabs["admin_panel"] && isSysAdmin && (
               <div className={activeTab === "admin_panel" ? "block animate-fade-in" : "hidden"}>
                 {/* Admin Database control hub */}
-                <AdminPanel onRefreshTrigger={triggerProgressRefresh} />
+                <AdminPanel
+                  onRefreshTrigger={triggerProgressRefresh}
+                  currentUser={currentUser}
+                  currentSchoolLogo={schoolLogo}
+                  onLogoUpdate={(newLogo) => setSchoolLogo(newLogo)}
+                />
               </div>
             )}
           </div>

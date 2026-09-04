@@ -6,7 +6,7 @@ import { createServer as createViteServer } from "vite";
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: "25mb" }));
 
 // Path to data file
 const DB_PATH = path.join(process.cwd(), "src", "data", "db.json");
@@ -17,6 +17,7 @@ let saveDebounceTimer: NodeJS.Timeout | null = null;
 
 const DEFAULT_SCHOOL_ID = "smp-islam-smart";
 const DEFAULT_SCHOOL_NAME = "SMP ISLAM SMART PANGKALPINANG";
+const DEFAULT_SCHOOL_PASSWORD = "SMART01PKP";
 
 function ensureSchoolsInitialized(db: any) {
   if (!db.schools || !Array.isArray(db.schools) || db.schools.length === 0) {
@@ -27,7 +28,7 @@ function ensureSchoolsInitialized(db: any) {
         npsn: "69987654",
         city: "Pangkalpinang",
         adminUsername: "admin",
-        schoolPassword: "123",
+        schoolPassword: DEFAULT_SCHOOL_PASSWORD,
         createdAt: "2026-01-01T00:00:00.000Z",
       },
     ];
@@ -40,11 +41,23 @@ function ensureSchoolsInitialized(db: any) {
         npsn: "69987654",
         city: "Pangkalpinang",
         adminUsername: "admin",
-        schoolPassword: "123",
+        schoolPassword: DEFAULT_SCHOOL_PASSWORD,
         createdAt: "2026-01-01T00:00:00.000Z",
       });
-    } else if (!defaultSchool.schoolPassword) {
-      defaultSchool.schoolPassword = "123";
+    } else {
+      defaultSchool.schoolPassword = DEFAULT_SCHOOL_PASSWORD;
+    }
+  }
+
+  // Ensure default school admin teacher exists and has credentials
+  if (Array.isArray(db.teachers)) {
+    const defaultAdmin = db.teachers.find(
+      (t: any) => t.username === "admin" && (!t.schoolId || t.schoolId === DEFAULT_SCHOOL_ID)
+    );
+    if (defaultAdmin) {
+      defaultAdmin.schoolPassword = DEFAULT_SCHOOL_PASSWORD;
+      defaultAdmin.schoolId = DEFAULT_SCHOOL_ID;
+      defaultAdmin.schoolName = DEFAULT_SCHOOL_NAME;
     }
   }
 
@@ -141,8 +154,199 @@ app.get("/api/schools", async (req, res) => {
     name: s.name,
     npsn: s.npsn || "",
     city: s.city || "",
+    logoUrl: s.logoUrl || db.school_settings?.[s.id]?.logoUrl || "",
   }));
   res.json(sanitized);
+});
+
+// Helper: Fleksibel mengenali variasi penulisan nama sekolah
+function findSchoolByNameFlexible(schools: any[], rawQuery: string) {
+  if (!rawQuery || !rawQuery.trim()) return null;
+  const clean = rawQuery.trim();
+  const queryLower = clean.toLowerCase();
+  const queryNoPunct = queryLower.replace(/[^a-z0-9]/g, "");
+
+  // 1. Exact match (case-insensitive)
+  let school = schools.find(
+    (s: any) => s.name?.trim().toLowerCase() === queryLower
+  );
+  if (school) return school;
+
+  // 2. Normalized without punctuation/spaces (e.g., "smpislamsmartpangkalpinang" vs "pangkal pinang")
+  school = schools.find((s: any) => {
+    const sNoPunct = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    return sNoPunct === queryNoPunct;
+  });
+  if (school) return school;
+
+  // 3. Substring matching (either query is inside school name, or school name is inside query)
+  if (queryNoPunct.length >= 3) {
+    school = schools.find((s: any) => {
+      const sNoPunct = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      return sNoPunct.includes(queryNoPunct) || queryNoPunct.includes(sNoPunct);
+    });
+    if (school) return school;
+  }
+
+  // 4. Token match: all words in query (longer than 1 letter) are in school name
+  const tokens = queryLower.split(/[\s\-_,.]+/).filter((t: string) => t.length > 1);
+  if (tokens.length > 0) {
+    school = schools.find((s: any) => {
+      const sLower = (s.name || "").toLowerCase();
+      return tokens.every((token: string) => sLower.includes(token));
+    });
+    if (school) return school;
+  }
+
+  // 5. NPSN exact match
+  if (/^\d+$/.test(clean)) {
+    school = schools.find((s: any) => s.npsn && s.npsn.trim() === clean);
+    if (school) return school;
+  }
+
+  // 6. ID match
+  school = schools.find((s: any) => s.id === clean || s.id === queryLower);
+  if (school) return school;
+
+  return null;
+}
+
+// Helper: Validasi kata sandi sekolah / admin
+function isSchoolPasswordValid(school: any, inputPassword: string, db: any): boolean {
+  const cleanPass = (inputPassword || "").trim();
+  if (!cleanPass) return false;
+
+  // Aturan khusus SMP ISLAM SMART PANGKALPINANG (Kata Sandi: SMART01PKP)
+  if (school.id === DEFAULT_SCHOOL_ID || school.name === DEFAULT_SCHOOL_NAME) {
+    if (
+      cleanPass === DEFAULT_SCHOOL_PASSWORD ||
+      cleanPass.toUpperCase() === "SMART01PKP" ||
+      cleanPass === "123"
+    ) {
+      return true;
+    }
+  }
+
+  // Cek kata sandi sekolah
+  if (
+    school.schoolPassword &&
+    (school.schoolPassword === cleanPass || school.schoolPassword === inputPassword)
+  ) {
+    return true;
+  }
+
+  // Cek kata sandi admin / guru sekolah ini
+  const schoolTeachers = (db.teachers || []).filter(
+    (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
+  );
+
+  if (schoolTeachers.some((t: any) => t.password === cleanPass || t.password === inputPassword)) {
+    return true;
+  }
+
+  return false;
+}
+
+// 0.1. Masuk Langsung ke Sistem dengan Nama Sekolah & Kata Sandi Sekolah
+app.post("/api/schools/login", async (req, res) => {
+  const { schoolName, password } = req.body;
+  const cleanSchoolName = (schoolName || "").trim();
+  const cleanPassword = (password || "").trim();
+
+  if (!cleanSchoolName) {
+    return res.status(400).json({ error: "Silakan masukkan nama sekolah yang terdaftar." });
+  }
+  if (!cleanPassword) {
+    return res.status(400).json({ error: "Silakan masukkan kata sandi sekolah." });
+  }
+
+  const db = await readDB();
+  let school = findSchoolByNameFlexible(db.schools || [], cleanSchoolName);
+
+  // Jika belum cocok, cek apakah input adalah username akun
+  if (!school) {
+    const matchedTeacher = (db.teachers || []).find(
+      (t: any) =>
+        t.username.toLowerCase().trim() === cleanSchoolName.toLowerCase() &&
+        (t.password === cleanPassword || t.password === password)
+    );
+    if (matchedTeacher) {
+      const teacherSchoolId = matchedTeacher.schoolId || DEFAULT_SCHOOL_ID;
+      school = (db.schools || []).find((s: any) => s.id === teacherSchoolId);
+    }
+  }
+
+  if (!school) {
+    return res.status(404).json({
+      error: `Sekolah "${cleanSchoolName}" belum terdaftar di sistem. Periksa kembali variasi penulisan nama sekolah atau daftarkan sekolah baru.`,
+    });
+  }
+
+  if (!isSchoolPasswordValid(school, cleanPassword, db)) {
+    return res.status(401).json({
+      error: school.id === DEFAULT_SCHOOL_ID 
+        ? "Kata sandi salah. Untuk SMP ISLAM SMART PANGKALPINANG, gunakan kata sandi: SMART01PKP."
+        : "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai.",
+    });
+  }
+
+  // Dapatkan akun admin sekolah
+  const schoolTeachers = (db.teachers || []).filter(
+    (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
+  );
+
+  let userAccount = schoolTeachers.find(
+    (t: any) => t.username === school.adminUsername || t.subject === "Admin"
+  );
+
+  // Jika kata sandi yang diketik cocok dengan guru tertentu, masuk sebagai guru tersebut
+  const specificTeacher = schoolTeachers.find(
+    (t: any) => t.password === cleanPassword && t.subject !== "Admin"
+  );
+  if (specificTeacher && cleanPassword !== DEFAULT_SCHOOL_PASSWORD && cleanPassword !== school.schoolPassword) {
+    userAccount = specificTeacher;
+  }
+
+  if (!userAccount) {
+    userAccount = schoolTeachers[0] || {
+      id: "t_adm_" + school.id,
+      name: `Admin ${school.name}`,
+      username: school.adminUsername || "admin",
+      subject: "Admin",
+      isWaliKelas: false,
+      kelas: "",
+      schoolId: school.id,
+      schoolName: school.name,
+    };
+  }
+
+  const logoUrl =
+    school.logoUrl ||
+    db.school_settings?.[school.id]?.logoUrl ||
+    (school.id === DEFAULT_SCHOOL_ID ? null : "");
+
+  res.json({
+    success: true,
+    message: `Berhasil masuk ke portal ${school.name}.`,
+    school: {
+      id: school.id,
+      name: school.name,
+      npsn: school.npsn || "",
+      city: school.city || "",
+      logoUrl: logoUrl || "",
+    },
+    user: {
+      id: userAccount.id,
+      name: userAccount.name,
+      username: userAccount.username,
+      subject: userAccount.subject,
+      isWaliKelas: !!userAccount.isWaliKelas,
+      kelas: userAccount.kelas || "",
+      schoolId: school.id,
+      schoolName: school.name,
+      logoUrl: logoUrl || "",
+    },
+  });
 });
 
 // Verify School Access with School Name & School Password
@@ -159,58 +363,7 @@ app.post("/api/schools/verify", async (req, res) => {
   }
 
   const db = await readDB();
-  const query = cleanSchoolName.toLowerCase();
-  const queryNoSpace = query.replace(/[^a-z0-9]/g, "");
-
-  // 1. Exact match (case-insensitive)
-  let school = (db.schools || []).find(
-    (s: any) => s.name.trim().toLowerCase() === query
-  );
-
-  // 2. Normalized without non-alphanumeric (e.g. Pangkal Pinang vs Pangkalpinang)
-  if (!school) {
-    school = (db.schools || []).find((s: any) => {
-      const sNoSpace = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-      return sNoSpace === queryNoSpace;
-    });
-  }
-
-  // 3. Substring / partial match (e.g. "SMP ISLAM SMART" is inside "SMP ISLAM SMART PANGKALPINANG")
-  if (!school && queryNoSpace.length >= 4) {
-    school = (db.schools || []).find((s: any) => {
-      const sNoSpace = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-      return sNoSpace.includes(queryNoSpace) || queryNoSpace.includes(sNoSpace);
-    });
-  }
-
-  // 4. Token match: all words in query (e.g. ["smp", "islam", "smart"]) are in school name
-  if (!school) {
-    const tokens = query.split(/\s+/).filter((t: string) => t.length > 2);
-    if (tokens.length > 0) {
-      school = (db.schools || []).find((s: any) => {
-        const sLower = (s.name || "").toLowerCase();
-        return tokens.every((token: string) => sLower.includes(token));
-      });
-    }
-  }
-
-  // 5. NPSN match
-  if (!school && /^\d+$/.test(query)) {
-    school = (db.schools || []).find((s: any) => s.npsn && s.npsn.trim() === query);
-  }
-
-  // 6. Direct username match: if user typed "admin" or their teacher username into the school box!
-  if (!school) {
-    const matchedTeacher = (db.teachers || []).find(
-      (t: any) =>
-        t.username.toLowerCase().trim() === query &&
-        (t.password === cleanPassword || t.password === password)
-    );
-    if (matchedTeacher) {
-      const teacherSchoolId = matchedTeacher.schoolId || DEFAULT_SCHOOL_ID;
-      school = (db.schools || []).find((s: any) => s.id === teacherSchoolId);
-    }
-  }
+  const school = findSchoolByNameFlexible(db.schools || [], cleanSchoolName);
 
   if (!school) {
     return res.status(404).json({
@@ -218,33 +371,26 @@ app.post("/api/schools/verify", async (req, res) => {
     });
   }
 
-  // Find teachers for this school to verify passwords
+  if (!isSchoolPasswordValid(school, cleanPassword, db)) {
+    return res.status(401).json({
+      error: school.id === DEFAULT_SCHOOL_ID 
+        ? "Kata sandi sekolah salah. Gunakan kata sandi: SMART01PKP."
+        : "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai.",
+    });
+  }
+
   const schoolTeachers = (db.teachers || []).filter(
     (t: any) => t.schoolId === school.id || (!t.schoolId && school.id === DEFAULT_SCHOOL_ID)
   );
 
   const adminTeacher = schoolTeachers.find(
     (t: any) => t.username === school.adminUsername || t.subject === "Admin"
-  );
+  ) || schoolTeachers[0];
 
-  const isSchoolPassMatch =
-    school.schoolPassword &&
-    (school.schoolPassword === cleanPassword || school.schoolPassword === password);
-  const isAdminPassMatch =
-    adminTeacher &&
-    (adminTeacher.password === cleanPassword || adminTeacher.password === password);
-  const isAnyTeacherMatch = schoolTeachers.some(
-    (t: any) => t.password === cleanPassword || t.password === password
-  );
-  const isDefaultMatch =
-    (school.id === DEFAULT_SCHOOL_ID || school.name === DEFAULT_SCHOOL_NAME) &&
-    (cleanPassword === "123" || cleanPassword === "admin");
-
-  if (!isSchoolPassMatch && !isAdminPassMatch && !isAnyTeacherMatch && !isDefaultMatch) {
-    return res.status(401).json({
-      error: "Kata sandi sekolah salah. Silakan masukkan kata sandi yang sesuai.",
-    });
-  }
+  const logoUrl =
+    school.logoUrl ||
+    db.school_settings?.[school.id]?.logoUrl ||
+    (school.id === DEFAULT_SCHOOL_ID ? null : "");
 
   res.json({
     success: true,
@@ -253,7 +399,124 @@ app.post("/api/schools/verify", async (req, res) => {
       name: school.name,
       npsn: school.npsn || "",
       city: school.city || "",
+      logoUrl: logoUrl || "",
     },
+    user: adminTeacher ? {
+      id: adminTeacher.id,
+      name: adminTeacher.name,
+      username: adminTeacher.username,
+      subject: adminTeacher.subject,
+      isWaliKelas: !!adminTeacher.isWaliKelas,
+      kelas: adminTeacher.kelas || "",
+      schoolId: school.id,
+      schoolName: school.name,
+      logoUrl: logoUrl || "",
+    } : undefined,
+  });
+});
+
+// Logo Management API Endpoints
+app.post("/api/schools/:id/logo", async (req, res) => {
+  const { id } = req.params;
+  const { logoUrl } = req.body;
+  const db = await readDB();
+
+  const school = (db.schools || []).find((s: any) => s.id === id);
+  if (!school) {
+    return res.status(404).json({ error: "Sekolah tidak ditemukan." });
+  }
+
+  school.logoUrl = logoUrl || "";
+  if (!db.school_settings) db.school_settings = {};
+  if (!db.school_settings[id]) {
+    db.school_settings[id] = { schoolId: id, schoolName: school.name };
+  }
+  db.school_settings[id].logoUrl = logoUrl || "";
+
+  await writeDB(db);
+  res.json({
+    success: true,
+    message: "Logo sekolah berhasil diperbarui.",
+    logoUrl: school.logoUrl,
+  });
+});
+
+app.delete("/api/schools/:id/logo", async (req, res) => {
+  const { id } = req.params;
+  const db = await readDB();
+
+  const school = (db.schools || []).find((s: any) => s.id === id);
+  if (!school) {
+    return res.status(404).json({ error: "Sekolah tidak ditemukan." });
+  }
+
+  school.logoUrl = "";
+  if (db.school_settings && db.school_settings[id]) {
+    db.school_settings[id].logoUrl = "";
+  }
+  if (id === DEFAULT_SCHOOL_ID && db.settings) {
+    db.settings.logoUrl = "";
+  }
+
+  await writeDB(db);
+  res.json({
+    success: true,
+    message: "Logo sekolah berhasil dihapus.",
+    logoUrl: "",
+  });
+});
+
+app.post("/api/school/logo", async (req, res) => {
+  const schoolId = getSchoolId(req);
+  const { logoUrl } = req.body;
+  const db = await readDB();
+
+  const school = (db.schools || []).find((s: any) => s.id === schoolId);
+  if (!school) {
+    return res.status(404).json({ error: "Sekolah tidak ditemukan." });
+  }
+
+  school.logoUrl = logoUrl || "";
+  if (!db.school_settings) db.school_settings = {};
+  if (!db.school_settings[schoolId]) {
+    db.school_settings[schoolId] = { schoolId, schoolName: school.name };
+  }
+  db.school_settings[schoolId].logoUrl = logoUrl || "";
+  if (schoolId === DEFAULT_SCHOOL_ID) {
+    if (!db.settings) db.settings = {};
+    db.settings.logoUrl = logoUrl || "";
+  }
+
+  await writeDB(db);
+  res.json({
+    success: true,
+    message: "Logo sekolah berhasil diperbarui.",
+    logoUrl: school.logoUrl,
+  });
+});
+
+app.delete("/api/school/logo", async (req, res) => {
+  const schoolId = getSchoolId(req);
+  const db = await readDB();
+
+  const school = (db.schools || []).find((s: any) => s.id === schoolId);
+  if (!school) {
+    return res.status(404).json({ error: "Sekolah tidak ditemukan." });
+  }
+
+  school.logoUrl = "";
+  if (db.school_settings && db.school_settings[schoolId]) {
+    db.school_settings[schoolId].logoUrl = "";
+  }
+  if (schoolId === DEFAULT_SCHOOL_ID && db.settings) {
+    db.settings.logoUrl = "";
+  }
+
+  await writeDB(db);
+  res.json({
+    success: true,
+    message: "Logo sekolah berhasil dihapus.",
+    logoUrl: "",
   });
 });
 
@@ -912,7 +1175,7 @@ app.delete("/api/tps/:subject/:tpId", async (req, res) => {
 app.get("/api/settings", async (req, res) => {
   const db = await readDB();
   const schoolId = getSchoolId(req);
-  const school = db.schools.find((s: any) => s.id === schoolId);
+  const school = (db.schools || []).find((s: any) => s.id === schoolId);
 
   if (schoolId === DEFAULT_SCHOOL_ID) {
     const principalName =
@@ -922,7 +1185,7 @@ app.get("/api/settings", async (req, res) => {
       semesterName: "Ganjil",
       tahunPelajaran: "2026/2027",
       fontSize: "11pt",
-      showLogo: false,
+      showLogo: true,
       showSpiritual: true,
       showSosial: true,
       showAttendance: true,
@@ -936,7 +1199,9 @@ app.get("/api/settings", async (req, res) => {
     };
     return res.json({
       schoolId: DEFAULT_SCHOOL_ID,
-      schoolName: DEFAULT_SCHOOL_NAME,
+      schoolName: school?.name || DEFAULT_SCHOOL_NAME,
+      schoolCity: school?.city || "Pangkalpinang",
+      logoUrl: db.settings?.logoUrl !== undefined ? db.settings.logoUrl : (school?.logoUrl || null),
       principalName,
       principalNip,
       format,
@@ -966,6 +1231,8 @@ app.get("/api/settings", async (req, res) => {
   res.json({
     schoolId,
     schoolName: school?.name || "Sekolah",
+    schoolCity: school?.city || "",
+    logoUrl: schSettings.logoUrl !== undefined ? schSettings.logoUrl : (school?.logoUrl || ""),
     principalName,
     principalNip,
     format,
@@ -973,9 +1240,10 @@ app.get("/api/settings", async (req, res) => {
 });
 
 app.post("/api/settings", async (req, res) => {
-  const { principalName, principalNip, format } = req.body;
+  const { principalName, principalNip, format, logoUrl } = req.body;
   const db = await readDB();
   const schoolId = getSchoolId(req);
+  const school = (db.schools || []).find((s: any) => s.id === schoolId);
 
   const formatObj = format
     ? {
@@ -1006,16 +1274,31 @@ app.post("/api/settings", async (req, res) => {
 
   if (schoolId === DEFAULT_SCHOOL_ID) {
     if (!db.settings) db.settings = {};
-    db.settings.principalName =
-      principalName || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
-    db.settings.principalNip = principalNip || "19780512 200501 1 002";
+    if (principalName !== undefined) {
+      db.settings.principalName = principalName || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
+    }
+    if (principalNip !== undefined) {
+      db.settings.principalNip = principalNip || "19780512 200501 1 002";
+    }
     if (formatObj) db.settings.format = formatObj;
+    if (logoUrl !== undefined) {
+      db.settings.logoUrl = logoUrl;
+      if (school) school.logoUrl = logoUrl;
+    }
   } else {
     if (!db.school_settings) db.school_settings = {};
-    if (!db.school_settings[schoolId]) db.school_settings[schoolId] = {};
-    db.school_settings[schoolId].principalName = principalName || "";
-    db.school_settings[schoolId].principalNip = principalNip || "";
+    if (!db.school_settings[schoolId]) db.school_settings[schoolId] = { schoolId };
+    if (principalName !== undefined) {
+      db.school_settings[schoolId].principalName = principalName;
+    }
+    if (principalNip !== undefined) {
+      db.school_settings[schoolId].principalNip = principalNip;
+    }
     if (formatObj) db.school_settings[schoolId].format = formatObj;
+    if (logoUrl !== undefined) {
+      db.school_settings[schoolId].logoUrl = logoUrl;
+      if (school) school.logoUrl = logoUrl;
+    }
   }
 
   await writeDB(db);

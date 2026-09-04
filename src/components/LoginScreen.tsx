@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   LogIn,
   ShieldAlert,
@@ -9,64 +9,34 @@ import {
   CheckCircle2,
   MapPin,
   Hash,
-  ArrowRight,
-  RefreshCw,
   Eye,
   EyeOff,
-  UserCheck,
-  ShieldCheck,
-  Lock,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { Teacher } from "../types";
 import SmpIslamSmartLogo from "./SmpIslamSmartLogo";
-
-interface RegisteredSchool {
-  id: string;
-  name: string;
-  npsn?: string;
-  city?: string;
-  adminUsername?: string;
-}
 
 interface LoginScreenProps {
   onLoginSuccess: (user: Teacher) => void;
 }
 
 export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
-  // Main Tab: "login" or "register_school"
-  const [activeTab, setActiveTab] = useState<"login" | "register_school">("login");
+  // Main Tab: "school_login" (Masuk Sistem Sekolah) or "register_school" (Daftar Sekolah Baru)
+  const [activeTab, setActiveTab] = useState<"school_login" | "register_school">("school_login");
 
-  // School step states: user manually types school name and school password
-  const [activeSchool, setActiveSchool] = useState<RegisteredSchool | null>(null);
+  // School Login States
   const [schoolInput, setSchoolInput] = useState("");
   const [schoolPassword, setSchoolPassword] = useState("");
-  const [showSchoolPassword, setShowSchoolPassword] = useState(false);
-  const [verifyingSchool, setVerifyingSchool] = useState(false);
-
-  // Sub-mode for activeTab === "login": "direct" (Username + Password) or "school" (Verifikasi Sekolah)
-  const [loginMode, setLoginMode] = useState<"direct" | "school">("direct");
-  const [directUsername, setDirectUsername] = useState("");
-  const [directPassword, setDirectPassword] = useState("");
-  const [showDirectPassword, setShowDirectPassword] = useState(false);
-
-  // User selection within active verified school
-  // Role tab: "guru" (pilih nama guru) or "admin" (admin pengatur data)
-  const [roleTab, setRoleTab] = useState<"guru" | "admin">("guru");
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
-  const [teacherPassword, setTeacherPassword] = useState("");
-
-  // Admin login states
-  const [adminUsername, setAdminUsername] = useState("");
-  const [adminPassword, setAdminPassword] = useState("");
-
-  // UI helpers
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  // School registration form state
+  // Optional: Personal Teacher Login Toggle
+  const [showTeacherLogin, setShowTeacherLogin] = useState(false);
+  const [teacherUsername, setTeacherUsername] = useState("");
+  const [teacherPassword, setTeacherPassword] = useState("");
+  const [showTeacherPassword, setShowTeacherPassword] = useState(false);
+
+  // School Registration Form States
   const [regSchoolName, setRegSchoolName] = useState("");
   const [regCity, setRegCity] = useState("");
   const [regNpsn, setRegNpsn] = useState("");
@@ -75,51 +45,14 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [regPassword, setRegPassword] = useState("");
   const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
 
-  // Load teachers whenever activeSchool is set
-  useEffect(() => {
-    if (!activeSchool) {
-      setTeachers([]);
-      setSelectedTeacherId("");
-      return;
-    }
+  // Feedback States
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
-    fetch(`/api/teachers?schoolId=${encodeURIComponent(activeSchool.id)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setTeachers(data);
-          // Filter teachers excluding admin
-          const nonAdminTeachers = data.filter(
-            (t) =>
-              t.subject?.toLowerCase() !== "admin" &&
-              t.username?.toLowerCase() !== "admin"
-          );
-          if (nonAdminTeachers.length > 0) {
-            setSelectedTeacherId(nonAdminTeachers[0].id);
-          } else {
-            setSelectedTeacherId("");
-          }
-        }
-      })
-      .catch((err) => {
-        console.error("Gagal memuat daftar guru untuk sekolah", err);
-      });
-  }, [activeSchool]);
-
-  // List of teachers excluding Admin (admin manages school data separately)
-  const availableTeachers = teachers.filter(
-    (t) =>
-      t.subject?.toLowerCase() !== "admin" &&
-      t.username?.toLowerCase() !== "admin"
-  );
-
-  const currentSelectedTeacher = availableTeachers.find(
-    (t) => t.id === selectedTeacherId
-  );
-
-  // Handler: Verifikasi Sekolah Mandiri (Nama Sekolah + Kata Sandi Sekolah)
-  const handleVerifySchool = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  // Handler: Masuk dengan Nama Sekolah & Kata Sandi Sekolah
+  const handleSchoolLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError("");
     setSuccessMsg("");
 
@@ -127,18 +60,18 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     const cleanPass = schoolPassword.trim();
 
     if (!cleanName) {
-      setError("Silakan ketikkan nama sekolah sesuai yang didaftarkan.");
+      setError("Silakan masukkan nama sekolah yang sudah terdaftar.");
       return;
     }
     if (!cleanPass) {
-      setError("Silakan masukkan kata sandi sekolah untuk membuka data sekolah.");
+      setError("Silakan masukkan kata sandi sekolah.");
       return;
     }
 
-    setVerifyingSchool(true);
+    setLoading(true);
 
     try {
-      const response = await fetch("/api/schools/verify", {
+      const response = await fetch("/api/schools/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -150,75 +83,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Nama sekolah atau kata sandi salah.");
+        throw new Error(data.error || "Gagal masuk ke sistem sekolah.");
       }
 
-      setActiveSchool(data.school);
-      setSchoolInput(data.school.name);
-      setSchoolPassword("");
-      setError("");
-      setTeacherPassword("");
-      setAdminPassword("");
-      setRoleTab("guru");
-      setSuccessMsg(`Portal ${data.school.name} berhasil diverifikasi.`);
-      setTimeout(() => setSuccessMsg(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Gagal memverifikasi sekolah.");
-    } finally {
-      setVerifyingSchool(false);
-    }
-  };
-
-  // Handler: Ganti Sekolah / Keluar dari Sesi Sekolah
-  const handleSwitchSchool = () => {
-    setActiveSchool(null);
-    setSelectedTeacherId("");
-    setTeachers([]);
-    setError("");
-    setSuccessMsg("");
-    setTeacherPassword("");
-    setAdminPassword("");
-    setSchoolPassword("");
-  };
-
-  // Handler: Login Langsung dengan Username & Kata Sandi
-  const handleDirectLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccessMsg("");
-
-    const cleanUsername = directUsername.trim();
-    const cleanPassword = directPassword.trim();
-
-    if (!cleanUsername) {
-      setError("Silakan masukkan username pengguna atau administrator.");
-      return;
-    }
-
-    if (!cleanPassword) {
-      setError("Silakan masukkan kata sandi akun Anda.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: cleanUsername,
-          password: cleanPassword,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Kombinasi username atau kata sandi tidak cocok.");
-      }
-
-      onLoginSuccess(data);
+      setSuccessMsg(`Berhasil masuk ke portal ${data.school.name}!`);
+      setTimeout(() => {
+        onLoginSuccess(data.user);
+      }, 500);
     } catch (err: any) {
       setError(err.message || "Gagal menghubungi server.");
     } finally {
@@ -226,67 +97,21 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     }
   };
 
-  // Handler: Login sebagai Guru (Pilih nama guru yang terdaftar)
+  // Handler: Masuk dengan Akun Guru Pribadi
   const handleTeacherLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
 
-    if (!activeSchool) {
-      setError("Silakan masukkan dan verifikasi nama sekolah terlebih dahulu.");
+    const cleanUser = teacherUsername.trim();
+    const cleanPass = teacherPassword.trim();
+
+    if (!cleanUser) {
+      setError("Silakan masukkan username guru.");
       return;
     }
-
-    if (!currentSelectedTeacher) {
-      setError("Silakan pilih salah satu nama guru yang terdaftar.");
-      return;
-    }
-
-    if (!teacherPassword) {
-      setError("Kata sandi guru harus diisi.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: currentSelectedTeacher.username,
-          password: teacherPassword,
-          schoolId: activeSchool.id,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Kata sandi guru tidak sesuai.");
-      }
-
-      onLoginSuccess(data);
-    } catch (err: any) {
-      setError(err.message || "Gagal menghubungi server.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handler: Login sebagai Administrator Sekolah (Pengatur Data)
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccessMsg("");
-
-    if (!activeSchool) {
-      setError("Silakan masukkan dan verifikasi nama sekolah terlebih dahulu.");
-      return;
-    }
-
-    if (!adminUsername.trim() || !adminPassword) {
-      setError("Username dan kata sandi administrator harus diisi.");
+    if (!cleanPass) {
+      setError("Silakan masukkan kata sandi.");
       return;
     }
 
@@ -297,19 +122,21 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: adminUsername.trim(),
-          password: adminPassword,
-          schoolId: activeSchool.id,
+          username: cleanUser,
+          password: cleanPass,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Kombinasi username atau kata sandi admin salah.");
+        throw new Error(data.error || "Username atau kata sandi tidak sesuai.");
       }
 
-      onLoginSuccess(data);
+      setSuccessMsg(`Selamat datang, ${data.name}!`);
+      setTimeout(() => {
+        onLoginSuccess(data);
+      }, 500);
     } catch (err: any) {
       setError(err.message || "Gagal menghubungi server.");
     } finally {
@@ -367,16 +194,30 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       }
 
       setSuccessMsg(
-        `Sekolah "${data.school.name}" berhasil didaftarkan! Menyiapkan dashboard...`
+        `Sekolah "${data.school.name}" berhasil didaftarkan! Membuka portal kosong...`
       );
 
       setTimeout(() => {
-        onLoginSuccess(data.admin);
-      }, 1200);
+        const adminUser = data.user || data.admin;
+        if (adminUser) {
+          onLoginSuccess(adminUser);
+        } else {
+          setActiveTab("school_login");
+          setSchoolInput(data.school.name);
+          setSchoolPassword(regPassword);
+        }
+      }, 800);
     } catch (err: any) {
       setError(err.message || "Gagal mendaftarkan sekolah.");
       setLoading(false);
     }
+  };
+
+  // Helper quick fill for SMP ISLAM SMART
+  const fillDefaultSchool = () => {
+    setSchoolInput("SMP ISLAM SMART PANGKALPINANG");
+    setSchoolPassword("SMART01PKP");
+    setError("");
   };
 
   return (
@@ -394,25 +235,22 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       >
         {/* Header Section */}
         <div className="bg-gradient-to-b from-[#111c34] to-[#0d1527] px-6 pt-7 pb-5 text-center text-white relative border-b border-[#1e2e4a]">
-          {/* Logo or School Badge */}
+          {/* Logo */}
           <div className="mx-auto w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-3 p-1.5 shadow-lg ring-1 ring-blue-400/20">
-            {activeSchool?.id === "smp-islam-smart" || !activeSchool ? (
-              <SmpIslamSmartLogo size="100%" />
-            ) : (
-              <div className="w-full h-full rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl">
-                <Building2 className="w-8 h-8 text-white" />
-              </div>
-            )}
+            <SmpIslamSmartLogo
+              size="100%"
+              schoolName={schoolInput || "SMP ISLAM SMART PANGKALPINANG"}
+            />
           </div>
 
-          <h1 className="text-lg font-extrabold tracking-tight text-white uppercase">
+          <h1 className="text-lg font-extrabold tracking-tight text-white uppercase font-sans">
             PORTAL SISTEM RAPORT
           </h1>
           <p className="text-xs text-slate-400 mt-1 font-medium">
             Sistem Informasi Penilaian & Raport Digital Terpadu
           </p>
 
-          {/* Tab Switcher: Masuk vs Daftar Sekolah */}
+          {/* Tab Switcher */}
           <div
             className="flex items-center mt-5 bg-[#080d19] p-1 rounded-xl border border-[#1e2e4a]"
             id="auth-mode-tabs"
@@ -420,19 +258,19 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             <button
               type="button"
               onClick={() => {
-                setActiveTab("login");
+                setActiveTab("school_login");
                 setError("");
                 setSuccessMsg("");
               }}
-              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "login"
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === "school_login"
                   ? "bg-blue-600 text-white shadow"
                   : "text-slate-400 hover:text-slate-200"
               }`}
               id="tab-login"
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Masuk Portal</span>
+              <span>Masuk Portal Sekolah</span>
             </button>
             <button
               type="button"
@@ -441,7 +279,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 setError("");
                 setSuccessMsg("");
               }}
-              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === "register_school"
                   ? "bg-indigo-600 text-white shadow"
                   : "text-slate-400 hover:text-slate-200"
@@ -477,660 +315,348 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             </div>
           )}
 
-          {/* ================= TAB 1: MASUK PORTAL ================= */}
-          {activeTab === "login" && (
-            <div className="space-y-5">
-              {!activeSchool ? (
-                <div className="space-y-4">
-                  {/* Sub-Tabs: Masuk Akun Pengguna vs Buka Portal Sekolah */}
-                  <div className="flex items-center bg-[#080d19] p-1 rounded-xl border border-[#1e2e4a]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoginMode("direct");
-                        setError("");
-                      }}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                        loginMode === "direct"
-                          ? "bg-blue-600 text-white shadow"
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                      id="subtab-direct-login"
-                    >
-                      <User className="w-3.5 h-3.5" />
-                      <span>Masuk Akun Pengguna</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoginMode("school");
-                        setError("");
-                      }}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                        loginMode === "school"
-                          ? "bg-indigo-600 text-white shadow"
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                      id="subtab-school-login"
-                    >
-                      <Building2 className="w-3.5 h-3.5" />
-                      <span>Buka Akses Sekolah</span>
-                    </button>
-                  </div>
-
-                  {/* MODE 1: MASUK LANGSUNG DENGAN USERNAME & KATA SANDI */}
-                  {loginMode === "direct" && (
-                    <form
-                      onSubmit={handleDirectLogin}
-                      className="space-y-4 pt-1"
-                      id="direct-login-form"
-                    >
-                      <div className="p-3 bg-[#080d19] border border-blue-500/20 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
-                        <Lock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                        <div className="leading-relaxed">
-                          <span className="font-bold text-slate-200 block">
-                            Masuk Akun Guru / Administrator
-                          </span>
-                          Masukkan username dan kata sandi akun Anda. Sistem akan langsung mengarahkan Anda ke dashboard sekolah terkait.
-                        </div>
-                      </div>
-
-                      {/* Input: Username Pengguna / Admin */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
-                          <User className="w-4 h-4 text-blue-400" />
-                          <span>Username Akun</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={directUsername}
-                          onChange={(e) => setDirectUsername(e.target.value)}
-                          placeholder="Masukkan username (contoh: admin atau username guru)"
-                          className="w-full px-3.5 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
-                          id="direct-username-input"
-                          autoComplete="username"
-                        />
-                      </div>
-
-                      {/* Input: Kata Sandi Akun */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
-                          <Key className="w-4 h-4 text-blue-400" />
-                          <span>Kata Sandi Akun</span>
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showDirectPassword ? "text" : "password"}
-                            value={directPassword}
-                            onChange={(e) => setDirectPassword(e.target.value)}
-                            placeholder="Masukkan kata sandi..."
-                            className="w-full pl-3.5 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
-                            id="direct-password-input"
-                            autoComplete="current-password"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowDirectPassword(!showDirectPassword)}
-                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
-                            title={showDirectPassword ? "Sembunyikan sandi" : "Tampilkan sandi"}
-                          >
-                            {showDirectPassword ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Tombol Masuk Langsung */}
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-blue-950/60 border border-blue-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 mt-3"
-                        id="direct-login-button"
-                      >
-                        {loading ? (
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        ) : (
-                          <>
-                            <LogIn className="w-4 h-4" />
-                            <span>MASUK KE SISTEM RAPORT</span>
-                          </>
-                        )}
-                      </button>
-                    </form>
-                  )}
-
-                  {/* MODE 2: BUKA AKSES SEKOLAH DULU DENGAN NAMA SEKOLAH & KATA SANDI */}
-                  {loginMode === "school" && (
-                    <form
-                      onSubmit={handleVerifySchool}
-                      className="space-y-4 pt-1"
-                      id="school-verification-form"
-                    >
-                      <div className="p-3 bg-[#080d19] border border-indigo-500/20 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
-                        <Lock className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-                        <div className="leading-relaxed">
-                          <span className="font-bold text-slate-200 block">
-                            Keamanan Akses Data Sekolah
-                          </span>
-                          Silakan masukkan nama sekolah (misal: SMP ISLAM SMART) beserta kata sandi sekolah untuk membuka daftar guru dan admin sekolah tersebut.
-                        </div>
-                      </div>
-
-                      {/* Input 1: Nama Sekolah */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
-                          <Building2 className="w-4 h-4 text-indigo-400" />
-                          <span>Nama Sekolah (Sesuai yang Didaftarkan)</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={schoolInput}
-                          onChange={(e) => setSchoolInput(e.target.value)}
-                          placeholder="Contoh: SMP ISLAM SMART atau SMP ISLAM SMART PANGKALPINANG"
-                          className="w-full px-3.5 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition font-medium"
-                          id="school-name-input"
-                          autoComplete="off"
-                        />
-                        <p className="text-[11px] text-slate-400 mt-1">
-                          Ketikkan nama sekolah atau NPSN yang didaftarkan.
-                        </p>
-                      </div>
-
-                      {/* Input 2: Kata Sandi Sekolah */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
-                          <Key className="w-4 h-4 text-indigo-400" />
-                          <span>Kata Sandi Sekolah</span>
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showSchoolPassword ? "text" : "password"}
-                            value={schoolPassword}
-                            onChange={(e) => setSchoolPassword(e.target.value)}
-                            placeholder="Masukkan kata sandi sekolah..."
-                            className="w-full pl-3.5 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition font-medium"
-                            id="school-password-input"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowSchoolPassword(!showSchoolPassword)}
-                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
-                            title={showSchoolPassword ? "Sembunyikan sandi" : "Tampilkan sandi"}
-                          >
-                            {showSchoolPassword ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Tombol Lanjut Buka Akun Sekolah */}
-                      <button
-                        type="submit"
-                        disabled={verifyingSchool}
-                        className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-indigo-950/60 border border-indigo-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 mt-3"
-                        id="connect-school-button"
-                      >
-                        {verifyingSchool ? (
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        ) : (
-                          <>
-                            <span>BUKA PORTAL SEKOLAH</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-                    </form>
-                  )}
-                </div>
-              ) : (
-                /* STEP 2: SETELAH BERHASIL LOGIN DI AKUN SEKOLAH YANG BENAR */
-                <div className="space-y-4" id="active-school-login-section">
-                  {/* Banner Sekolah Terverifikasi & Tombol Ganti Sekolah */}
-                  <div className="p-3.5 bg-gradient-to-r from-blue-950/70 to-indigo-950/70 border border-blue-500/40 rounded-xl flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-300 shrink-0">
-                        <Building2 className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[10px] font-mono text-blue-300 uppercase tracking-wider font-semibold">
-                          Akun Sekolah Terverifikasi
-                        </div>
-                        <div className="text-xs font-bold text-white truncate">
-                          {activeSchool.name}
-                        </div>
-                        {activeSchool.city && (
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <MapPin className="w-3 h-3 text-slate-500" />
-                            <span>{activeSchool.city}</span>
-                            {activeSchool.npsn && (
-                              <span>&bull; NPSN: {activeSchool.npsn}</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
+          {/* ================= TAB 1: MASUK PORTAL SEKOLAH ================= */}
+          {activeTab === "school_login" && (
+            <div className="space-y-4">
+              {!showTeacherLogin ? (
+                <form
+                  onSubmit={handleSchoolLogin}
+                  className="space-y-4"
+                  id="school-login-form"
+                >
+                  <div className="p-3 bg-[#080d19] border border-blue-500/20 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
+                    <Building2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <div className="leading-relaxed">
+                      <span className="font-bold text-slate-200 block">
+                        Akses Portal Sekolah Terdaftar
+                      </span>
+                      Cukup ketikkan nama sekolah yang sudah terdaftar beserta kata sandinya untuk langsung masuk. Sistem otomatis mengenali berbagai variasi tulisan.
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={handleSwitchSchool}
-                      className="px-2.5 py-1.5 rounded-lg bg-[#080d19] border border-blue-500/30 hover:border-blue-400 text-[11px] text-blue-300 hover:text-white transition flex items-center gap-1 shrink-0 cursor-pointer"
-                      title="Ganti atau masukkan nama sekolah lain"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      <span>Ganti</span>
-                    </button>
                   </div>
 
-                  {/* Tab Pilihan Peran: Guru (Pilih Akun Guru) vs Administrator (Pengatur Data) */}
-                  <div className="flex items-center bg-[#080d19] p-1 rounded-xl border border-[#1e2e4a]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRoleTab("guru");
-                        setError("");
-                      }}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                        roleTab === "guru"
-                          ? "bg-blue-600 text-white shadow"
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                      id="role-tab-guru"
-                    >
-                      <UserCheck className="w-3.5 h-3.5" />
-                      <span>Guru / Wali Kelas</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRoleTab("admin");
-                        setError("");
-                      }}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                        roleTab === "admin"
-                          ? "bg-amber-600 text-white shadow"
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                      id="role-tab-admin"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Administrator Sekolah</span>
-                    </button>
+                  {/* Input: Nama Sekolah */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Nama Sekolah Terdaftar</span>
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={schoolInput}
+                      onChange={(e) => setSchoolInput(e.target.value)}
+                      placeholder="Contoh: SMP ISLAM SMART PANGKALPINANG"
+                      className="w-full px-3.5 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
+                      id="school-name-input"
+                      autoComplete="off"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Mengenali variasi tulisan (contoh: SMP ISLAM SMART, huruf kecil/besar, atau singkatan).
+                    </p>
                   </div>
 
-                  {/* FORM 1: LOGIN GURU (PILIH DARI DAFTAR GURU TERDAFTAR KECUALI ADMIN) */}
-                  {roleTab === "guru" && (
-                    <form onSubmit={handleTeacherLogin} className="space-y-4 pt-1">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center justify-between">
-                          <span>Pilih Nama Guru Terdaftar (Username)</span>
-                          <span className="text-[10px] text-blue-400 font-normal">
-                            {availableTeachers.length} Guru Siap
-                          </span>
-                        </label>
-
-                        {availableTeachers.length > 0 ? (
-                          <div className="space-y-2">
-                            <div className="relative">
-                              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                <User className="h-4 w-4" />
-                              </span>
-                              <select
-                                value={selectedTeacherId}
-                                onChange={(e) => setSelectedTeacherId(e.target.value)}
-                                className="w-full pl-10 pr-8 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium appearance-none cursor-pointer"
-                                id="teacher-select-dropdown"
-                              >
-                                {availableTeachers.map((teacher) => (
-                                  <option
-                                    key={teacher.id}
-                                    value={teacher.id}
-                                    className="bg-[#0c1322] text-slate-100 py-1"
-                                  >
-                                    {teacher.name} — Mapel {teacher.subject}
-                                    {teacher.isWaliKelas && teacher.kelas
-                                      ? ` (Wali Kelas ${teacher.kelas})`
-                                      : ""}{" "}
-                                    [Username: {teacher.username}]
-                                  </option>
-                                ))}
-                              </select>
-                              <span className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
-                                ▼
-                              </span>
-                            </div>
-
-                            {/* Info Card Guru yang Dipilih */}
-                            {currentSelectedTeacher && (
-                              <div className="p-3 bg-[#080d19] border border-[#1e2e4a] rounded-xl flex items-center justify-between gap-3 text-xs">
-                                <div>
-                                  <div className="font-bold text-blue-300">
-                                    {currentSelectedTeacher.name}
-                                  </div>
-                                  <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                                    <span>
-                                      Mapel:{" "}
-                                      <strong className="text-slate-200">
-                                        {currentSelectedTeacher.subject}
-                                      </strong>
-                                    </span>
-                                    {currentSelectedTeacher.isWaliKelas && (
-                                      <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px]">
-                                        Wali Kelas {currentSelectedTeacher.kelas}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="text-right shrink-0">
-                                  <div className="text-[9px] text-slate-500 font-mono uppercase">
-                                    Username
-                                  </div>
-                                  <div className="text-xs font-mono font-bold text-slate-200 bg-[#0d1627] px-2 py-0.5 rounded border border-[#1e2e4a]">
-                                    {currentSelectedTeacher.username}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="p-3.5 bg-amber-950/40 border border-amber-500/40 rounded-xl text-xs text-amber-200 space-y-2">
-                            <p className="font-semibold text-amber-300">
-                              Belum ada akun guru terdaftar di sekolah ini.
-                            </p>
-                            <p className="text-[11px] text-slate-300">
-                              Karena admin bertugas mengisi dan mengatur data guru di website sekolah, silakan masuk melalui menu Administrator Sekolah untuk menambahkan data guru.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => setRoleTab("admin")}
-                              className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5"
-                            >
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                              <span>Masuk sebagai Administrator</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Password Guru */}
-                      {availableTeachers.length > 0 && (
-                        <div>
-                          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono">
-                            Kata Sandi Guru
-                          </label>
-                          <div className="relative">
-                            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                              <Key className="h-4 w-4" />
-                            </span>
-                            <input
-                              type={showPassword ? "text" : "password"}
-                              value={teacherPassword}
-                              onChange={(e) => setTeacherPassword(e.target.value)}
-                              placeholder="Masukkan kata sandi guru..."
-                              className="w-full pl-10 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
-                              id="teacher-password-input"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
-                            >
-                              {showPassword ? (
-                                <EyeOff className="w-4 h-4" />
-                              ) : (
-                                <Eye className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {availableTeachers.length > 0 && (
-                        <button
-                          type="submit"
-                          disabled={loading}
-                          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-blue-950/60 border border-blue-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 mt-2"
-                          id="teacher-login-button"
-                        >
-                          {loading ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          ) : (
-                            <>
-                              <LogIn className="w-4 h-4" />
-                              <span>MASUK SEBAGAI GURU</span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </form>
-                  )}
-
-                  {/* FORM 2: LOGIN ADMINISTRATOR (BERTUGAS MENGATUR DATA) */}
-                  {roleTab === "admin" && (
-                    <form onSubmit={handleAdminLogin} className="space-y-4 pt-1">
-                      <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-xl text-[11px] text-amber-200">
-                        <div className="font-bold text-amber-300 flex items-center gap-1.5 mb-0.5">
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>Akses Pengatur & Pengelola Data</span>
-                        </div>
-                        Administrator bertugas mengisi dan mengatur data siswa, guru, kelas, mata pelajaran, serta konfigurasi website sekolah.
-                      </div>
-
-                      {/* Username Admin */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono">
-                          Username Administrator
-                        </label>
-                        <div className="relative">
-                          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                            <User className="h-4 w-4" />
-                          </span>
-                          <input
-                            type="text"
-                            value={adminUsername}
-                            onChange={(e) => setAdminUsername(e.target.value)}
-                            placeholder="Contoh: admin..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 transition font-medium"
-                            id="admin-username-input"
-                            autoComplete="off"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Password Admin */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 font-mono">
-                          Kata Sandi Administrator
-                        </label>
-                        <div className="relative">
-                          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                            <Key className="h-4 w-4" />
-                          </span>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            value={adminPassword}
-                            onChange={(e) => setAdminPassword(e.target.value)}
-                            placeholder="Masukkan kata sandi admin..."
-                            className="w-full pl-10 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 transition font-medium"
-                            id="admin-password-input"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
-                          >
-                            {showPassword ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
+                  {/* Input: Kata Sandi Sekolah */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Kata Sandi Sekolah</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={schoolPassword}
+                        onChange={(e) => setSchoolPassword(e.target.value)}
+                        placeholder="Masukkan kata sandi (contoh: SMART01PKP)"
+                        className="w-full pl-3.5 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition font-medium"
+                        id="school-password-input"
+                        autoComplete="current-password"
+                      />
                       <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-amber-950/60 border border-amber-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 mt-2"
-                        id="admin-login-button"
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
+                        title={showPassword ? "Sembunyikan sandi" : "Tampilkan sandi"}
                       >
-                        {loading ? (
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
                         ) : (
-                          <>
-                            <ShieldCheck className="w-4 h-4" />
-                            <span>MASUK SEBAGAI ADMINISTRATOR</span>
-                          </>
+                          <Eye className="w-4 h-4" />
                         )}
                       </button>
-                    </form>
-                  )}
-                </div>
+                    </div>
+                  </div>
+
+                  {/* Quick preset badge */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={fillDefaultSchool}
+                      className="w-full py-2 px-3 rounded-lg bg-blue-950/40 hover:bg-blue-900/50 border border-blue-500/30 text-[11px] text-blue-300 font-medium transition flex items-center justify-between cursor-pointer group"
+                      id="quick-fill-btn"
+                    >
+                      <span className="flex items-center gap-1.5 truncate">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
+                        <span className="truncate">
+                          Contoh Terdaftar: <strong>SMP ISLAM SMART PANGKALPINANG</strong> (Sandi: SMART01PKP)
+                        </span>
+                      </span>
+                      <span className="text-[10px] bg-blue-600/30 px-1.5 py-0.5 rounded text-blue-200 shrink-0 ml-1">
+                        Isi Otomatis
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Tombol Masuk */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-blue-950/60 border border-blue-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 mt-2"
+                    id="school-login-button"
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <LogIn className="w-4 h-4" />
+                        <span>MASUK KE SISTEM RAPORT</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </button>
+
+                  {/* Toggle Teacher Personal Login */}
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowTeacherLogin(true)}
+                      className="text-xs text-slate-400 hover:text-blue-400 transition cursor-pointer underline decoration-dotted underline-offset-4"
+                    >
+                      Atau masuk dengan akun Guru / Username Pengguna
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* Fallback: Guru Login with username & password */
+                <form
+                  onSubmit={handleTeacherLogin}
+                  className="space-y-4"
+                  id="teacher-login-form"
+                >
+                  <div className="p-3 bg-[#080d19] border border-indigo-500/20 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
+                    <User className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                    <div className="leading-relaxed">
+                      <span className="font-bold text-slate-200 block">
+                        Masuk dengan Akun Guru Spesifik
+                      </span>
+                      Gunakan username dan kata sandi akun guru Anda untuk langsung masuk ke portal mata pelajaran Anda.
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Username Pengguna</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={teacherUsername}
+                      onChange={(e) => setTeacherUsername(e.target.value)}
+                      placeholder="Masukkan username akun..."
+                      className="w-full px-3.5 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition font-medium"
+                      id="teacher-username-input"
+                      autoComplete="username"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5 font-mono flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Kata Sandi</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showTeacherPassword ? "text" : "password"}
+                        value={teacherPassword}
+                        onChange={(e) => setTeacherPassword(e.target.value)}
+                        placeholder="Masukkan kata sandi..."
+                        className="w-full pl-3.5 pr-10 py-2.5 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition font-medium"
+                        id="teacher-password-input"
+                        autoComplete="current-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowTeacherPassword(!showTeacherPassword)}
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
+                      >
+                        {showTeacherPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs font-bold font-mono tracking-wider shadow-lg shadow-indigo-950/60 border border-indigo-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
+                    id="teacher-login-button"
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <LogIn className="w-4 h-4" />
+                        <span>MASUK SEBAGAI GURU</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="pt-1 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowTeacherLogin(false)}
+                      className="text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                    >
+                      ← Kembali ke Masuk dengan Nama Sekolah
+                    </button>
+                  </div>
+                </form>
               )}
             </div>
           )}
 
-          {/* ================= TAB 2: PENDAFTARAN SEKOLAH BARU ================= */}
+          {/* ================= TAB 2: DAFTAR SEKOLAH BARU ================= */}
           {activeTab === "register_school" && (
-            <form onSubmit={handleRegisterSchoolSubmit} className="space-y-3.5">
-              <div className="p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl text-[11px] text-indigo-200">
-                <p className="font-semibold text-indigo-300 mb-0.5 flex items-center gap-1">
-                  <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Pendaftaran Sekolah Mandiri</span>
-                </p>
-                Daftarkan nama sekolah Anda untuk membuat portal penilaian terpisah. Akun administrator bertugas mengisi dan mengatur data guru, siswa, dan kelas.
+            <form
+              onSubmit={handleRegisterSchoolSubmit}
+              className="space-y-3.5"
+              id="register-school-form"
+            >
+              <div className="p-3 bg-[#080d19] border border-indigo-500/20 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
+                <Building2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                <div className="leading-relaxed">
+                  <span className="font-bold text-slate-200 block">
+                    Pendaftaran Sekolah Mandiri
+                  </span>
+                  Setelah mendaftar, Anda akan langsung masuk ke website sekolah baru dalam keadaan data kosong, sehingga Admin Sekolah dapat menginputkan guru, siswa, dan logo sekolah masing-masing.
+                </div>
               </div>
 
+              {/* Nama Sekolah */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1 font-mono">
-                  Nama Lengkap Sekolah *
+                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1 font-mono flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Nama Lengkap Sekolah *</span>
                 </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <Building2 className="h-4 w-4" />
-                  </span>
+                <input
+                  type="text"
+                  required
+                  value={regSchoolName}
+                  onChange={(e) => setRegSchoolName(e.target.value)}
+                  placeholder="Contoh: SMP IT INSAN CENDEKIA"
+                  className="w-full px-3.5 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition font-medium"
+                  id="reg-school-name"
+                />
+              </div>
+
+              {/* Kota & NPSN */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1 font-mono flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Kota / Kab</span>
+                  </label>
                   <input
                     type="text"
-                    value={regSchoolName}
-                    onChange={(e) => setRegSchoolName(e.target.value)}
-                    placeholder="Contoh: SMP Negeri 1 Pangkalpinang"
-                    className="w-full pl-9 pr-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition font-medium"
-                    id="reg-school-name"
-                    required
+                    value={regCity}
+                    onChange={(e) => setRegCity(e.target.value)}
+                    placeholder="Contoh: Pangkalpinang"
+                    className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
+                    id="reg-school-city"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1 font-mono flex items-center gap-1.5">
+                    <Hash className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>NPSN (Opsional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={regNpsn}
+                    onChange={(e) => setRegNpsn(e.target.value)}
+                    placeholder="Contoh: 10987654"
+                    className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
+                    id="reg-school-npsn"
                   />
                 </div>
               </div>
 
+              {/* Nama Admin & Username */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1 font-mono">
-                    Kota / Kabupaten
+                  <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1 font-mono">
+                    Nama Admin Sekolah
                   </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                      <MapPin className="h-3.5 w-3.5" />
-                    </span>
-                    <input
-                      type="text"
-                      value={regCity}
-                      onChange={(e) => setRegCity(e.target.value)}
-                      placeholder="Pangkalpinang"
-                      className="w-full pl-8 pr-2.5 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
-                      id="reg-city"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={regAdminName}
+                    onChange={(e) => setRegAdminName(e.target.value)}
+                    placeholder="Nama Lengkap Admin"
+                    className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
+                    id="reg-admin-name"
+                  />
                 </div>
-
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1 font-mono">
-                    NPSN (Opsional)
+                  <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1 font-mono">
+                    Username Login *
                   </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                      <Hash className="h-3.5 w-3.5" />
-                    </span>
-                    <input
-                      type="text"
-                      value={regNpsn}
-                      onChange={(e) => setRegNpsn(e.target.value)}
-                      placeholder="8 digit NPSN"
-                      className="w-full pl-8 pr-2.5 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
-                      id="reg-npsn"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value)}
+                    placeholder="Username admin"
+                    className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
+                    id="reg-admin-username"
+                    autoComplete="username"
+                  />
                 </div>
               </div>
 
-              <div className="border-t border-[#1e2e4a] pt-2">
-                <label className="block text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-1 font-mono">
-                  Akun Administrator Sekolah
-                </label>
-
-                <div className="space-y-2.5">
-                  <div>
-                    <label className="block text-[10px] text-slate-400 uppercase mb-0.5">
-                      Nama Lengkap Admin
-                    </label>
-                    <input
-                      type="text"
-                      value={regAdminName}
-                      onChange={(e) => setRegAdminName(e.target.value)}
-                      placeholder="Contoh: Admin Sekolah / Nama Petugas"
-                      className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
-                      id="reg-admin-name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] text-slate-400 uppercase mb-0.5">
-                      Username Login Admin *
-                    </label>
-                    <input
-                      type="text"
-                      value={regUsername}
-                      onChange={(e) => setRegUsername(e.target.value)}
-                      placeholder="Contoh: admin_smpn1"
-                      className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
-                      id="reg-username"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] text-slate-400 uppercase mb-0.5">
-                        Kata Sandi *
-                      </label>
-                      <input
-                        type="password"
-                        value={regPassword}
-                        onChange={(e) => setRegPassword(e.target.value)}
-                        placeholder="Kata sandi..."
-                        className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
-                        id="reg-password"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-400 uppercase mb-0.5">
-                        Ulangi Sandi *
-                      </label>
-                      <input
-                        type="password"
-                        value={regPasswordConfirm}
-                        onChange={(e) => setRegPasswordConfirm(e.target.value)}
-                        placeholder="Konfirmasi..."
-                        className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
-                        id="reg-password-confirm"
-                        required
-                      />
-                    </div>
-                  </div>
+              {/* Sandi & Konfirmasi Sandi */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1 font-mono">
+                    Kata Sandi *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="Minimal 3 karakter"
+                    className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
+                    id="reg-admin-password"
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1 font-mono">
+                    Ulangi Sandi *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={regPasswordConfirm}
+                    onChange={(e) => setRegPasswordConfirm(e.target.value)}
+                    placeholder="Ketik ulang sandi"
+                    className="w-full px-3 py-2 bg-[#080d19] border border-[#1e2e4a] rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-medium"
+                    id="reg-admin-password-confirm"
+                    autoComplete="new-password"
+                  />
                 </div>
               </div>
 
@@ -1145,31 +671,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 ) : (
                   <>
                     <PlusCircle className="w-4 h-4" />
-                    <span>DAFTARKAN SEKOLAH</span>
+                    <span>DAFTAR & MASUK KE SISTEM</span>
                   </>
                 )}
               </button>
-
-              <div className="text-center pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab("login");
-                    setError("");
-                  }}
-                  className="text-xs text-slate-400 hover:text-slate-300 font-medium cursor-pointer"
-                >
-                  Sudah terdaftar? Kembali ke menu Masuk
-                </button>
-              </div>
             </form>
           )}
         </div>
-      </div>
-
-      {/* Clean Footer Info */}
-      <div className="mt-6 text-center text-xs text-slate-500 font-medium max-w-sm">
-        Sistem Manajemen Nilai & Raport Digital Terpadu
       </div>
     </div>
   );
