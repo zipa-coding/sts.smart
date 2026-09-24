@@ -16,7 +16,7 @@ import dbData from "../data/db.json";
 const dbDataAny = dbData as any;
 const metaEnv = (import.meta as any).env || {};
 
-// Firebase configuration with smartsts-12f15 as configured project
+// Firebase configuration with smartsts-12f15
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDHuaZ2ean-ZDP84bDC2lOZxVCEklLvD4o",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "smartsts-12f15.firebaseapp.com",
@@ -273,7 +273,7 @@ export const firebaseApi = {
 
   // 3. GET, POST, PUT, DELETE /api/students
   getStudents: async (): Promise<any[]> => {
-    if (!db) return [];
+    if (!db) return dbDataAny.students || [];
     const studentCollections = ["students", "siswa", "Students", "Siswa", "data_siswa", "dataSiswa", "data_students", "DataSiswa", "santri"];
     try {
       for (const colName of studentCollections) {
@@ -286,7 +286,7 @@ export const firebaseApi = {
                 id: docSnap.id,
                 name: d.name || d.nama || d.namaSiswa || d.nama_lengkap || d.namaLengkap || d.fullname || "Siswa",
                 nisn: d.nisn || d.nis || d.nisnSiswa || d.nis_nisn || d.no_induk || docSnap.id,
-                kelas: d.kelas || d.rombel || d.class || d.tingkat || "7",
+                kelas: String(d.kelas || d.rombel || d.class || d.tingkat || "7").trim(),
                 ...d
               };
             });
@@ -298,19 +298,69 @@ export const firebaseApi = {
     } catch (e) {
       console.warn("Failed to get students from Firestore:", e);
     }
-    return [];
+    return dbDataAny.students || [];
   },
   postStudent: async (body: any) => {
     if (!db) throw new Error("Database not connected");
     const { name, nisn, kelas } = body;
-    const q = query(collection(db, "students"), where("nisn", "==", nisn));
+    const cleanNisn = String(nisn || "").trim().replace(/\D/g, "");
+    const q = query(collection(db, "students"), where("nisn", "==", cleanNisn));
     const dup = await withTimeout(getDocs(q), 5000).catch(() => ({ empty: true }));
     if (!dup.empty) throw new Error("Siswa dengan NISN ini sudah terdaftar.");
 
     const id = "s_" + Date.now();
-    const newStudent = { id, nisn, name, kelas };
+    const newStudent = { id, nisn: cleanNisn, name: String(name || "").trim(), kelas: String(kelas || "7").trim() };
     await withTimeout(setDoc(doc(db, "students", id), newStudent), 5000);
     return newStudent;
+  },
+  postStudentsBatch: async (studentsList: any[]): Promise<any> => {
+    if (!db) throw new Error("Database not connected");
+    const existing = await firebaseApi.getStudents();
+    const existingNisns = new Set(existing.map((s: any) => String(s.nisn || "").trim()));
+    const batchNisns = new Set<string>();
+
+    const addedStudents: any[] = [];
+    const duplicates: string[] = [];
+    const errors: string[] = [];
+
+    let counter = 0;
+    for (const item of studentsList) {
+      const name = String(item.name || "").trim();
+      const nisn = String(item.nisn || "").trim().replace(/\D/g, "");
+      const kelas = String(item.kelas || "7").trim();
+
+      if (!name) {
+        errors.push(`Baris NISN ${nisn || "?"}: Nama siswa tidak boleh kosong.`);
+        continue;
+      }
+      if (!nisn) {
+        errors.push(`Siswa "${name}": NISN tidak valid (harus angka).`);
+        continue;
+      }
+
+      if (existingNisns.has(nisn) || batchNisns.has(nisn)) {
+        duplicates.push(`${name} (${nisn})`);
+        continue;
+      }
+
+      batchNisns.add(nisn);
+      existingNisns.add(nisn);
+
+      const id = "s_" + Date.now() + "_" + (++counter);
+      const newStudent = { id, nisn, name, kelas };
+      await withTimeout(setDoc(doc(db, "students", id), newStudent), 5000);
+      addedStudents.push(newStudent);
+    }
+
+    return {
+      success: true,
+      addedCount: addedStudents.length,
+      duplicatesCount: duplicates.length,
+      duplicates,
+      errors,
+      students: addedStudents,
+      totalStudents: existing.length + addedStudents.length,
+    };
   },
   putStudent: async (id: string, body: any) => {
     if (!db) throw new Error("Database not connected");
@@ -505,9 +555,10 @@ export const firebaseApi = {
       "Bahasa Arab", "Tahsin ABaTaTsa", "Tahfizh Al-Qur’an", "Do’a Harian dan Hadits", "Wudhu dan Sholat"
     ];
     const totalStudents = students.length;
+    const registeredStudentIds = new Set(students.map((s: any) => s.id));
     
     const subjectProgress = subjectsList.map(sub => {
-      const filledGradesForSub = grades.filter((g: any) => g.subject === sub);
+      const filledGradesForSub = grades.filter((g: any) => g.subject === sub && registeredStudentIds.has(g.studentId));
       const completedCount = filledGradesForSub.length;
       const percentage = totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0;
       const t = teachers.find((teach: any) => teach.subject === sub);
@@ -520,19 +571,25 @@ export const firebaseApi = {
       };
     });
 
-    const classes = Array.from(new Set(students.map((s: any) => s.kelas))) as string[];
+    const classSet = new Set(["7", "8", "9"]);
+    students.forEach((s: any) => {
+      const k = String(s.kelas || "").trim();
+      if (k) classSet.add(k);
+    });
+    const classes = Array.from(classSet).sort();
+
     const classProgress = classes.map(cls => {
-      const studentsInClass = students.filter((s: any) => s.kelas === cls);
+      const studentsInClass = students.filter((s: any) => String(s.kelas || "").trim() === cls);
       const totalGradesNeeded = studentsInClass.length * subjectsList.length;
       let gradesFilledCount = 0;
-      const studentIds = studentsInClass.map((s: any) => s.id);
+      const studentIds = new Set(studentsInClass.map((s: any) => s.id));
       grades.forEach((g: any) => {
-        if (studentIds.includes(g.studentId)) {
+        if (studentIds.has(g.studentId)) {
           gradesFilledCount++;
         }
       });
       const percent = totalGradesNeeded > 0 ? Math.round((gradesFilledCount / totalGradesNeeded) * 100) : 0;
-      const waliKelas = teachers.find((teach: any) => teach.isWaliKelas && teach.kelas === cls);
+      const waliKelas = teachers.find((teach: any) => teach.isWaliKelas && String(teach.kelas || "").trim() === cls);
       return {
         kelas: cls,
         studentCount: studentsInClass.length,

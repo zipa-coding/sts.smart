@@ -155,6 +155,16 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           }
         }
 
+        // POST /api/students/batch
+        if (path === '/api/students/batch' && method === 'POST') {
+          try {
+            const res = await firebaseApi.postStudentsBatch(body?.students || []);
+            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          } catch (e: any) {
+            console.warn("Firestore postStudentsBatch failed, falling back:", e);
+          }
+        }
+
         // PUT /api/students/:id
         if (path.startsWith('/api/students/') && method === 'PUT') {
           const id = path.split('/').pop() || "";
@@ -371,6 +381,61 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       db.students.push(newStudent);
       saveDB(db);
       return new Response(JSON.stringify(newStudent), { status: 201, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // POST /api/students/batch
+    if (path === '/api/students/batch' && method === 'POST') {
+      const studentsList = body?.students || [];
+      const db = getDB();
+      const existingNisns = new Set(db.students.map((s: any) => String(s.nisn || "").trim()));
+      const batchNisns = new Set<string>();
+
+      const addedStudents: any[] = [];
+      const duplicates: string[] = [];
+      const errors: string[] = [];
+
+      let counter = 0;
+      for (const item of studentsList) {
+        const name = String(item.name || "").trim();
+        const nisn = String(item.nisn || "").trim().replace(/\D/g, "");
+        const kelas = String(item.kelas || "7").trim();
+
+        if (!name) {
+          errors.push(`Baris NISN ${nisn || "?"}: Nama siswa tidak boleh kosong.`);
+          continue;
+        }
+        if (!nisn) {
+          errors.push(`Siswa "${name}": NISN tidak valid (harus angka).`);
+          continue;
+        }
+
+        if (existingNisns.has(nisn) || batchNisns.has(nisn)) {
+          duplicates.push(`${name} (${nisn})`);
+          continue;
+        }
+
+        batchNisns.add(nisn);
+        existingNisns.add(nisn);
+
+        const id = "s_" + Date.now() + "_" + (++counter);
+        const newStudent = { id, nisn, name, kelas };
+        db.students.push(newStudent);
+        addedStudents.push(newStudent);
+      }
+
+      if (addedStudents.length > 0) {
+        saveDB(db);
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        addedCount: addedStudents.length,
+        duplicatesCount: duplicates.length,
+        duplicates,
+        errors,
+        students: addedStudents,
+        totalStudents: db.students.length
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // PUT /api/students/:id
@@ -602,8 +667,10 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         "Bahasa Arab", "Tahsin ABaTaTsa", "Tahfizh Al-Qur’an", "Do’a Harian dan Hadits", "Wudhu dan Sholat"
       ];
       const totalStudents = db.students.length;
+      const registeredStudentIds = new Set(db.students.map((s: any) => s.id));
+
       const subjectProgress = subjectsList.map(sub => {
-        const filledGradesForSub = db.grades.filter((g: any) => g.subject === sub);
+        const filledGradesForSub = db.grades.filter((g: any) => g.subject === sub && registeredStudentIds.has(g.studentId));
         const completedCount = filledGradesForSub.length;
         const percentage = totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0;
         const teacher = db.teachers.find((t: any) => t.subject === sub);
@@ -616,19 +683,25 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         };
       });
 
-      const classes = Array.from(new Set(db.students.map((s: any) => s.kelas))) as string[];
+      const classSet = new Set(["7", "8", "9"]);
+      db.students.forEach((s: any) => {
+        const k = String(s.kelas || "").trim();
+        if (k) classSet.add(k);
+      });
+      const classes = Array.from(classSet).sort();
+
       const classProgress = classes.map(cls => {
-        const studentsInClass = db.students.filter((s: any) => s.kelas === cls);
+        const studentsInClass = db.students.filter((s: any) => String(s.kelas || "").trim() === cls);
         const totalGradesNeeded = studentsInClass.length * subjectsList.length;
         let gradesFilledCount = 0;
-        const studentIds = studentsInClass.map((s: any) => s.id);
+        const studentIds = new Set(studentsInClass.map((s: any) => s.id));
         db.grades.forEach((g: any) => {
-          if (studentIds.includes(g.studentId)) {
+          if (studentIds.has(g.studentId)) {
             gradesFilledCount++;
           }
         });
         const percent = totalGradesNeeded > 0 ? Math.round((gradesFilledCount / totalGradesNeeded) * 100) : 0;
-        const waliKelas = db.teachers.find((t: any) => t.isWaliKelas && t.kelas === cls);
+        const waliKelas = db.teachers.find((t: any) => t.isWaliKelas && String(t.kelas || "").trim() === cls);
         return {
           kelas: cls,
           studentCount: studentsInClass.length,

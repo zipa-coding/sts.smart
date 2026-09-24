@@ -250,6 +250,74 @@ app.post("/api/students", async (req, res) => {
   res.status(201).json(newStudent);
 });
 
+// POST /api/students/batch - Batch import students
+app.post("/api/students/batch", async (req, res) => {
+  const { students } = req.body;
+  if (!Array.isArray(students) || students.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Daftar siswa wajib berupa array dan tidak boleh kosong." });
+  }
+
+  const db = await readDB();
+  const existingNisns = new Set(
+    db.students.map((s: any) => String(s.nisn || "").trim())
+  );
+  const batchNisns = new Set<string>();
+
+  const addedStudents: any[] = [];
+  const duplicates: string[] = [];
+  const errors: string[] = [];
+
+  let counter = 0;
+  for (const item of students) {
+    const name = String(item.name || "").trim();
+    const nisn = String(item.nisn || "").trim().replace(/\D/g, "");
+    const kelas = String(item.kelas || "7").trim();
+
+    if (!name) {
+      errors.push(`Baris NISN ${nisn || "?"}: Nama siswa tidak boleh kosong.`);
+      continue;
+    }
+    if (!nisn) {
+      errors.push(`Siswa "${name}": NISN tidak boleh kosong dan harus berupa angka.`);
+      continue;
+    }
+
+    if (existingNisns.has(nisn) || batchNisns.has(nisn)) {
+      duplicates.push(`${name} (${nisn})`);
+      continue;
+    }
+
+    batchNisns.add(nisn);
+    existingNisns.add(nisn);
+
+    const newStudent = {
+      id: "s_" + Date.now() + "_" + (++counter),
+      nisn,
+      name,
+      kelas: kelas || "7",
+    };
+
+    db.students.push(newStudent);
+    addedStudents.push(newStudent);
+  }
+
+  if (addedStudents.length > 0) {
+    await writeDB(db);
+  }
+
+  res.status(200).json({
+    success: true,
+    addedCount: addedStudents.length,
+    duplicatesCount: duplicates.length,
+    duplicates,
+    errors,
+    students: addedStudents,
+    totalStudents: db.students.length,
+  });
+});
+
 app.put("/api/students/:id", async (req, res) => {
   const { id } = req.params;
   const { name, nisn, kelas } = req.body;
@@ -595,10 +663,13 @@ app.get("/api/summary", async (req, res) => {
   ];
 
   const totalStudents = db.students.length;
+  const registeredStudentIds = new Set(db.students.map((s: any) => s.id));
 
-  // Calculate progress mapping
+  // Calculate progress mapping - only count grades for active registered students
   const subjectProgress = subjects.map((sub) => {
-    const filledGradesForSub = db.grades.filter((g: any) => g.subject === sub);
+    const filledGradesForSub = db.grades.filter(
+      (g: any) => g.subject === sub && registeredStudentIds.has(g.studentId)
+    );
     const completedCount = filledGradesForSub.length;
     const percentage =
       totalStudents > 0
@@ -617,18 +688,24 @@ app.get("/api/summary", async (req, res) => {
     };
   });
 
-  // Class progress summary
-  const classes = Array.from(
-    new Set(db.students.map((s: any) => s.kelas)),
-  ) as string[];
+  // Ensure standard classes (7, 8, 9) and any custom classes are represented
+  const classSet = new Set(["7", "8", "9"]);
+  db.students.forEach((s: any) => {
+    const k = String(s.kelas || "").trim();
+    if (k) classSet.add(k);
+  });
+  const classes = Array.from(classSet).sort();
+
   const classProgress = classes.map((cls) => {
-    const studentsInClass = db.students.filter((s: any) => s.kelas === cls);
+    const studentsInClass = db.students.filter(
+      (s: any) => String(s.kelas || "").trim() === cls
+    );
     const totalGradesNeeded = studentsInClass.length * subjects.length;
 
     let gradesFilledCount = 0;
-    const studentIds = studentsInClass.map((s: any) => s.id);
+    const studentIds = new Set(studentsInClass.map((s: any) => s.id));
     db.grades.forEach((g: any) => {
-      if (studentIds.includes(g.studentId)) {
+      if (studentIds.has(g.studentId)) {
         gradesFilledCount++;
       }
     });
@@ -638,7 +715,7 @@ app.get("/api/summary", async (req, res) => {
         ? Math.round((gradesFilledCount / totalGradesNeeded) * 100)
         : 0;
     const waliKelas = db.teachers.find(
-      (t: any) => t.isWaliKelas && t.kelas === cls,
+      (t: any) => t.isWaliKelas && String(t.kelas || "").trim() === cls,
     );
 
     return {
@@ -665,7 +742,10 @@ app.get("/api/summary", async (req, res) => {
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        allowedHosts: true,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

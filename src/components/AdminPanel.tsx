@@ -14,6 +14,12 @@ import {
   X,
   AlertCircle,
   Award,
+  FileSpreadsheet,
+  Upload,
+  CheckCircle2,
+  Search,
+  FileText,
+  Copy,
 } from "lucide-react";
 
 interface AdminPanelProps {
@@ -85,6 +91,241 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
     nisn: "",
     kelas: "7",
   });
+
+  // Batch student import state
+  const [isBatchStudentModalOpen, setIsBatchStudentModalOpen] = useState(false);
+  const [batchRawText, setBatchRawText] = useState("");
+  const [batchDefaultClass, setBatchDefaultClass] = useState("7");
+  const [isSubmittingBatch, setIsSubmittingBatch] = useState(false);
+  const [batchResult, setBatchResult] = useState<{
+    success: boolean;
+    addedCount: number;
+    duplicatesCount: number;
+    duplicates: string[];
+    errors: string[];
+  } | null>(null);
+
+  // Student filtering & search
+  const [studentClassFilter, setStudentClassFilter] = useState<string>("all");
+  const [studentSearch, setStudentSearch] = useState<string>("");
+
+  // Memoized live parsing of batch input
+  const parsedBatchStudents = React.useMemo(() => {
+    if (!batchRawText.trim()) return [];
+    const lines = batchRawText.split(/\r?\n/);
+    const existingNisns = new Set(students.map((s) => String(s.nisn || "").trim()));
+    const seenBatchNisns = new Set<string>();
+
+    const results: {
+      rawLine: string;
+      nisn: string;
+      name: string;
+      kelas: string;
+      status: "valid" | "duplicate_db" | "duplicate_batch" | "invalid_nisn" | "invalid_name";
+      message: string;
+    }[] = [];
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+
+      // Check if header row
+      const lower = line.toLowerCase();
+      if (
+        (lower.includes("nisn") && (lower.includes("nama") || lower.includes("name"))) ||
+        (lower.includes("no") && lower.includes("siswa"))
+      ) {
+        continue;
+      }
+
+      // Delimiter detection
+      let tokens: string[] = [];
+      if (line.includes("\t")) {
+        tokens = line.split("\t");
+      } else if (line.includes(";")) {
+        tokens = line.split(";");
+      } else if (line.includes("|")) {
+        tokens = line.split("|");
+      } else if (line.includes(",")) {
+        tokens = line.split(",");
+      } else {
+        const parts = line.split(/\s+/);
+        if (parts.length >= 2) {
+          tokens = [parts[0], parts.slice(1).join(" ")];
+        } else {
+          tokens = [line];
+        }
+      }
+
+      tokens = tokens.map((t) => t.trim()).filter((t) => t.length > 0);
+      if (tokens.length === 0) continue;
+
+      let nisn = "";
+      let name = "";
+      let kelas = batchDefaultClass;
+
+      if (tokens.length === 1) {
+        name = tokens[0];
+      } else if (tokens.length === 2) {
+        const d0 = tokens[0].replace(/\D/g, "");
+        const d1 = tokens[1].replace(/\D/g, "");
+        if (d0.length >= 4 && d1.length < 4) {
+          nisn = d0;
+          name = tokens[1];
+        } else if (d1.length >= 4 && d0.length < 4) {
+          nisn = d1;
+          name = tokens[0];
+        } else {
+          nisn = d0 || tokens[0];
+          name = tokens[1];
+        }
+      } else if (tokens.length === 3) {
+        if (/^\d{1,3}$/.test(tokens[0]) && tokens[1].replace(/\D/g, "").length >= 4) {
+          nisn = tokens[1].replace(/\D/g, "");
+          name = tokens[2];
+        } else {
+          nisn = tokens[0].replace(/\D/g, "");
+          name = tokens[1];
+          const k = tokens[2].replace(/\D/g, "");
+          if (["7", "8", "9"].includes(k)) kelas = k;
+          else kelas = tokens[2];
+        }
+      } else if (tokens.length >= 4) {
+        nisn = tokens[1].replace(/\D/g, "");
+        name = tokens[2];
+        const k = tokens[3].replace(/\D/g, "");
+        if (["7", "8", "9"].includes(k)) kelas = k;
+        else kelas = tokens[3];
+      }
+
+      // Live validation
+      if (!name) {
+        results.push({
+          rawLine,
+          nisn,
+          name: "-",
+          kelas,
+          status: "invalid_name",
+          message: "Nama siswa kosong",
+        });
+      } else if (!nisn || nisn.length < 4) {
+        results.push({
+          rawLine,
+          nisn,
+          name,
+          kelas,
+          status: "invalid_nisn",
+          message: "NISN tidak valid (min. 4 angka)",
+        });
+      } else if (existingNisns.has(nisn)) {
+        results.push({
+          rawLine,
+          nisn,
+          name,
+          kelas,
+          status: "duplicate_db",
+          message: "NISN sudah ada di database",
+        });
+      } else if (seenBatchNisns.has(nisn)) {
+        results.push({
+          rawLine,
+          nisn,
+          name,
+          kelas,
+          status: "duplicate_batch",
+          message: "NISN duplikat di teks ini",
+        });
+      } else {
+        seenBatchNisns.add(nisn);
+        results.push({
+          rawLine,
+          nisn,
+          name,
+          kelas,
+          status: "valid",
+          message: "Siap disimpan",
+        });
+      }
+    }
+
+    return results;
+  }, [batchRawText, batchDefaultClass, students]);
+
+  const fillSampleBatchData = () => {
+    const sample = `0012984101\tAhmad Fauzi Ramadhan\t7
+0012984102\tAisyah Putri Azzahra\t7
+0012984103\tBilal Al-Ghifari\t7
+0012984104\tFatimah Az-Zahra\t8
+0012984105\tMuhammad Farhan Hakim\t8
+0012984106\tZahra Nurul Izzah\t9`;
+    setBatchRawText(sample);
+  };
+
+  const handleBatchStudentSubmit = async () => {
+    const validStudents = parsedBatchStudents
+      .filter((p) => p.status === "valid")
+      .map((p) => ({
+        nisn: p.nisn,
+        name: p.name,
+        kelas: p.kelas || batchDefaultClass || "7",
+      }));
+
+    if (validStudents.length === 0) {
+      alert("Tidak ada baris siswa yang valid untuk disimpan.");
+      return;
+    }
+
+    setIsSubmittingBatch(true);
+    setBatchResult(null);
+    try {
+      const res = await fetch("/api/students/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ students: validStudents }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal mengimpor siswa.");
+      }
+
+      setBatchResult({
+        success: true,
+        addedCount: data.addedCount || validStudents.length,
+        duplicatesCount: data.duplicatesCount || 0,
+        duplicates: data.duplicates || [],
+        errors: data.errors || [],
+      });
+
+      await fetchAllData();
+      onRefreshTrigger();
+      showSuccess(`Berhasil menginput ${data.addedCount || validStudents.length} siswa baru sekaligus!`);
+      setBatchRawText("");
+    } catch (err: any) {
+      setBatchResult({
+        success: false,
+        addedCount: 0,
+        duplicatesCount: 0,
+        duplicates: [],
+        errors: [err.message || "Gagal menginput siswa."],
+      });
+    } finally {
+      setIsSubmittingBatch(false);
+    }
+  };
+
+  const filteredStudents = React.useMemo(() => {
+    return students.filter((s) => {
+      const matchClass =
+        studentClassFilter === "all" ||
+        String(s.kelas).trim() === studentClassFilter;
+      const q = studentSearch.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        String(s.nisn).includes(q);
+      return matchClass && matchSearch;
+    });
+  }, [students, studentClassFilter, studentSearch]);
 
   const [tpForm, setTpForm] = useState({
     subject: "IPA",
@@ -700,58 +941,156 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           className="bg-white rounded-lg border border-slate-200 shadow-sm p-4"
           id="student-management-panel"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">
-                Dafar Siswa SMP
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-slate-900">
+                  Daftar & Manajemen Siswa SMP
+                </h2>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold font-mono">
+                  {students.length} Total Siswa
+                </span>
+              </div>
               <p className="text-[10px] text-slate-400">
-                Masukkan, edit nama, NISN, dan kualifikasi kelas siswa yang
-                terdaftar
+                Kelola data siswa, NISN, dan pembagian kelas siswa secara individual atau massal
               </p>
             </div>
-            <button
-              onClick={() => {
-                setEditingStudent(null);
-                setStudentForm({
-                  name: "",
-                  nisn: "",
-                  kelas: "7",
-                });
-                setIsStudentModalOpen(true);
-              }}
-              className="px-3 py-1 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded flex items-center gap-1 shadow-xs cursor-pointer transition"
-            >
-              <Plus className="w-3.5 h-3.5" /> Tambah Siswa
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setBatchResult(null);
+                  setIsBatchStudentModalOpen(true);
+                }}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer transition"
+              >
+                <FileSpreadsheet className="w-4 h-4" /> Input Banyak Siswa Sekaligus
+              </button>
+              <button
+                onClick={() => {
+                  setEditingStudent(null);
+                  setStudentForm({
+                    name: "",
+                    nisn: "",
+                    kelas: "7",
+                  });
+                  setIsStudentModalOpen(true);
+                }}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 active:bg-black text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer transition"
+              >
+                <Plus className="w-3.5 h-3.5" /> Tambah Satu Siswa
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 mb-4">
-            {/* Quick Filter Info Cards */}
-            {["7", "8", "9"].map((cls, ci) => (
-              <div
-                key={ci}
-                className="p-2.5 bg-slate-50 border border-slate-205 rounded flex items-center justify-between"
-              >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+            {/* Total Siswa Card */}
+            <div
+              onClick={() => setStudentClassFilter("all")}
+              className={`p-2.5 rounded-lg border transition cursor-pointer ${
+                studentClassFilter === "all"
+                  ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200"
+                  : "bg-slate-50 border-slate-200 hover:border-slate-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-emerald-850 text-xs font-extrabold block">
-                    Kelas {cls}
+                  <span className="text-emerald-900 text-xs font-black block">
+                    Semua Siswa
                   </span>
-                  <span className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
                     Total Terdaftar
                   </span>
                 </div>
-                <span className="text-base font-extrabold text-slate-800">
-                  {students.filter((s) => s.kelas === cls).length} Siswa
+                <span className="text-base font-black text-emerald-800 font-mono">
+                  {students.length}
                 </span>
               </div>
-            ))}
+            </div>
+
+            {/* Quick Filter Info Cards for Classes 7, 8, 9 */}
+            {["7", "8", "9"].map((cls) => {
+              const count = students.filter(
+                (s) => String(s.kelas || "").trim() === cls
+              ).length;
+              const isSelected = studentClassFilter === cls;
+              return (
+                <div
+                  key={cls}
+                  onClick={() => setStudentClassFilter(isSelected ? "all" : cls)}
+                  className={`p-2.5 rounded-lg border transition cursor-pointer ${
+                    isSelected
+                      ? "bg-blue-50 border-blue-400 ring-2 ring-blue-200"
+                      : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-blue-900 text-xs font-black block">
+                        Kelas {cls}
+                      </span>
+                      <span className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                        Siswa Terdaftar
+                      </span>
+                    </div>
+                    <span className="text-base font-black text-slate-800 font-mono">
+                      {count}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Filter Bar & Search */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 mb-3">
+            <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
+              {[
+                { id: "all", label: `Semua (${students.length})` },
+                { id: "7", label: `Kelas 7 (${students.filter(s => String(s.kelas).trim() === "7").length})` },
+                { id: "8", label: `Kelas 8 (${students.filter(s => String(s.kelas).trim() === "8").length})` },
+                { id: "9", label: `Kelas 9 (${students.filter(s => String(s.kelas).trim() === "9").length})` },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setStudentClassFilter(tab.id)}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer shrink-0 ${
+                    studentClassFilter === tab.id
+                      ? "bg-emerald-700 text-white shadow-xs"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                placeholder="Cari nama atau NISN..."
+                className="w-full pl-8 pr-3 py-1 text-xs bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-emerald-600 focus:bg-white"
+              />
+              {studentSearch && (
+                <button
+                  onClick={() => setStudentSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs md:text-sm border-collapse text-gray-700">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="p-3 font-semibold text-gray-500 uppercase tracking-wider w-12 text-center">
+                    No
+                  </th>
                   <th className="p-3 font-semibold text-gray-500 uppercase tracking-wider">
                     Nama Siswa
                   </th>
@@ -767,33 +1106,46 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {students.map((s) => (
-                  <tr key={s.id} className="hover:bg-gray-50/30">
-                    <td className="p-3 font-bold text-gray-800">{s.name}</td>
-                    <td className="p-3 font-mono text-gray-500">{s.nisn}</td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-850 border border-emerald-200 rounded text-xs font-bold">
-                        Kelas {s.kelas}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="inline-flex gap-2">
-                        <button
-                          onClick={() => startEditStudent(s)}
-                          className="p-1 text-sky-650 hover:bg-sky-50 rounded transition cursor-pointer"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteStudent(s.id)}
-                          className="p-1 text-red-650 hover:bg-red-50 rounded transition cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                {filteredStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-6 text-center text-gray-400 text-xs">
+                      Tidak ada data siswa yang cocok dengan filter atau pencarian.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredStudents.map((s, idx) => (
+                    <tr key={s.id} className="hover:bg-gray-50/50">
+                      <td className="p-3 text-center text-gray-400 font-mono text-xs">
+                        {idx + 1}
+                      </td>
+                      <td className="p-3 font-bold text-gray-800">{s.name}</td>
+                      <td className="p-3 font-mono text-gray-500">{s.nisn}</td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-850 border border-emerald-200 rounded text-xs font-bold font-mono">
+                          Kelas {s.kelas}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="inline-flex gap-2">
+                          <button
+                            onClick={() => startEditStudent(s)}
+                            className="p-1 text-sky-650 hover:bg-sky-50 rounded transition cursor-pointer"
+                            title="Edit Siswa"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteStudent(s.id)}
+                            className="p-1 text-red-650 hover:bg-red-50 rounded transition cursor-pointer"
+                            title="Hapus Siswa"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -1649,6 +2001,265 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* BATCH STUDENT IMPORT MODAL */}
+      {isBatchStudentModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden animate-scale-up my-6">
+            {/* Modal Header */}
+            <div className="bg-emerald-850 px-6 py-4 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-700/60 border border-emerald-500/40 flex items-center justify-center">
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm uppercase tracking-wide">
+                    Input Siswa Secara Massal (Banyak Sekaligus)
+                  </h3>
+                  <p className="text-[11px] text-emerald-200 font-normal">
+                    Salin & tempel baris dari Excel, Google Sheets, atau CSV tanpa perlu input satu per satu
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsBatchStudentModalOpen(false);
+                  setBatchResult(null);
+                }}
+                className="text-white/80 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-white/10 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Batch Result Banner */}
+              {batchResult && (
+                <div
+                  className={`p-3.5 rounded-xl border text-xs flex items-start gap-2.5 ${
+                    batchResult.success
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                      : "bg-red-50 border-red-300 text-red-900"
+                  }`}
+                >
+                  {batchResult.success ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-1">
+                    <p className="font-bold">
+                      {batchResult.success
+                        ? `Alhamdulillah! Berhasil menambahkan ${batchResult.addedCount} siswa baru ke sistem.`
+                        : "Gagal menyimpan data siswa massal."}
+                    </p>
+                    {batchResult.duplicatesCount > 0 && (
+                      <p className="text-[11px] text-amber-800 font-medium">
+                        Catatan: {batchResult.duplicatesCount} siswa dilewati karena NISN sudah terdaftar.
+                      </p>
+                    )}
+                    {batchResult.errors.length > 0 && (
+                      <div className="text-[11px] text-red-700">
+                        {batchResult.errors.map((err, i) => (
+                          <div key={i}>• {err}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Guide and Controls Toolbar */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-700">
+                      Kelas Default:
+                    </label>
+                    <select
+                      value={batchDefaultClass}
+                      onChange={(e) => setBatchDefaultClass(e.target.value)}
+                      className="px-2.5 py-1 text-xs border border-slate-300 rounded-md bg-white font-bold text-slate-800 focus:outline-none focus:border-emerald-600"
+                    >
+                      <option value="7">Kelas 7</option>
+                      <option value="8">Kelas 8</option>
+                      <option value="9">Kelas 9</option>
+                    </select>
+                    <span className="text-[10px] text-slate-400">
+                      (Digunakan bila kolom kelas tidak diisi di teks)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={fillSampleBatchData}
+                      className="px-2.5 py-1 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-bold rounded-md flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-slate-500" /> Isi Contoh Format
+                    </button>
+                    {batchRawText && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBatchRawText("");
+                          setBatchResult(null);
+                        }}
+                        className="px-2.5 py-1 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-[11px] font-bold rounded-md flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" /> Bersihkan
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-slate-500 leading-relaxed bg-white p-2.5 rounded-lg border border-slate-200">
+                  <span className="font-bold text-slate-700 block mb-0.5">
+                    Format yang Didukung (Bisa langsung blok & copy dari Excel / Spreadsheet):
+                  </span>
+                  <div className="font-mono text-[10px] text-slate-600 space-y-0.5">
+                    <div>Format 1: <strong className="text-emerald-700">NISN [Tab/Koma] Nama Lengkap Siswa [Tab/Koma] Kelas</strong></div>
+                    <div>Format 2: <strong className="text-emerald-700">NISN [Tab/Koma] Nama Lengkap Siswa</strong> (Kelas otomatis ikut Kelas Default)</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Textarea Input */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Tempelkan (Paste) Teks Data Siswa Di Bawah Ini:
+                </label>
+                <textarea
+                  value={batchRawText}
+                  onChange={(e) => {
+                    setBatchRawText(e.target.value);
+                    if (batchResult) setBatchResult(null);
+                  }}
+                  rows={6}
+                  placeholder={`Contoh tempel (paste):&#10;0012984101\tAhmad Fauzi Ramadhan\t7&#10;0012984102\tAisyah Putri Azzahra\t7&#10;0012984103\tBilal Al-Ghifari\t8`}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-xs font-mono focus:outline-none focus:border-emerald-600 focus:bg-white resize-y shadow-inner bg-slate-50/50"
+                ></textarea>
+              </div>
+
+              {/* Parsing Telemetry Summary */}
+              {batchRawText.trim() && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 font-mono">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[11px]">
+                        Total Baris: {parsedBatchStudents.length}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[11px]">
+                        Siap Disimpan: {parsedBatchStudents.filter((p) => p.status === "valid").length}
+                      </span>
+                      {parsedBatchStudents.some((p) => p.status !== "valid") && (
+                        <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[11px]">
+                          Bermasalah / Duplikat: {parsedBatchStudents.filter((p) => p.status !== "valid").length}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-slate-400">
+                      Pratinjau Data Sebelum Disimpan
+                    </span>
+                  </div>
+
+                  {/* Preview Table */}
+                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-52 overflow-y-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-100 sticky top-0 border-b border-slate-200">
+                        <tr>
+                          <th className="p-2 font-bold text-slate-600 w-10 text-center">No</th>
+                          <th className="p-2 font-bold text-slate-600">NISN</th>
+                          <th className="p-2 font-bold text-slate-600">Nama Siswa</th>
+                          <th className="p-2 font-bold text-slate-600">Kelas</th>
+                          <th className="p-2 font-bold text-slate-600 text-right">Status Validasi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-150">
+                        {parsedBatchStudents.map((item, idx) => (
+                          <tr
+                            key={idx}
+                            className={
+                              item.status === "valid"
+                                ? "bg-emerald-50/30 hover:bg-emerald-50/60"
+                                : "bg-red-50/30 hover:bg-red-50/60"
+                            }
+                          >
+                            <td className="p-2 text-center text-slate-400 font-mono text-[11px]">
+                              {idx + 1}
+                            </td>
+                            <td className="p-2 font-mono font-bold text-slate-700">
+                              {item.nisn || "-"}
+                            </td>
+                            <td className="p-2 font-semibold text-slate-800 truncate max-w-[200px]">
+                              {item.name}
+                            </td>
+                            <td className="p-2 font-mono">
+                              <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">
+                                Kelas {item.kelas}
+                              </span>
+                            </td>
+                            <td className="p-2 text-right">
+                              {item.status === "valid" ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Siap Disimpan
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                                  <AlertCircle className="w-3 h-3 text-amber-600" /> {item.message}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  disabled={isSubmittingBatch}
+                  onClick={() => {
+                    setIsBatchStudentModalOpen(false);
+                    setBatchResult(null);
+                  }}
+                  className="w-full sm:w-auto px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50"
+                >
+                  Tutup
+                </button>
+                <button
+                  type="button"
+                  disabled={
+                    isSubmittingBatch ||
+                    parsedBatchStudents.filter((p) => p.status === "valid").length === 0
+                  }
+                  onClick={handleBatchStudentSubmit}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2 transition disabled:opacity-40 shadow-sm"
+                >
+                  {isSubmittingBatch ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Menyimpan ke Database...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      <span>
+                        Simpan Semua Siswa Valid (
+                        {parsedBatchStudents.filter((p) => p.status === "valid").length} Siswa)
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

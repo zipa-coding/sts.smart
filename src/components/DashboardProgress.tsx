@@ -219,14 +219,31 @@ export default function DashboardProgress({
               </div>
             </div>
 
-            <div className="text-3xl font-black text-white tracking-tight">
-              {summary.totalStudents}
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-white tracking-tight">
+                {summary.totalStudents}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">
+                Siswa Aktif
+              </span>
             </div>
           </div>
 
-          <p className="text-[11px] text-slate-400 mt-2 font-medium">
-            Fisik siswa terdaftar di Mode SMP
-          </p>
+          <div className="mt-3 pt-2.5 border-t border-[#1a2948]/70">
+            <div className="text-[10px] uppercase tracking-wider text-slate-400 font-mono font-semibold mb-1.5">
+              Rincian Per Rombel:
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {summary.classProgress.map((cp) => (
+                <span
+                  key={cp.kelas}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-950/60 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-bold"
+                >
+                  Kelas {cp.kelas}: <span className="text-white">{cp.studentCount}</span>
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Card 2: MAPEL TUNTAS (100%) */}
@@ -295,14 +312,85 @@ export default function DashboardProgress({
               </div>
             </div>
 
-            <div className="text-3xl font-black text-purple-400 tracking-tight">
-              {summary.classProgress.length || 3}
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-purple-400 tracking-tight">
+                {summary.classProgress.length}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">
+                Rombel Aktif
+              </span>
             </div>
           </div>
 
           <p className="text-[11px] text-slate-400 mt-2 font-medium">
-            Fasilitas Kelas 7, 8, 9 di Mode SMP
+            Total {summary.totalStudents} siswa dalam {summary.classProgress.length} rombel kelas
           </p>
+        </div>
+      </div>
+
+      {/* Rombel / Class Progress Breakdown Section */}
+      <div className="rounded-2xl bg-[#0c1322] border border-[#1a2948] p-5 shadow-xl space-y-3" id="class-progress-section">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#1a2948]">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
+            <Users className="w-4 h-4 text-blue-400" />
+            <h2 className="text-sm font-extrabold text-white tracking-tight">
+              Distribusi Siswa & Kesiapan Nilai Per Kelas
+            </h2>
+          </div>
+          <span className="text-[11px] text-slate-400 font-mono">
+            Total {summary.totalStudents} Siswa • {summary.classProgress.length} Kelas
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          {summary.classProgress.map((cp) => (
+            <div
+              key={cp.kelas}
+              className="p-4 rounded-xl bg-[#080d1a] border border-[#1a2948] hover:border-blue-500/50 transition-all space-y-3"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="inline-block px-2.5 py-0.5 rounded-md bg-blue-600/20 border border-blue-500/30 text-blue-400 text-xs font-black font-mono">
+                    KELAS {cp.kelas}
+                  </span>
+                  <p className="text-[11px] text-slate-400 mt-1 truncate">
+                    Wali: <span className="text-slate-200 font-medium">{cp.waliKelasName}</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-black text-white font-mono">
+                    {cp.studentCount}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block font-medium">
+                    Siswa Terdaftar
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span>Progres Pengisian Nilai:</span>
+                  <span className="font-mono font-bold text-white">
+                    {cp.percent}% ({cp.filledGrades}/{cp.totalNeeded})
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      cp.percent === 100
+                        ? "bg-emerald-500"
+                        : cp.percent > 0
+                        ? "bg-blue-500"
+                        : "bg-slate-700"
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(0, cp.percent))}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -465,11 +553,16 @@ export default function DashboardProgress({
             </div>
           </div>
 
-          <div className="pt-2 border-t border-[#1a2948] flex items-center justify-between text-[11px] text-slate-400">
-            <span>Total Nilai Terisi Sekolah:</span>
-            <span className="font-mono font-bold text-emerald-400">
-              {stats.totalGradesFilled} / {stats.totalGradesRequired} Siswa ({stats.overallPercent}%)
-            </span>
+          <div className="pt-2.5 border-t border-[#1a2948] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-slate-300">Rekapitulasi Nilai:</span>
+              <span className="font-mono font-bold text-emerald-400">
+                {stats.totalGradesFilled} / {stats.totalGradesRequired} Entri Nilai ({stats.overallPercent}%)
+              </span>
+            </div>
+            <div className="text-slate-400">
+              Total Siswa: <strong className="text-white font-mono">{summary.totalStudents} Siswa</strong>
+            </div>
           </div>
         </div>
       </div>
