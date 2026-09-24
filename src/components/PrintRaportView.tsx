@@ -206,7 +206,7 @@ export default function PrintRaportView({
   // Generate automated narrative backup fallback if subject deskripsi is empty
   const generateDescription = (g: Grade | undefined) => {
     if (!g || !g.tps || !Array.isArray(g.tps) || g.tps.length === 0) {
-      return "Belum ada deskripsi capaian pembelajaran.";
+      return "";
     }
 
     const achieved = g.tps.filter((tp) => tp.achieved).map((tp) => tp.text);
@@ -223,95 +223,40 @@ export default function PrintRaportView({
       desc += `Perlu peningkatan bimbingan lebih lanjut dalam hal ${needImprovement.join(", ")}.`;
     }
 
-    if (achieved.length === 0 && needImprovement.length === 0) {
-      return "Menunjukkan partisipasi cukup baik dalam proses pembelajaran.";
-    }
-
     return desc.trim();
-  };
-
-  // Deterministic hash based on student.id and subject to generate realistic stable mock grades if not entered
-  const getDeterministicMockGrade = (sub: string) => {
-    const str = `${student.id}-${sub}`;
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    hash = Math.abs(hash);
-
-    // Stable score between 78 and 92
-    const score = 78 + (hash % 15);
-
-    // Usaha, Proses, Capaian based on standard score: >91=A, >=80=B, <=79=C
-    let usaha = "B";
-    let proses = "B";
-    let capaian = "B";
-    if (score > 91) {
-      usaha = "A";
-      proses = "A";
-      capaian = "A";
-    } else if (score >= 80) {
-      usaha = "B";
-      proses = "B";
-      capaian = "B";
-    } else {
-      usaha = "C";
-      proses = "C";
-      capaian = "C";
-    }
-
-    // Generate beautiful personalized description
-    const name = student.name;
-    const isMulokOrKeislaman =
-      mulokSubjects.includes(sub) || keislamanSubjects.includes(sub);
-
-    let deskripsi = "";
-    if (isMulokOrKeislaman) {
-      deskripsi = `Alhamdulillah ananda ${name} dalam usaha, proses serta capaian untuk pelajaran ${sub} sudah baik. Memperlihatkan partisipasi aktif, kesungguhan belajar, serta peningkatan pemahaman materi dengan baik. Terus pertahankan semangat dan motivasi belajarmu ya.`;
-    } else {
-      deskripsi = `Alhamdulillah, perkembangan kompetensi ananda ${name} dalam pelajaran ${sub} menunjukkan usaha dan proses yang sangat baik. Ananda aktif berpartisipasi dalam setiap kegiatan kelas dan mampu menyelesaikan tugas dengan penuh tanggung jawab. Terus tingkatkan fokus belajarmu ya.`;
-    }
-
-    return {
-      score,
-      usaha,
-      proses,
-      capaian,
-      deskripsi,
-    };
   };
 
   const getSubjectScore = (sub: string) => {
     const g = grades.find((x) => x.subject === sub);
-    if (g) return g.score;
-    return getDeterministicMockGrade(sub).score;
+    if (g && g.score !== undefined && g.score !== null) return g.score;
+    return "";
   };
 
   const getSubjectUsaha = (sub: string) => {
     const g = grades.find((x) => x.subject === sub);
-    if (g) return g.usaha || "B";
-    return getDeterministicMockGrade(sub).usaha;
+    if (g && g.usaha) return g.usaha;
+    return "-";
   };
 
   const getSubjectProses = (sub: string) => {
     const g = grades.find((x) => x.subject === sub);
-    if (g) return g.proses || "B";
-    return getDeterministicMockGrade(sub).proses;
+    if (g && g.proses) return g.proses;
+    return "-";
   };
 
   const getSubjectCapaian = (sub: string) => {
     const g = grades.find((x) => x.subject === sub);
-    if (g) return g.capaian || "B";
-    return getDeterministicMockGrade(sub).capaian;
+    if (g && g.capaian) return g.capaian;
+    return "-";
   };
 
   const getSubjectDescription = (sub: string) => {
     const g = grades.find((x) => x.subject === sub);
     if (g) {
-      if (g.deskripsi) return g.deskripsi;
+      if (g.deskripsi && g.deskripsi.trim() !== "") return g.deskripsi.trim();
       return generateDescription(g);
     }
-    return getDeterministicMockGrade(sub).deskripsi;
+    return "";
   };
 
   const handlePrint = () => {
@@ -490,18 +435,18 @@ export default function PrintRaportView({
             </tr>
             <tr>
               <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.spiritualUsaha || "B"}
+                ${waliKelasNote.spiritualUsaha || "-"}
               </td>
               <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.spiritualProses || "B"}
+                ${waliKelasNote.spiritualProses || "-"}
               </td>
               <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.spiritualCapaian || "B"}
+                ${waliKelasNote.spiritualCapaian || "-"}
               </td>
             </tr>
             <tr>
               <td colspan="4" style="padding: 4px 6px 10px 6px; font-size: 9.5pt; text-align: justify; line-height: 1.45;">
-                <strong>Deskripsi:</strong> ${waliKelasNote.spiritualDeskripsi || "Menunjukkan pembiasaan akhlak shaleh serta ketaatan ibadah yang baik."}
+                <strong>Deskripsi:</strong> ${waliKelasNote.spiritualDeskripsi || ""}
               </td>
             </tr>
           </table>
@@ -524,18 +469,18 @@ export default function PrintRaportView({
             </tr>
             <tr>
               <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.sosialUsaha || "B"}
+                ${waliKelasNote.sosialUsaha || "-"}
               </td>
               <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.sosialProses || "B"}
+                ${waliKelasNote.sosialProses || "-"}
               </td>
               <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.sosialCapaian || "B"}
+                ${waliKelasNote.sosialCapaian || "-"}
               </td>
             </tr>
             <tr>
               <td colspan="4" style="padding: 4px 6px 10px 6px; font-size: 9.5pt; text-align: justify; line-height: 1.45;">
-                <strong>Deskripsi:</strong> ${waliKelasNote.sosialDeskripsi || "Menunjukkan sikap tolong-menolong, kesopanan santun, serta kerjasama yang baik dengan sesama kawan."}
+                <strong>Deskripsi:</strong> ${waliKelasNote.sosialDeskripsi || ""}
               </td>
             </tr>
           </table>
@@ -735,7 +680,7 @@ export default function PrintRaportView({
           <table class="pdf-box-table" style="page-break-inside: avoid;">
             <tr>
               <td style="padding: 6px 8px 10px 8px; font-size: 9.5pt; text-align: justify; line-height: 1.45;">
-                ${waliKelasNote.catatan || "Alhamdulillah secara keseluruhan ananda sudah baik dalam mengikuti kegiatan belajar di sekolah."}
+                ${waliKelasNote.catatan || ""}
               </td>
             </tr>
           </table>
@@ -1096,18 +1041,18 @@ export default function PrintRaportView({
         </tr>
         <tr>
           <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.spiritualUsaha || "B"}
+            ${waliKelasNote.spiritualUsaha || "-"}
           </td>
           <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.spiritualProses || "B"}
+            ${waliKelasNote.spiritualProses || "-"}
           </td>
           <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.spiritualCapaian || "B"}
+            ${waliKelasNote.spiritualCapaian || "-"}
           </td>
         </tr>
         <tr>
           <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
-            <strong>Deskripsi:</strong> ${waliKelasNote.spiritualDeskripsi || "Menunjukkan pembiasaan akhlak shaleh serta ketaatan ibadah yang baik."}
+            <strong>Deskripsi:</strong> ${waliKelasNote.spiritualDeskripsi || ""}
           </td>
         </tr>
       </table>
@@ -1130,18 +1075,18 @@ export default function PrintRaportView({
         </tr>
         <tr>
           <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.sosialUsaha || "B"}
+            ${waliKelasNote.sosialUsaha || "-"}
           </td>
           <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.sosialProses || "B"}
+            ${waliKelasNote.sosialProses || "-"}
           </td>
           <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.sosialCapaian || "B"}
+            ${waliKelasNote.sosialCapaian || "-"}
           </td>
         </tr>
         <tr>
           <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
-            <strong>Deskripsi:</strong> ${waliKelasNote.sosialDeskripsi || "Menunjukkan sikap tolong-menolong, kesopanan santun, serta kerjasama yang baik dengan sesama kawan."}
+            <strong>Deskripsi:</strong> ${waliKelasNote.sosialDeskripsi || ""}
           </td>
         </tr>
       </table>
@@ -1345,7 +1290,7 @@ export default function PrintRaportView({
       <table border="1" cellspacing="0" cellpadding="4" style="width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1.2px solid #000000; background-color: #ffffff; margin-left: auto; margin-right: auto; page-break-inside: avoid;">
         <tr>
           <td style="border: 1px solid #000000; padding: 6px 8px 10px 8px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
-            ${waliKelasNote.catatan || "Alhamdulillah secara keseluruhan ananda sudah baik dalam mengikuti kegiatan belajar di sekolah."}
+            ${waliKelasNote.catatan || ""}
           </td>
         </tr>
       </table>
@@ -1866,7 +1811,7 @@ export default function PrintRaportView({
                         Usaha
                       </div>
                       <div className="text-xs font-bold text-black">
-                        {waliKelasNote.spiritualUsaha || "B"}
+                        {waliKelasNote.spiritualUsaha || "-"}
                       </div>
                     </td>
                     <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 text-gray-500 align-top">
@@ -1874,7 +1819,7 @@ export default function PrintRaportView({
                         Proses
                       </div>
                       <div className="text-xs font-bold text-black">
-                        {waliKelasNote.spiritualProses || "B"}
+                        {waliKelasNote.spiritualProses || "-"}
                       </div>
                     </td>
                     <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] bg-gray-50/50 text-gray-500 align-top">
@@ -1882,7 +1827,7 @@ export default function PrintRaportView({
                         Capaian
                       </div>
                       <div className="text-xs font-bold text-black">
-                        {waliKelasNote.spiritualCapaian || "B"}
+                        {waliKelasNote.spiritualCapaian || "-"}
                       </div>
                     </td>
                   </tr>
@@ -1896,8 +1841,7 @@ export default function PrintRaportView({
                         Deskripsi:
                       </strong>
                       <span className="text-gray-800">
-                        {waliKelasNote.spiritualDeskripsi ||
-                          "Menunjukkan pembiasaan akhlak shaleh serta ketaatan ibadah yang baik."}
+                        {waliKelasNote.spiritualDeskripsi || ""}
                       </span>
                     </td>
                   </tr>
@@ -1918,7 +1862,7 @@ export default function PrintRaportView({
                         Usaha
                       </div>
                       <div className="text-xs font-bold text-black">
-                        {waliKelasNote.sosialUsaha || "B"}
+                        {waliKelasNote.sosialUsaha || "-"}
                       </div>
                     </td>
                     <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 text-gray-500 align-top">
@@ -1926,7 +1870,7 @@ export default function PrintRaportView({
                         Proses
                       </div>
                       <div className="text-xs font-bold text-black">
-                        {waliKelasNote.sosialProses || "B"}
+                        {waliKelasNote.sosialProses || "-"}
                       </div>
                     </td>
                     <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] bg-gray-50/50 text-gray-500 align-top">
@@ -1934,7 +1878,7 @@ export default function PrintRaportView({
                         Capaian
                       </div>
                       <div className="text-xs font-bold text-black">
-                        {waliKelasNote.sosialCapaian || "B"}
+                        {waliKelasNote.sosialCapaian || "-"}
                       </div>
                     </td>
                   </tr>
@@ -1948,8 +1892,7 @@ export default function PrintRaportView({
                         Deskripsi:
                       </strong>
                       <span className="text-gray-800">
-                        {waliKelasNote.sosialDeskripsi ||
-                          "Menunjukkan sikap tolong-menolong, kesopanan santun, serta kerjasama yang baik dengan sesama kawan."}
+                        {waliKelasNote.sosialDeskripsi || ""}
                       </span>
                     </td>
                   </tr>
@@ -2239,11 +2182,10 @@ export default function PrintRaportView({
               F. Saran-Saran
             </h4>
             <div
-              className="border pt-1.5 pb-2.5 px-3 text-xs leading-relaxed text-justify border-black text-slate-900 bg-transparent"
+              className="border pt-1.5 pb-2.5 px-3 text-xs leading-relaxed text-justify border-black text-slate-900 bg-transparent min-h-[40px]"
               style={{ fontSize: "9.5pt" }}
             >
-              {waliKelasNote.catatan ||
-                "Alhamdulillah secara keseluruhan ananda sudah baik dalam mengikuti kegiatan belajar di sekolah."}
+              {waliKelasNote.catatan || ""}
             </div>
           </div>
 
