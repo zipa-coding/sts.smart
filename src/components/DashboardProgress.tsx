@@ -16,7 +16,15 @@ import {
   ShieldCheck,
   Zap,
   Filter,
-  Award
+  Award,
+  Trophy,
+  Medal,
+  ChevronDown,
+  ChevronUp,
+  Star,
+  SlidersHorizontal,
+  Eye,
+  BookOpen
 } from "lucide-react";
 
 interface DashboardProgressProps {
@@ -33,6 +41,12 @@ export default function DashboardProgress({
   // Subject filtering and search
   const [categoryFilter, setCategoryFilter] = useState<"all" | "nasional" | "islamic" | "muatan">("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Student Rankings State
+  const [rankingClassFilter, setRankingClassFilter] = useState<string>("all");
+  const [rankingSearch, setRankingSearch] = useState<string>("");
+  const [rankingSortOrder, setRankingSortOrder] = useState<"desc" | "asc">("desc");
+  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
 
   const fetchSummary = async () => {
     setLoading(true);
@@ -82,6 +96,52 @@ export default function DashboardProgress({
       return matchesCategory && matchesSearch;
     });
   }, [categorizedSubjects, categoryFilter, searchQuery]);
+
+  // Filtered and Sorted Student Rankings
+  const filteredRankings = useMemo(() => {
+    if (!summary?.studentRankings) return [];
+    let list = [...summary.studentRankings];
+
+    if (rankingClassFilter !== "all") {
+      list = list.filter((s) => String(s.kelas).trim() === rankingClassFilter);
+    }
+
+    if (rankingSearch.trim()) {
+      const q = rankingSearch.toLowerCase().trim();
+      list = list.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          String(s.nisn).toLowerCase().includes(q)
+      );
+    }
+
+    if (rankingSortOrder === "asc") {
+      list.sort((a, b) => {
+        if (a.totalScore !== b.totalScore) return a.totalScore - b.totalScore;
+        return a.averageScore - b.averageScore;
+      });
+    } else {
+      list.sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+        return b.averageScore - a.averageScore;
+      });
+    }
+
+    return list;
+  }, [summary?.studentRankings, rankingClassFilter, rankingSearch, rankingSortOrder]);
+
+  const topThreePodium = useMemo(() => {
+    if (!summary?.studentRankings) return [];
+    let pool = [...summary.studentRankings];
+    if (rankingClassFilter !== "all") {
+      pool = pool.filter((s) => String(s.kelas).trim() === rankingClassFilter);
+    }
+    pool.sort((a, b) => {
+      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+      return b.averageScore - a.averageScore;
+    });
+    return pool.slice(0, 3);
+  }, [summary?.studentRankings, rankingClassFilter]);
 
   // Overall Statistics calculations
   const stats = useMemo(() => {
@@ -562,6 +622,479 @@ export default function DashboardProgress({
             </div>
             <div className="text-slate-400">
               Total Siswa: <strong className="text-white font-mono">{summary.totalStudents} Siswa</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* STUDENT RANKING SECTION (AKUMULASI NILAI TERTINGGI KE TERENDAH) */}
+      <div
+        className="rounded-2xl bg-[#0c1322] border border-[#1a2948] p-6 shadow-xl space-y-6 animate-fade-in"
+        id="student-ranking-section"
+      >
+        {/* Header & Filter Controls */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#1a2948]">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <Trophy className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-black text-white tracking-wide">
+                  Peringkat Siswa (Leaderboard Nilai)
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider">
+                  Akumulasi Nilai
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Urutan peringkat siswa berdasarkan akumulasi seluruh perolehan nilai mata pelajaran dari tertinggi ke terendah
+              </p>
+            </div>
+          </div>
+
+          {/* Filtering and Sort Toolbar */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Class filter tabs */}
+            <div className="flex items-center bg-[#080d1a] border border-[#1a2948] p-1 rounded-xl">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 hidden sm:inline">
+                Rombel:
+              </span>
+              {[
+                { id: "all", label: "Semua Tingkat" },
+                { id: "7", label: "Kelas 7" },
+                { id: "8", label: "Kelas 8" },
+                { id: "9", label: "Kelas 9" },
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setRankingClassFilter(c.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    rankingClassFilter === c.id
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort order toggle */}
+            <div className="flex items-center bg-[#080d1a] border border-[#1a2948] p-1 rounded-xl">
+              <button
+                onClick={() => setRankingSortOrder("desc")}
+                title="Nilai Tertinggi ke Terendah"
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                  rankingSortOrder === "desc"
+                    ? "bg-amber-600/80 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <span>Tertinggi</span>
+                <span className="text-[10px]">↓</span>
+              </button>
+              <button
+                onClick={() => setRankingSortOrder("asc")}
+                title="Nilai Terendah ke Tertinggi"
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                  rankingSortOrder === "asc"
+                    ? "bg-amber-600/80 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <span>Terendah</span>
+                <span className="text-[10px]">↑</span>
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative min-w-[200px]">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={rankingSearch}
+                onChange={(e) => setRankingSearch(e.target.value)}
+                placeholder="Cari siswa atau NISN..."
+                className="w-full pl-8 pr-3 py-1.5 bg-[#080d1a] border border-[#1a2948] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* TOP 3 PODIUM / CHAMPION CARDS (Displayed when in desc sort) */}
+        {rankingSortOrder === "desc" && topThreePodium.length > 0 && !rankingSearch && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 pb-2">
+            {/* JUARA 2 (Silver) */}
+            {topThreePodium[1] && (
+              <div className="order-2 md:order-1 rounded-2xl bg-gradient-to-b from-slate-800/60 to-[#080d1a] border border-slate-600/40 p-4 shadow-lg flex flex-col justify-between hover:border-slate-400 transition relative overflow-hidden">
+                <div className="absolute -right-4 -top-4 w-20 h-20 bg-slate-400/5 rounded-full blur-xl pointer-events-none"></div>
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-300/10 border border-slate-300/30 text-slate-300 text-xs font-bold flex items-center gap-1.5">
+                      <span>🥈</span> Juara 2
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-bold">
+                      Kelas {topThreePodium[1].kelas}
+                    </span>
+                  </div>
+                  <h4 className="text-base font-bold text-white truncate" title={topThreePodium[1].name}>
+                    {topThreePodium[1].name}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    NISN: {topThreePodium[1].nisn || "-"}
+                  </p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
+                      Total Akumulasi
+                    </span>
+                    <span className="text-xl font-black text-slate-200 font-mono">
+                      {topThreePodium[1].totalScore.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
+                      Rata-Rata
+                    </span>
+                    <span className="text-lg font-bold text-cyan-400 font-mono">
+                      {topThreePodium[1].averageScore}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* JUARA 1 (Gold - Center & Elevated) */}
+            {topThreePodium[0] && (
+              <div className="order-1 md:order-2 rounded-2xl bg-gradient-to-b from-amber-900/30 via-[#0c162c] to-[#080d1a] border-2 border-amber-500/60 p-5 shadow-[0_0_25px_rgba(245,158,11,0.15)] flex flex-col justify-between hover:border-amber-400 transition relative overflow-hidden">
+                <div className="absolute -right-6 -top-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-black flex items-center gap-1.5 shadow-xs">
+                      <span>🥇</span> Juara 1 (Terbaik)
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono text-[10px] font-bold">
+                      Kelas {topThreePodium[0].kelas}
+                    </span>
+                  </div>
+                  <h4 className="text-lg font-black text-amber-200 truncate" title={topThreePodium[0].name}>
+                    {topThreePodium[0].name}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    NISN: {topThreePodium[0].nisn || "-"}
+                  </p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-amber-500/30 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] uppercase tracking-wider text-amber-400/80 font-mono block font-bold">
+                      Total Akumulasi
+                    </span>
+                    <span className="text-2xl font-black text-amber-400 font-mono">
+                      {topThreePodium[0].totalScore.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] uppercase tracking-wider text-amber-400/80 font-mono block font-bold">
+                      Rata-Rata
+                    </span>
+                    <span className="text-xl font-black text-emerald-400 font-mono">
+                      {topThreePodium[0].averageScore}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* JUARA 3 (Bronze) */}
+            {topThreePodium[2] && (
+              <div className="order-3 md:order-3 rounded-2xl bg-gradient-to-b from-amber-950/40 to-[#080d1a] border border-amber-700/40 p-4 shadow-lg flex flex-col justify-between hover:border-amber-600 transition relative overflow-hidden">
+                <div className="absolute -right-4 -top-4 w-20 h-20 bg-amber-700/5 rounded-full blur-xl pointer-events-none"></div>
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-700/20 border border-amber-700/40 text-amber-400 text-xs font-bold flex items-center gap-1.5">
+                      <span>🥉</span> Juara 3
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-bold">
+                      Kelas {topThreePodium[2].kelas}
+                    </span>
+                  </div>
+                  <h4 className="text-base font-bold text-white truncate" title={topThreePodium[2].name}>
+                    {topThreePodium[2].name}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    NISN: {topThreePodium[2].nisn || "-"}
+                  </p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-amber-900/50 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
+                      Total Akumulasi
+                    </span>
+                    <span className="text-xl font-black text-amber-300/90 font-mono">
+                      {topThreePodium[2].totalScore.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
+                      Rata-Rata
+                    </span>
+                    <span className="text-lg font-bold text-cyan-400 font-mono">
+                      {topThreePodium[2].averageScore}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FULL RANKING TABLE */}
+        <div className="rounded-xl border border-[#1a2948] overflow-hidden bg-[#080d1a]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#0f172a] text-slate-400 uppercase tracking-wider font-mono text-[10px] border-b border-[#1a2948]">
+                <tr>
+                  <th className="py-3 px-4 text-center w-16">Peringkat</th>
+                  <th className="py-3 px-4">Nama Siswa / NISN</th>
+                  <th className="py-3 px-4 text-center">Kelas</th>
+                  <th className="py-3 px-4 text-center">Capaian Mapel</th>
+                  <th className="py-3 px-4 text-right">Akumulasi Nilai</th>
+                  <th className="py-3 px-4 text-right">Rata-Rata</th>
+                  <th className="py-3 px-4 text-center">Predikat</th>
+                  <th className="py-3 px-4 text-center w-28">Rincian Mapel</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1a2948]/70">
+                {filteredRankings.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-slate-400 italic">
+                      Tidak ada siswa ditemukan yang sesuai dengan kriteria filter.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRankings.map((student, idx) => {
+                    const rankNum = rankingSortOrder === "desc" ? idx + 1 : filteredRankings.length - idx;
+                    const isTop1 = rankNum === 1;
+                    const isTop2 = rankNum === 2;
+                    const isTop3 = rankNum === 3;
+                    const isExpanded = expandedStudentId === student.studentId;
+
+                    return (
+                      <React.Fragment key={student.studentId}>
+                        <tr
+                          className={`hover:bg-[#0f1b36] transition ${
+                            isTop1
+                              ? "bg-amber-500/5 font-semibold"
+                              : isTop2
+                              ? "bg-slate-400/5"
+                              : isTop3
+                              ? "bg-amber-700/5"
+                              : ""
+                          }`}
+                        >
+                          {/* Rank Badge */}
+                          <td className="py-3.5 px-4 text-center">
+                            {isTop1 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black">
+                                🥇 1
+                              </span>
+                            ) : isTop2 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-400/20 text-slate-200 border border-slate-400/40 text-xs font-black">
+                                🥈 2
+                              </span>
+                            ) : isTop3 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-700/20 text-amber-300 border border-amber-700/40 text-xs font-black">
+                                🥉 3
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#0f172a] text-slate-400 border border-[#1a2948] text-[11px] font-mono font-bold">
+                                #{rankNum}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Student Name & NISN */}
+                          <td className="py-3.5 px-4">
+                            <div className="font-bold text-white text-xs sm:text-sm">
+                              {student.name}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              NISN: {student.nisn || "-"}
+                            </div>
+                          </td>
+
+                          {/* Class */}
+                          <td className="py-3.5 px-4 text-center">
+                            <span className="inline-block px-2.5 py-0.5 rounded-full bg-blue-950/70 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-bold">
+                              Kelas {student.kelas}
+                            </span>
+                          </td>
+
+                          {/* Completed Subjects */}
+                          <td className="py-3.5 px-4 text-center">
+                            <div className="inline-flex flex-col items-center">
+                              <span className="text-[11px] font-mono font-bold text-slate-300">
+                                {student.filledSubjectsCount} / {student.totalSubjectsCount}
+                              </span>
+                              <div className="w-16 h-1.5 bg-[#0f172a] rounded-full overflow-hidden mt-1 border border-[#1a2948]">
+                                <div
+                                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full"
+                                  style={{
+                                    width: `${Math.min(
+                                      100,
+                                      Math.round(
+                                        (student.filledSubjectsCount /
+                                          (student.totalSubjectsCount || 1)) *
+                                          100
+                                      )
+                                    )}%`,
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Total Score */}
+                          <td className="py-3.5 px-4 text-right">
+                            <span className="text-sm font-black text-amber-300 font-mono">
+                              {student.totalScore.toLocaleString("id-ID")}
+                            </span>
+                            <span className="text-[10px] text-slate-400 ml-1">Poin</span>
+                          </td>
+
+                          {/* Average Score */}
+                          <td className="py-3.5 px-4 text-right">
+                            <span
+                              className={`text-sm font-black font-mono ${
+                                student.averageScore >= 85
+                                  ? "text-emerald-400"
+                                  : student.averageScore >= 75
+                                  ? "text-cyan-400"
+                                  : student.averageScore > 0
+                                  ? "text-amber-400"
+                                  : "text-slate-500"
+                              }`}
+                            >
+                              {student.averageScore}
+                            </span>
+                          </td>
+
+                          {/* Predikat */}
+                          <td className="py-3.5 px-4 text-center">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                                student.predikat.startsWith("A")
+                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                  : student.predikat.startsWith("B")
+                                  ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                                  : student.predikat.startsWith("C")
+                                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                                  : "bg-slate-800 text-slate-400 border border-slate-700"
+                              }`}
+                            >
+                              {student.predikat}
+                            </span>
+                          </td>
+
+                          {/* Action toggle detail */}
+                          <td className="py-3.5 px-4 text-center">
+                            <button
+                              onClick={() =>
+                                setExpandedStudentId(
+                                  isExpanded ? null : student.studentId
+                                )
+                              }
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 mx-auto cursor-pointer ${
+                                isExpanded
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-[#0f172a] text-slate-300 hover:text-white border border-[#1a2948] hover:border-blue-500/50"
+                              }`}
+                            >
+                              <Eye className="w-3 h-3" />
+                              <span>{isExpanded ? "Tutup" : "Rincian"}</span>
+                            </button>
+                          </td>
+                        </tr>
+
+                        {/* EXPANDED ACCORDION: Individual Subject Scores */}
+                        {isExpanded && (
+                          <tr className="bg-[#060a14] border-b border-[#1a2948]">
+                            <td colSpan={8} className="p-4">
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between text-[11px] pb-1 border-b border-[#1a2948]/80">
+                                  <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                                    <BookOpen className="w-3.5 h-3.5 text-blue-400" />
+                                    <span>Rincian Perolehan Nilai Mata Pelajaran: {student.name}</span>
+                                  </span>
+                                  <span className="text-slate-400 font-mono text-[10px]">
+                                    Terisi: {student.filledSubjectsCount} dari {student.totalSubjectsCount} Mata Pelajaran
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 pt-1">
+                                  {[
+                                    "PAI", "PPKN", "Bahasa Indonesia", "Matematika", "IPA", "IPS", "Bahasa Inggris", "PJOK", "Prakarya", "Informatika",
+                                    "Bahasa Arab", "Tahsin ABaTaTsa", "Tahfizh Al-Qur’an", "Do’a Harian dan Hadits", "Wudhu dan Sholat"
+                                  ].map((subName) => {
+                                    const score = student.subjectScores?.[subName];
+                                    const hasScore = score !== undefined && score !== null;
+
+                                    return (
+                                      <div
+                                        key={subName}
+                                        className="p-2 rounded-lg bg-[#0c1322] border border-[#1a2948] flex items-center justify-between text-xs"
+                                      >
+                                        <span className="text-[10px] text-slate-300 truncate max-w-[100px]" title={subName}>
+                                          {subName}
+                                        </span>
+                                        <span
+                                          className={`font-mono font-bold text-xs px-1.5 py-0.5 rounded ${
+                                            !hasScore
+                                              ? "text-slate-600 bg-slate-900"
+                                              : score >= 85
+                                              ? "text-emerald-400 bg-emerald-950/60 border border-emerald-500/30"
+                                              : score >= 75
+                                              ? "text-cyan-400 bg-cyan-950/60 border border-cyan-500/30"
+                                              : "text-amber-400 bg-amber-950/60 border border-amber-500/30"
+                                          }`}
+                                        >
+                                          {hasScore ? score : "-"}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Table Footer */}
+          <div className="p-3 bg-[#0f172a] border-t border-[#1a2948] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
+            <div>
+              Menampilkan <strong className="text-white">{filteredRankings.length}</strong> dari{" "}
+              <strong className="text-white">{summary.totalStudents}</strong> siswa terdaftar
+              {rankingClassFilter !== "all" && ` (Filter: Kelas ${rankingClassFilter})`}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Nilai ≥ 85 (Sangat Baik)
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Nilai 75-84 (Baik)
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-400"></span> Nilai &lt; 75
+              </span>
             </div>
           </div>
         </div>

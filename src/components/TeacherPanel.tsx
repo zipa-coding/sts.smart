@@ -79,18 +79,24 @@ export default function TeacherPanel({
       setStudents(sArr);
       setGrades(gArr);
 
-      // Filter TP templates specifically for this teacher's subject
-      const subjectTps = Array.isArray(tpObj[user.subject])
+      // Filter TP templates specifically for this teacher's subject and the selected class
+      const allSubjectTps = Array.isArray(tpObj[user.subject])
         ? tpObj[user.subject]
         : [];
-      setTpTemplates(subjectTps);
+      const classTps = allSubjectTps.filter(
+        (t: any) =>
+          !t.kelas ||
+          t.kelas === "all" ||
+          String(t.kelas).trim() === String(selectedClass).trim(),
+      );
+      setTpTemplates(classTps);
 
       // Auto-select first student in this class if available
       const classStudents = sArr.filter(
         (s: Student) => s.kelas === selectedClass,
       );
       if (classStudents.length > 0) {
-        handleStudentSelect(classStudents[0], gArr, subjectTps);
+        handleStudentSelect(classStudents[0], gArr, classTps);
       } else {
         setSelectedStudent(null);
         setScore("");
@@ -334,6 +340,7 @@ export default function TeacherPanel({
         body: JSON.stringify({
           subject: user.subject,
           tpText: newTpText.trim(),
+          kelas: selectedClass,
         }),
       });
 
@@ -341,13 +348,21 @@ export default function TeacherPanel({
       if (!response.ok) throw new Error(data.error || "Gagal menyimpan TP.");
 
       setNewTpText("");
-      setSuccess("Tujuan Pembelajaran berhasil ditambahkan!");
+      setSuccess(`Tujuan Pembelajaran untuk Kelas ${selectedClass} berhasil ditambahkan!`);
 
-      // Reload TP templates for this subject
+      // Reload TP templates for this subject and selected class
       const resTp = await fetch("/api/tps");
       const tpData = await resTp.json();
-      const subjectTps = tpData[user.subject] || [];
-      setTpTemplates(subjectTps);
+      const allSubjectTps = Array.isArray(tpData[user.subject])
+        ? tpData[user.subject]
+        : [];
+      const classTps = allSubjectTps.filter(
+        (t: any) =>
+          !t.kelas ||
+          t.kelas === "all" ||
+          String(t.kelas).trim() === String(selectedClass).trim(),
+      );
+      setTpTemplates(classTps);
 
       // Default the new TP as achieved in state
       setTpAchievements((prev) => ({
@@ -382,13 +397,19 @@ export default function TeacherPanel({
 
       setSuccess("Tujuan Pembelajaran berhasil dihapus.");
 
-      // Reload TP templates
+      // Reload TP templates for selected class
       const resTp = await fetch("/api/tps");
       const tpData = await resTp.json();
-      const subjectTps = Array.isArray(tpData[user.subject])
+      const allSubjectTps = Array.isArray(tpData[user.subject])
         ? tpData[user.subject]
         : [];
-      setTpTemplates(subjectTps);
+      const classTps = allSubjectTps.filter(
+        (t: any) =>
+          !t.kelas ||
+          t.kelas === "all" ||
+          String(t.kelas).trim() === String(selectedClass).trim(),
+      );
+      setTpTemplates(classTps);
     } catch (err: any) {
       setError(err.message || "Gagal menghapus TP.");
     }
@@ -776,14 +797,18 @@ export default function TeacherPanel({
             className="space-y-4 animate-fade-in"
             id="teacher-tplocal-management"
           >
-            <div>
-              <h3 className="font-bold text-xs text-slate-800 uppercase">
-                Kelola Tujuan Pembelajaran (TP) - {user.subject}
-              </h3>
-              <p className="text-[10px] text-slate-400">
-                Hubungkan materi dan kompetensi yang diujikan dalam raport untuk
-                mapel Anda. Semua guru bebas menambahkan atau mengedit di sini!
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-xs text-slate-800 uppercase flex items-center gap-2">
+                  <span>Kelola Tujuan Pembelajaran (TP) - {user.subject}</span>
+                  <span className="px-2 py-0.5 bg-emerald-800 text-white rounded text-[10px] font-bold">
+                    Kelas {selectedClass}
+                  </span>
+                </h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Tujuan pembelajaran otomatis disesuaikan secara spesifik untuk tingkat Kelas {selectedClass}. Anda dapat menambah atau memperbarui sesuai kebutuhan materi.
+                </p>
+              </div>
             </div>
 
             {/* Form to add custom learning objective directly by the teacher */}
@@ -792,15 +817,16 @@ export default function TeacherPanel({
               className="p-3 bg-emerald-50 rounded-lg border border-emerald-150 flex gap-2 items-end"
             >
               <div className="flex-1">
-                <label className="block text-[9px] font-bold text-emerald-900 uppercase tracking-widest mb-1">
-                  Tambah Tujuan Pembelajaran Baru:
+                <label className="block text-[9px] font-bold text-emerald-900 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                  <span>Tambah Tujuan Pembelajaran Baru:</span>
+                  <span className="text-emerald-700 font-extrabold">(Tingkat Kelas {selectedClass})</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={newTpText}
                   onChange={(e) => setNewTpText(e.target.value)}
-                  placeholder="Contoh: Mengidentifikasi rumus kuadratik dan diagram koordinat..."
+                  placeholder={`Contoh: Menguasai kompetensi dasar materi kelas ${selectedClass}...`}
                   className="w-full p-1.5 bg-white border border-emerald-250 rounded text-xs focus:outline-none focus:border-emerald-700"
                 />
               </div>
@@ -820,16 +846,21 @@ export default function TeacherPanel({
 
             {/* List of current objectives for this subject with delete buttons */}
             <div className="border border-slate-200 rounded-lg overflow-hidden">
-              <div className="bg-slate-50 px-3 py-2 border-b border-slate-200">
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                  Daftar TP Terdaftar (
-                  {!Array.isArray(tpTemplates) ? 0 : tpTemplates.length})
+              <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <span>Daftar TP Kelas {selectedClass}</span>
+                  <span className="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-mono">
+                    {!Array.isArray(tpTemplates) ? 0 : tpTemplates.length} TP
+                  </span>
+                </span>
+                <span className="text-[9px] text-slate-400 italic">
+                  Khusus Rombel {selectedClass}
                 </span>
               </div>
               <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
                 {!Array.isArray(tpTemplates) || tpTemplates.length === 0 ? (
                   <p className="p-4 text-center text-xs text-slate-400 italic">
-                    Belum ada Tujuan Pembelajaran yang ditambahkan.
+                    Belum ada Tujuan Pembelajaran untuk Kelas {selectedClass}. Silakan tambahkan pada form di atas.
                   </p>
                 ) : (
                   tpTemplates
@@ -843,9 +874,14 @@ export default function TeacherPanel({
                           <span className="text-[10px] font-mono text-slate-350">
                             {idx + 1}.
                           </span>
-                          <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
-                            {tp.text}
-                          </p>
+                          <div>
+                            <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
+                              {tp.text}
+                            </p>
+                            <span className="inline-block mt-1 text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              Kelas {tp.kelas || selectedClass}
+                            </span>
+                          </div>
                         </div>
                         <button
                           onClick={() => handleDeleteLocalTp(tp.id)}

@@ -535,11 +535,11 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
 
     // POST /api/tps
     if (path === '/api/tps' && method === 'POST') {
-      const { subject, tpText } = body || {};
+      const { subject, tpText, kelas } = body || {};
       const db = getDB();
       if (!db.tujuan_pembelajaran_templates) db.tujuan_pembelajaran_templates = {};
       if (!db.tujuan_pembelajaran_templates[subject]) db.tujuan_pembelajaran_templates[subject] = [];
-      const newTP = { id: "tp_" + Date.now(), text: tpText };
+      const newTP = { id: "tp_" + Date.now(), text: tpText, kelas: kelas ? String(kelas).trim() : "7" };
       db.tujuan_pembelajaran_templates[subject].push(newTP);
       saveDB(db);
       return new Response(JSON.stringify(newTP), { status: 201, headers: { 'Content-Type': 'application/json' } });
@@ -712,11 +712,72 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         };
       });
 
+      // Calculate Student Rankings
+      const studentRankings = db.students.map((s: any) => {
+        const studentGrades = db.grades.filter((g: any) => g.studentId === s.id);
+        const subjectScores: Record<string, number> = {};
+        let totalScore = 0;
+        let filledSubjectsCount = 0;
+
+        studentGrades.forEach((g: any) => {
+          const val = Number(g.score);
+          if (!isNaN(val) && g.score !== null && g.score !== undefined && g.subject) {
+            subjectScores[g.subject] = val;
+            totalScore += val;
+            filledSubjectsCount++;
+          }
+        });
+
+        const averageScore =
+          filledSubjectsCount > 0
+            ? Math.round((totalScore / filledSubjectsCount) * 10) / 10
+            : 0;
+
+        let predikat = "D (Perlu Bimbingan)";
+        if (averageScore >= 90) predikat = "A (Sangat Baik)";
+        else if (averageScore >= 80) predikat = "B (Baik)";
+        else if (averageScore >= 70) predikat = "C (Cukup)";
+        else if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
+
+        return {
+          studentId: s.id,
+          name: s.name,
+          nisn: s.nisn,
+          kelas: String(s.kelas || "").trim(),
+          totalScore,
+          averageScore,
+          filledSubjectsCount,
+          totalSubjectsCount: subjectsList.length,
+          rank: 0,
+          rankInClass: 0,
+          predikat,
+          subjectScores,
+        };
+      });
+
+      studentRankings.sort((a: any, b: any) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+        if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
+        return a.name.localeCompare(b.name);
+      });
+
+      studentRankings.forEach((s: any, idx: number) => {
+        s.rank = idx + 1;
+      });
+
+      const classCounters: Record<string, number> = {};
+      studentRankings.forEach((s: any) => {
+        const k = s.kelas;
+        classCounters[k] = (classCounters[k] || 0) + 1;
+        s.rankInClass = classCounters[k];
+      });
+
       return new Response(JSON.stringify({
         totalStudents,
         totalTeachers: db.teachers.length,
         subjectProgress,
         classProgress,
+        studentRankings,
         lastUpdate: new Date().toISOString()
       }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }

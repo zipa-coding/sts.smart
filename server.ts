@@ -476,11 +476,44 @@ app.post("/api/walikelas/notes", async (req, res) => {
 // 6. Learning Objectives (TP) Templates CRUD
 app.get("/api/tps", async (req, res) => {
   const db = await readDB();
-  res.json(db.tujuan_pembelajaran_templates || {});
+  const templates = db.tujuan_pembelajaran_templates || {};
+  const { kelas, subject } = req.query;
+
+  // If specific subject requested
+  if (subject && typeof subject === "string") {
+    let items = templates[subject] || [];
+    if (kelas && typeof kelas === "string") {
+      items = items.filter(
+        (item: any) =>
+          !item.kelas ||
+          item.kelas === "all" ||
+          String(item.kelas).trim() === String(kelas).trim()
+      );
+    }
+    return res.json(items);
+  }
+
+  // If filtered by kelas across all subjects
+  if (kelas && typeof kelas === "string") {
+    const filtered: Record<string, any[]> = {};
+    for (const [sub, list] of Object.entries(templates)) {
+      if (Array.isArray(list)) {
+        filtered[sub] = list.filter(
+          (item: any) =>
+            !item.kelas ||
+            item.kelas === "all" ||
+            String(item.kelas).trim() === String(kelas).trim()
+        );
+      }
+    }
+    return res.json(filtered);
+  }
+
+  res.json(templates);
 });
 
 app.post("/api/tps", async (req, res) => {
-  const { subject, tpText } = req.body;
+  const { subject, tpText, kelas } = req.body;
   if (!subject || !tpText) {
     return res
       .status(400)
@@ -498,6 +531,7 @@ app.post("/api/tps", async (req, res) => {
   const newTP = {
     id: "tp_" + Date.now(),
     text: tpText,
+    kelas: kelas ? String(kelas).trim() : "7",
   };
 
   db.tujuan_pembelajaran_templates[subject].push(newTP);
@@ -728,11 +762,75 @@ app.get("/api/summary", async (req, res) => {
     };
   });
 
+  // Calculate Student Rankings (Akumulasi Nilai Tertinggi ke Nilai Terendah)
+  const studentRankings = db.students.map((s: any) => {
+    const studentGrades = db.grades.filter((g: any) => g.studentId === s.id);
+    const subjectScores: Record<string, number> = {};
+    let totalScore = 0;
+    let filledSubjectsCount = 0;
+
+    studentGrades.forEach((g: any) => {
+      const val = Number(g.score);
+      if (!isNaN(val) && g.score !== null && g.score !== undefined && g.subject) {
+        subjectScores[g.subject] = val;
+        totalScore += val;
+        filledSubjectsCount++;
+      }
+    });
+
+    const averageScore =
+      filledSubjectsCount > 0
+        ? Math.round((totalScore / filledSubjectsCount) * 10) / 10
+        : 0;
+
+    let predikat = "D (Perlu Bimbingan)";
+    if (averageScore >= 90) predikat = "A (Sangat Baik)";
+    else if (averageScore >= 80) predikat = "B (Baik)";
+    else if (averageScore >= 70) predikat = "C (Cukup)";
+    else if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
+
+    return {
+      studentId: s.id,
+      name: s.name,
+      nisn: s.nisn,
+      kelas: String(s.kelas || "").trim(),
+      totalScore,
+      averageScore,
+      filledSubjectsCount,
+      totalSubjectsCount: subjects.length,
+      rank: 0,
+      rankInClass: 0,
+      predikat,
+      subjectScores,
+    };
+  });
+
+  // Sort descending by totalScore, then averageScore, then name
+  studentRankings.sort((a: any, b: any) => {
+    if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+    if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Assign overall rank (1-indexed)
+  studentRankings.forEach((s: any, idx: number) => {
+    s.rank = idx + 1;
+  });
+
+  // Assign rankInClass per class
+  const classCounters: Record<string, number> = {};
+  studentRankings.forEach((s: any) => {
+    const k = s.kelas;
+    classCounters[k] = (classCounters[k] || 0) + 1;
+    s.rankInClass = classCounters[k];
+  });
+
   res.json({
     totalStudents,
     totalTeachers: db.teachers.length,
     subjectProgress,
     classProgress,
+    studentRankings,
     lastUpdate: new Date().toISOString(),
   });
 });

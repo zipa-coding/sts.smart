@@ -19,6 +19,28 @@ export interface TPItem {
   id: string;
   text: string;
   achieved: boolean;
+  kelas?: string;
+}
+
+export interface TPTemplate {
+  id: string;
+  text: string;
+  kelas?: string;
+}
+
+export interface StudentRanking {
+  studentId: string;
+  name: string;
+  nisn: string;
+  kelas: string;
+  totalScore: number;
+  averageScore: number;
+  filledSubjectsCount: number;
+  totalSubjectsCount: number;
+  rank: number;
+  rankInClass: number;
+  predikat: string;
+  subjectScores?: { [subject: string]: number };
 }
 
 export interface Grade {
@@ -75,6 +97,7 @@ export interface SchoolSummary {
   totalTeachers: number;
   subjectProgress: SubjectProgress[];
   classProgress: ClassProgress[];
+  studentRankings?: StudentRanking[];
   lastUpdate: string;
 }
 
