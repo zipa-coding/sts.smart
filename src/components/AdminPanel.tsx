@@ -1188,7 +1188,12 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setTpFilterClass(tab.id as any)}
+                  onClick={() => {
+                    setTpFilterClass(tab.id as any);
+                    if (tab.id !== "all") {
+                      setTpForm((prev) => ({ ...prev, kelas: tab.id }));
+                    }
+                  }}
                   className={`px-3 py-1 rounded text-xs font-bold transition cursor-pointer ${
                     tpFilterClass === tab.id
                       ? "bg-white text-emerald-850 shadow-xs"
@@ -1277,9 +1282,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   ? allItems
                   : allItems.filter(
                       (item: any) =>
-                        !item.kelas ||
-                        item.kelas === "all" ||
-                        String(item.kelas).trim() === tpFilterClass
+                        String(item.kelas || "").trim() === tpFilterClass
                     );
 
               return (

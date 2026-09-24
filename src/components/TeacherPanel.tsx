@@ -84,10 +84,7 @@ export default function TeacherPanel({
         ? tpObj[user.subject]
         : [];
       const classTps = allSubjectTps.filter(
-        (t: any) =>
-          !t.kelas ||
-          t.kelas === "all" ||
-          String(t.kelas).trim() === String(selectedClass).trim(),
+        (t: any) => String(t.kelas || "").trim() === String(selectedClass).trim()
       );
       setTpTemplates(classTps);
 
@@ -197,7 +194,7 @@ export default function TeacherPanel({
     if (!isNaN(num) && val.trim() !== "") {
       let defaultGrade = "C";
       if (num > 91) defaultGrade = "A";
-      else if (num >= 85) defaultGrade = "B";
+      else if (num >= 80) defaultGrade = "B";
       else defaultGrade = "C";
 
       setUsaha(defaultGrade);
@@ -351,16 +348,15 @@ export default function TeacherPanel({
       setSuccess(`Tujuan Pembelajaran untuk Kelas ${selectedClass} berhasil ditambahkan!`);
 
       // Reload TP templates for this subject and selected class
-      const resTp = await fetch("/api/tps");
+      const resTp = await fetch(`/api/tps?kelas=${selectedClass}`);
       const tpData = await resTp.json();
       const allSubjectTps = Array.isArray(tpData[user.subject])
         ? tpData[user.subject]
+        : Array.isArray(tpData)
+        ? tpData
         : [];
       const classTps = allSubjectTps.filter(
-        (t: any) =>
-          !t.kelas ||
-          t.kelas === "all" ||
-          String(t.kelas).trim() === String(selectedClass).trim(),
+        (t: any) => String(t.kelas || "").trim() === String(selectedClass).trim()
       );
       setTpTemplates(classTps);
 
@@ -398,16 +394,15 @@ export default function TeacherPanel({
       setSuccess("Tujuan Pembelajaran berhasil dihapus.");
 
       // Reload TP templates for selected class
-      const resTp = await fetch("/api/tps");
+      const resTp = await fetch(`/api/tps?kelas=${selectedClass}`);
       const tpData = await resTp.json();
       const allSubjectTps = Array.isArray(tpData[user.subject])
         ? tpData[user.subject]
+        : Array.isArray(tpData)
+        ? tpData
         : [];
       const classTps = allSubjectTps.filter(
-        (t: any) =>
-          !t.kelas ||
-          t.kelas === "all" ||
-          String(t.kelas).trim() === String(selectedClass).trim(),
+        (t: any) => String(t.kelas || "").trim() === String(selectedClass).trim()
       );
       setTpTemplates(classTps);
     } catch (err: any) {
@@ -576,22 +571,48 @@ export default function TeacherPanel({
 
               {/* THREE-GRADE EVALUATION CRITERIA + NUMERIC SCORE */}
               <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200">
                   <div>
                     <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block mb-0.5">
-                      Input Nilai & Kriteria
+                      Input Nilai & Kriteria Evaluasi
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-mono">
-                      Rentang Skala (0 - 100)
-                    </span>
-                    <span className="text-[9px] text-amber-600 dark:text-amber-400 block font-bold mt-0.5">
-                      Kategori: &gt;91 = A, &ge;85 = B, &lt;85 = C
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        &gt; 91 = A (Sangat Baik)
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded bg-cyan-100 text-cyan-800 border border-cyan-300">
+                        80 - 91 = B (Baik)
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                        &le; 79 = C (Cukup)
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-[11px] font-bold text-slate-700">
-                      Nilai Akhir:
-                    </label>
+                  <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                    <div className="text-right">
+                      <label className="text-[11px] font-bold text-slate-700 block">
+                        Nilai Akhir:
+                      </label>
+                      <span className={`text-[10px] font-extrabold font-mono block ${
+                        score !== ""
+                          ? Number(score) > 91
+                            ? "text-emerald-600"
+                            : Number(score) >= 80
+                            ? "text-cyan-600"
+                            : "text-amber-600"
+                          : "text-slate-400"
+                      }`}>
+                        {score !== "" ? (
+                          Number(score) > 91
+                            ? "Predikat A"
+                            : Number(score) >= 80
+                            ? "Predikat B"
+                            : "Predikat C"
+                        ) : (
+                          "Belum diisi"
+                        )}
+                      </span>
+                    </div>
                     <input
                       type="number"
                       min={0}
@@ -601,7 +622,7 @@ export default function TeacherPanel({
                         handleScoreChange(e.target.value.replace(/\D/g, ""))
                       }
                       placeholder="0"
-                      className="w-16 p-1 border-2 border-emerald-500 rounded text-center text-base font-bold bg-white text-emerald-950 focus:outline-none"
+                      className="w-16 p-1 border-2 border-emerald-500 rounded text-center text-base font-bold bg-white text-emerald-950 focus:outline-none shadow-xs"
                       required
                     />
                   </div>

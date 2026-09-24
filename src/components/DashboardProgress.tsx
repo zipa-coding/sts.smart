@@ -968,9 +968,9 @@ export default function DashboardProgress({
                           <td className="py-3.5 px-4 text-right">
                             <span
                               className={`text-sm font-black font-mono ${
-                                student.averageScore >= 85
+                                student.averageScore > 91
                                   ? "text-emerald-400"
-                                  : student.averageScore >= 75
+                                  : student.averageScore >= 80
                                   ? "text-cyan-400"
                                   : student.averageScore > 0
                                   ? "text-amber-400"
@@ -1053,9 +1053,9 @@ export default function DashboardProgress({
                                           className={`font-mono font-bold text-xs px-1.5 py-0.5 rounded ${
                                             !hasScore
                                               ? "text-slate-600 bg-slate-900"
-                                              : score >= 85
+                                              : score > 91
                                               ? "text-emerald-400 bg-emerald-950/60 border border-emerald-500/30"
-                                              : score >= 75
+                                              : score >= 80
                                               ? "text-cyan-400 bg-cyan-950/60 border border-cyan-500/30"
                                               : "text-amber-400 bg-amber-950/60 border border-amber-500/30"
                                           }`}
@@ -1087,13 +1087,13 @@ export default function DashboardProgress({
             </div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Nilai ≥ 85 (Sangat Baik)
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Nilai &gt; 91 (A - Sangat Baik)
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Nilai 75-84 (Baik)
+                <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Nilai 80 - 91 (B - Baik)
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400"></span> Nilai &lt; 75
+                <span className="w-2 h-2 rounded-full bg-amber-400"></span> Nilai &le; 79 (C - Cukup)
               </span>
             </div>
           </div>

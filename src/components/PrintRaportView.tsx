@@ -242,18 +242,22 @@ export default function PrintRaportView({
     // Stable score between 78 and 92
     const score = 78 + (hash % 15);
 
-    // Usaha, Proses, Capaian based on score
+    // Usaha, Proses, Capaian based on standard score: >91=A, >=80=B, <=79=C
     let usaha = "B";
     let proses = "B";
     let capaian = "B";
-    if (score >= 88) {
+    if (score > 91) {
       usaha = "A";
       proses = "A";
       capaian = "A";
-    } else if (score >= 83) {
-      usaha = "A";
+    } else if (score >= 80) {
+      usaha = "B";
       proses = "B";
       capaian = "B";
+    } else {
+      usaha = "C";
+      proses = "C";
+      capaian = "C";
     }
 
     // Generate beautiful personalized description

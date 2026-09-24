@@ -484,10 +484,7 @@ app.get("/api/tps", async (req, res) => {
     let items = templates[subject] || [];
     if (kelas && typeof kelas === "string") {
       items = items.filter(
-        (item: any) =>
-          !item.kelas ||
-          item.kelas === "all" ||
-          String(item.kelas).trim() === String(kelas).trim()
+        (item: any) => String(item.kelas || "").trim() === String(kelas).trim()
       );
     }
     return res.json(items);
@@ -499,10 +496,7 @@ app.get("/api/tps", async (req, res) => {
     for (const [sub, list] of Object.entries(templates)) {
       if (Array.isArray(list)) {
         filtered[sub] = list.filter(
-          (item: any) =>
-            !item.kelas ||
-            item.kelas === "all" ||
-            String(item.kelas).trim() === String(kelas).trim()
+          (item: any) => String(item.kelas || "").trim() === String(kelas).trim()
         );
       }
     }
@@ -783,11 +777,11 @@ app.get("/api/summary", async (req, res) => {
         ? Math.round((totalScore / filledSubjectsCount) * 10) / 10
         : 0;
 
-    let predikat = "D (Perlu Bimbingan)";
-    if (averageScore >= 90) predikat = "A (Sangat Baik)";
+    let predikat = "C (Cukup)";
+    if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
+    else if (averageScore > 91) predikat = "A (Sangat Baik)";
     else if (averageScore >= 80) predikat = "B (Baik)";
-    else if (averageScore >= 70) predikat = "C (Cukup)";
-    else if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
+    else predikat = "C (Cukup)";
 
     return {
       studentId: s.id,
@@ -843,6 +837,7 @@ async function startServer() {
       server: {
         middlewareMode: true,
         allowedHosts: true,
+        hmr: process.env.DISABLE_HMR === "true" ? false : undefined,
       },
       appType: "spa",
     });

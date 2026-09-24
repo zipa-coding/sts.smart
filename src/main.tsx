@@ -6,16 +6,18 @@ import dbData from './data/db.json';
 import { isFirebaseConfigured, firebaseApi } from './lib/firebase';
 import { registerSW } from 'virtual:pwa-register';
 
-// Automatically register and update PWA service worker
-registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    console.log('Versi baru Raport STS tersedia. Memperbarui...');
-  },
-  onOfflineReady() {
-    console.log('Aplikasi Raport STS siap digunakan secara offline.');
-  },
-});
+// Automatically register and update PWA service worker in production
+if (import.meta.env.PROD) {
+  registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      console.log('Versi baru Raport STS tersedia. Memperbarui...');
+    },
+    onOfflineReady() {
+      console.log('Aplikasi Raport STS siap digunakan secara offline.');
+    },
+  });
+}
 
 // Keep reference to original fetch
 const originalFetch = window.fetch;
@@ -37,6 +39,31 @@ function initializeLocalStorage() {
     if (raw) {
       try {
         clientDbCache = JSON.parse(raw);
+        // Ensure TP templates are strictly separated per class (Kelas 7, 8, 9)
+        let needsSave = false;
+        if (!clientDbCache.tujuan_pembelajaran_templates || typeof clientDbCache.tujuan_pembelajaran_templates !== 'object') {
+          clientDbCache.tujuan_pembelajaran_templates = dbData.tujuan_pembelajaran_templates;
+          needsSave = true;
+        } else {
+          // Check if any subject has TPs without distinct kelas 7, 8, and 9
+          const seedTemplates = dbData.tujuan_pembelajaran_templates as Record<string, any[]>;
+          for (const sub of Object.keys(seedTemplates)) {
+            const currentList = clientDbCache.tujuan_pembelajaran_templates[sub];
+            if (
+              !Array.isArray(currentList) ||
+              currentList.length === 0 ||
+              currentList.some((t: any) => !t.kelas || t.kelas === "all") ||
+              !currentList.some((t: any) => String(t.kelas).trim() === "8") ||
+              !currentList.some((t: any) => String(t.kelas).trim() === "9")
+            ) {
+              clientDbCache.tujuan_pembelajaran_templates[sub] = seedTemplates[sub];
+              needsSave = true;
+            }
+          }
+        }
+        if (needsSave) {
+          localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
+        }
       } catch (e) {
         clientDbCache = dbData;
       }
@@ -530,7 +557,30 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // 6. GET /api/tps
     if (path === '/api/tps' && method === 'GET') {
       const db = getDB();
-      return new Response(JSON.stringify(db.tujuan_pembelajaran_templates || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      const templates = db.tujuan_pembelajaran_templates || {};
+      const urlObj = new URL(urlStr, 'http://localhost');
+      const kelas = urlObj.searchParams.get('kelas');
+      const subject = urlObj.searchParams.get('subject');
+
+      if (subject) {
+        let items = templates[subject] || [];
+        if (kelas) {
+          items = items.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
+        }
+        return new Response(JSON.stringify(items), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (kelas) {
+        const filtered: Record<string, any[]> = {};
+        for (const [sub, list] of Object.entries(templates)) {
+          if (Array.isArray(list)) {
+            filtered[sub] = list.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
+          }
+        }
+        return new Response(JSON.stringify(filtered), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      return new Response(JSON.stringify(templates), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // POST /api/tps
@@ -733,11 +783,11 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
             ? Math.round((totalScore / filledSubjectsCount) * 10) / 10
             : 0;
 
-        let predikat = "D (Perlu Bimbingan)";
-        if (averageScore >= 90) predikat = "A (Sangat Baik)";
+        let predikat = "C (Cukup)";
+        if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
+        else if (averageScore > 91) predikat = "A (Sangat Baik)";
         else if (averageScore >= 80) predikat = "B (Baik)";
-        else if (averageScore >= 70) predikat = "C (Cukup)";
-        else if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
+        else predikat = "C (Cukup)";
 
         return {
           studentId: s.id,

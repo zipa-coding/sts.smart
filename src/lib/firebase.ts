@@ -455,12 +455,16 @@ export const firebaseApi = {
   },
 
   // 6. GET, POST, DELETE /api/tps
-  getTPs: async () => {
+  getTPs: async (kelas?: string) => {
     if (!db) return {};
     const snap = await withTimeout(getDocs(collection(db, "tujuan_pembelajaran_templates")), 2500);
     const templates: any = {};
     snap.docs.forEach(docSnap => {
-      templates[docSnap.id] = docSnap.data().tps || [];
+      let tpsList = docSnap.data().tps || [];
+      if (kelas) {
+        tpsList = tpsList.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
+      }
+      templates[docSnap.id] = tpsList;
     });
     return templates;
   },
@@ -621,11 +625,11 @@ export const firebaseApi = {
           ? Math.round((totalScore / filledSubjectsCount) * 10) / 10
           : 0;
 
-      let predikat = "D (Perlu Bimbingan)";
-      if (averageScore >= 90) predikat = "A (Sangat Baik)";
+      let predikat = "C (Cukup)";
+      if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
+      else if (averageScore > 91) predikat = "A (Sangat Baik)";
       else if (averageScore >= 80) predikat = "B (Baik)";
-      else if (averageScore >= 70) predikat = "C (Cukup)";
-      else if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
+      else predikat = "C (Cukup)";
 
       return {
         studentId: s.id,
