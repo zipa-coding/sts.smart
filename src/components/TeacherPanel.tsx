@@ -115,6 +115,51 @@ export default function TeacherPanel({
     fetchData();
   }, [selectedClass, user.subject]);
 
+  // Helper function to generate narrative description based on Kurikulum Merdeka standards
+  const generateNarrativeDescription = (
+    student: Student | null,
+    subjectName: string,
+    templates: { id: string; text: string }[],
+    achievements: { [tpId: string]: boolean },
+  ) => {
+    if (!student) return "";
+    const name = student.name ? student.name.trim() : "Siswa";
+
+    const safeTemplates = Array.isArray(templates)
+      ? templates.filter((tp) => tp && tp.id && tp.text)
+      : [];
+
+    if (safeTemplates.length === 0) return "";
+
+    const achieved = safeTemplates
+      .filter((tp) => achievements[tp.id] !== false)
+      .map((tp) => tp.text.trim())
+      .filter(Boolean);
+    const needImprovement = safeTemplates
+      .filter((tp) => achievements[tp.id] === false)
+      .map((tp) => tp.text.trim())
+      .filter(Boolean);
+
+    const joinItems = (items: string[]) => {
+      if (items.length === 0) return "";
+      if (items.length === 1) return items[0];
+      if (items.length === 2) return `${items[0]} dan ${items[1]}`;
+      return `${items.slice(0, -1).join(", ")}, dan ${items[items.length - 1]}`;
+    };
+
+    let text = "";
+
+    if (achieved.length > 0 && needImprovement.length === 0) {
+      text = `Alhamdulillah, ananda ${name} dalam pembelajaran ${subjectName || "mata pelajaran ini"} menunjukkan penguasaan yang sangat optimal dalam mencapai seluruh tujuan pembelajaran (${joinItems(achieved)}). Pertahankan prestasi dan semangat belajarnya!`;
+    } else if (achieved.length > 0 && needImprovement.length > 0) {
+      text = `Alhamdulillah, ananda ${name} dalam pembelajaran ${subjectName || "mata pelajaran ini"} menunjukkan penguasaan yang optimal dalam hal ${joinItems(achieved)}. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam hal ${joinItems(needImprovement)}.`;
+    } else if (needImprovement.length > 0) {
+      text = `Ananda ${name} dalam pembelajaran ${subjectName || "mata pelajaran ini"} masih memerlukan bimbingan dan pendampingan lebih lanjut untuk mencapai tujuan pembelajaran terutama terkait ${joinItems(needImprovement)}. Tetap semangat dan tingkatkan motivasi belajarnya.`;
+    }
+
+    return text;
+  };
+
   const handleStudentSelect = (
     student: Student,
     allGrades: Grade[] = grades,
@@ -157,9 +202,18 @@ export default function TeacherPanel({
         });
         setTpAchievements(achievedMap);
 
-        if (existingGrade.deskripsi) {
-          setCustomDescription(existingGrade.deskripsi);
+        if (existingGrade.deskripsi && existingGrade.deskripsi.trim() !== "") {
+          setCustomDescription(existingGrade.deskripsi.trim());
           setIsCustomDescActive(true);
+        } else if (safeTemplates.length > 0) {
+          const auto = generateNarrativeDescription(
+            student,
+            user.subject,
+            safeTemplates,
+            achievedMap,
+          );
+          setCustomDescription(auto);
+          setIsCustomDescActive(false);
         } else {
           setCustomDescription("");
           setIsCustomDescActive(false);
@@ -170,8 +224,6 @@ export default function TeacherPanel({
         setUsaha("B");
         setProses("B");
         setCapaian("B");
-        setCustomDescription("");
-        setIsCustomDescActive(false);
 
         const defaultMap: { [tpId: string]: boolean } = {};
         safeTemplates.forEach((t) => {
@@ -180,6 +232,19 @@ export default function TeacherPanel({
           }
         });
         setTpAchievements(defaultMap);
+
+        if (safeTemplates.length > 0) {
+          const auto = generateNarrativeDescription(
+            student,
+            user.subject,
+            safeTemplates,
+            defaultMap,
+          );
+          setCustomDescription(auto);
+        } else {
+          setCustomDescription("");
+        }
+        setIsCustomDescActive(false);
       }
     } catch (e: any) {
       console.error("Error in handleStudentSelect:", e);
@@ -203,50 +268,72 @@ export default function TeacherPanel({
     }
   };
 
-  // Switch achievement status of some TP
+  // Switch achievement status of some TP and automatically synchronize description
   const toggleTp = (id: string) => {
-    setTpAchievements((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+    const nextAchieved = !tpAchievements[id];
+    const nextMap = {
+      ...tpAchievements,
+      [id]: nextAchieved,
+    };
+    setTpAchievements(nextMap);
+
+    // Otomatis memperbarui deskripsi sesuai status TP terbaru & menyertakan nama siswa
+    if (selectedStudent && tpTemplates.length > 0) {
+      const updatedDesc = generateNarrativeDescription(
+        selectedStudent,
+        user.subject,
+        tpTemplates,
+        nextMap,
+      );
+      setCustomDescription(updatedDesc);
+    }
   };
 
-  // Auto generate narrative description
+  // Bulk set all TPs status (Semua Optimal atau Semua Butuh Bimbingan)
+  const setAllTpStatus = (achieved: boolean) => {
+    const nextMap: { [tpId: string]: boolean } = {};
+    tpTemplates.forEach((t) => {
+      if (t && t.id) nextMap[t.id] = achieved;
+    });
+    setTpAchievements(nextMap);
+
+    if (selectedStudent && tpTemplates.length > 0) {
+      const updatedDesc = generateNarrativeDescription(
+        selectedStudent,
+        user.subject,
+        tpTemplates,
+        nextMap,
+      );
+      setCustomDescription(updatedDesc);
+    }
+  };
+
+  // Sync / regenerate description from current TP status
+  const handleRegenerateFromTp = () => {
+    if (!selectedStudent) return;
+    if (tpTemplates.length === 0) {
+      setError("Belum ada Tujuan Pembelajaran (TP) untuk kelas ini.");
+      return;
+    }
+    const updatedDesc = generateNarrativeDescription(
+      selectedStudent,
+      user.subject,
+      tpTemplates,
+      tpAchievements,
+    );
+    setCustomDescription(updatedDesc);
+    setSuccess("Deskripsi berhasil diperbarui otomatis dari ceklist TP.");
+    setTimeout(() => setSuccess(""), 3000);
+  };
+
+  // Auto generate narrative description (used as fallback)
   const getAutoDescription = () => {
-    if (!selectedStudent) return "";
-
-    const safeTemplates = Array.isArray(tpTemplates)
-      ? tpTemplates.filter((tp) => tp && tp.id)
-      : [];
-    const achieved = safeTemplates
-      .filter((tp) => tpAchievements && tpAchievements[tp.id] !== false)
-      .map((tp) => tp.text || "");
-    const needImprovement = safeTemplates
-      .filter((tp) => tpAchievements && tpAchievements[tp.id] === false)
-      .map((tp) => tp.text || "");
-
-    const name = selectedStudent.name || "Siswa";
-
-    const gradeWord = (g: string) => {
-      if (g === "A") return "Sangat Baik";
-      if (g === "B") return "Baik";
-      if (g === "C") return "Cukup Baik";
-      return "Perlu Bimbingan";
-    };
-
-    let text = `Alhamdulillah ananda ${name} dalam usaha, proses serta capaian untuk pelajaran ${user.subject || ""} sudah ${gradeWord(capaian)}. `;
-
-    if (achieved.length > 0) {
-      text += `Mampu menguasai kompetensi yang optimal dalam hal ${achieved.join(", ")}. `;
-    }
-
-    if (needImprovement.length > 0) {
-      text += `Namun perlu bimbingan lebih lanjut terutama dalam hal ${needImprovement.join(", ")}. `;
-    } else {
-      text += `Pertahankan motivasi serta konsistensi belajarmu yang luar biasa ini di masa mendatang!`;
-    }
-
-    return text;
+    return generateNarrativeDescription(
+      selectedStudent,
+      user.subject,
+      tpTemplates,
+      tpAchievements,
+    );
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -276,9 +363,8 @@ export default function TeacherPanel({
       achieved: tpAchievements[tp.id] ?? true,
     }));
 
-    const finalDescription = isCustomDescActive
-      ? customDescription.trim()
-      : (customDescription.trim() || getAutoDescription());
+    // Description is taken directly from the textarea (supports both auto from TP and purely manual)
+    const finalDescription = customDescription.trim();
 
     try {
       const response = await fetch("/api/grades", {
@@ -672,17 +758,34 @@ export default function TeacherPanel({
               </div>
 
               {/* TP Objectives Checklist (Tujuan Pembelajaran) */}
-              <div className="border-t border-slate-100 pt-3">
-                <div className="flex justify-between items-center mb-2">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
                   <div>
-                    <h4 className="font-extrabold text-[10px] text-slate-600 uppercase tracking-wider">
+                    <h4 className="font-extrabold text-[10px] text-slate-700 dark:text-slate-200 uppercase tracking-wider">
                       Tujuan Pembelajaran (TP) untuk Anak Ini
                     </h4>
                     <p className="text-[10px] text-slate-400 leading-tight">
-                      Centang jika anak sudah optimal (Sangat Baik) pada TP
-                      tersebut.
+                      Centang jika anak sudah optimal (Sangat Baik). Un-centang jika masih butuh bimbingan.
                     </p>
                   </div>
+                  {Array.isArray(tpTemplates) && tpTemplates.length > 0 && (
+                    <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setAllTpStatus(true)}
+                        className="px-2 py-0.5 text-[9px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded transition cursor-pointer"
+                      >
+                        Semua Optimal ✓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAllTpStatus(false)}
+                        className="px-2 py-0.5 text-[9px] font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded transition cursor-pointer"
+                      >
+                        Semua Butuh Bimbingan ⚠️
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div
@@ -710,25 +813,26 @@ export default function TeacherPanel({
                             onClick={() => toggleTp(tp.id)}
                             className={`p-2 rounded-lg border text-[11px] transition cursor-pointer select-none flex items-start gap-2.5 ${
                               isChecked
-                                ? "bg-transparent border-slate-200/60 hover:bg-emerald-50/20 dark:border-slate-800 dark:hover:bg-emerald-950/10"
-                                : "bg-transparent border-slate-100 hover:bg-slate-50/30 dark:border-slate-900 dark:hover:bg-slate-850/20"
+                                ? "bg-emerald-50/20 border-emerald-200/80 hover:bg-emerald-50/50 dark:border-emerald-900/60 dark:bg-emerald-950/20"
+                                : "bg-amber-50/20 border-amber-200/80 hover:bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10"
                             }`}
                           >
                             <input
                               type="checkbox"
                               checked={isChecked}
-                              onChange={() => {}} // handled by parent div click
-                              className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer mt-0.5 dark:bg-slate-900 dark:border-slate-700"
+                              onChange={() => toggleTp(tp.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer mt-0.5 dark:bg-slate-900 dark:border-slate-700"
                             />
                             <div className="flex-1">
-                              <p className="text-slate-800 dark:text-slate-200 leading-normal">
+                              <p className="text-slate-800 dark:text-slate-200 leading-normal font-medium">
                                 {tp.text}
                               </p>
                               <span
-                                className={`text-[8px] font-extrabold tracking-wide mt-0.5 inline-block uppercase py-0.5 rounded ${
+                                className={`text-[9px] font-bold tracking-wide mt-1 inline-flex items-center gap-1 uppercase px-1.5 py-0.5 rounded ${
                                   isChecked
-                                    ? "text-green-700 dark:text-emerald-400"
-                                    : "text-amber-700 dark:text-amber-400"
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                                    : "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300"
                                 }`}
                               >
                                 {isChecked
@@ -744,54 +848,46 @@ export default function TeacherPanel({
               </div>
 
               {/* NARRATIVE DESCRIPTION PREVIEW / MANUAL INPUT */}
-              <div className="border-t border-slate-100 pt-3">
-                <div className="flex justify-between items-center mb-1.5">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
                   <div>
-                    <h4 className="font-extrabold text-[10px] text-slate-600 uppercase tracking-wider">
-                      Narasi Deskripsi Raport
+                    <h4 className="font-extrabold text-[10px] text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>Narasi Deskripsi Raport</span>
+                      {tpTemplates.length > 0 && (
+                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded text-[9px] font-semibold lowercase">
+                          otomatis memuat nama siswa
+                        </span>
+                      )}
                     </h4>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
                       {tpTemplates.length > 0
-                        ? "Dihasilkan otomatis berdasarkan kriteria & TP, atau aktifkan 'Edit Manual' untuk mengetik langsung."
-                        : "Ketik narasi deskripsi capaian raport siswa secara manual di bawah (dapat disimpan tanpa TP)."}
+                        ? `Deskripsi otomatis langsung diperbarui saat ceklist TP diubah (termasuk nama ananda ${selectedStudent.name}). Tetap bisa diedit manual langsung di kolom ini.`
+                        : `Ketik narasi deskripsi capaian raport ananda ${selectedStudent.name} secara manual di bawah (dapat disimpan tanpa TP).`}
                     </p>
                   </div>
-                  <label className="flex items-center gap-1 cursor-pointer text-[10px] font-semibold text-slate-650 hover:text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={isCustomDescActive}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setIsCustomDescActive(checked);
-                        if (checked && !customDescription) {
-                          setCustomDescription(getAutoDescription());
-                        }
-                      }}
-                      className="w-3 h-3 rounded"
-                    />
-                    <span>Edit Manual</span>
-                  </label>
+                  {tpTemplates.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleRegenerateFromTp}
+                      title="Klik untuk menyinkronkan atau menghasilkan ulang narasi deskripsi dari ceklist TP saat ini"
+                      className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition self-start sm:self-auto cursor-pointer shadow-xs"
+                    >
+                      <RefreshCw className="w-3 h-3 text-emerald-600" />
+                      <span>Sinkronkan dari TP</span>
+                    </button>
+                  )}
                 </div>
 
                 <textarea
-                  value={
-                    isCustomDescActive
-                      ? customDescription
-                      : (customDescription || getAutoDescription())
-                  }
-                  onChange={(e) => {
-                    setIsCustomDescActive(true);
-                    setCustomDescription(e.target.value);
-                  }}
-                  onFocus={() => {
-                    if (!isCustomDescActive && !customDescription) {
-                      setCustomDescription(getAutoDescription());
-                      setIsCustomDescActive(true);
-                    }
-                  }}
+                  value={customDescription}
+                  onChange={(e) => setCustomDescription(e.target.value)}
                   rows={4}
-                  placeholder="Ketik deskripsi capaian nilai rapor secara manual di sini..."
-                  className="w-full p-2 border border-slate-200 rounded text-xs bg-white text-slate-700 leading-relaxed font-sans focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  placeholder={
+                    selectedStudent
+                      ? `Ketik deskripsi capaian rapor untuk ananda ${selectedStudent.name} di sini...`
+                      : "Ketik deskripsi capaian nilai rapor secara manual di sini..."
+                  }
+                  className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 leading-relaxed font-sans focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
 

@@ -209,18 +209,30 @@ export default function PrintRaportView({
       return "";
     }
 
-    const achieved = g.tps.filter((tp) => tp.achieved).map((tp) => tp.text);
+    const name = student?.name ? student.name.trim() : "Siswa";
+    const achieved = g.tps
+      .filter((tp) => tp.achieved)
+      .map((tp) => (tp.text || "").trim())
+      .filter(Boolean);
     const needImprovement = g.tps
       .filter((tp) => !tp.achieved)
-      .map((tp) => tp.text);
+      .map((tp) => (tp.text || "").trim())
+      .filter(Boolean);
+
+    const joinItems = (items: string[]) => {
+      if (items.length === 0) return "";
+      if (items.length === 1) return items[0];
+      if (items.length === 2) return `${items[0]} dan ${items[1]}`;
+      return `${items.slice(0, -1).join(", ")}, dan ${items[items.length - 1]}`;
+    };
 
     let desc = "";
-    if (achieved.length > 0) {
-      desc += `Mampu menguasai kompetensi yang optimal dalam hal ${achieved.join(", ")}. `;
-    }
-
-    if (needImprovement.length > 0) {
-      desc += `Perlu peningkatan bimbingan lebih lanjut dalam hal ${needImprovement.join(", ")}.`;
+    if (achieved.length > 0 && needImprovement.length === 0) {
+      desc = `Alhamdulillah, ananda ${name} menunjukkan penguasaan yang sangat optimal dalam mencapai seluruh tujuan pembelajaran (${joinItems(achieved)}). Pertahankan semangat serta konsistensi belajarnya!`;
+    } else if (achieved.length > 0 && needImprovement.length > 0) {
+      desc = `Alhamdulillah, ananda ${name} menunjukkan penguasaan yang optimal dalam hal ${joinItems(achieved)}. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam hal ${joinItems(needImprovement)}.`;
+    } else if (needImprovement.length > 0) {
+      desc = `Ananda ${name} masih memerlukan pendampingan dan bimbingan lebih lanjut untuk mencapai tujuan pembelajaran terutama terkait ${joinItems(needImprovement)}.`;
     }
 
     return desc.trim();
