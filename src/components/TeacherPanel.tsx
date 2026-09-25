@@ -141,20 +141,21 @@ export default function TeacherPanel({
       .filter(Boolean);
 
     const joinItems = (items: string[]) => {
-      if (items.length === 0) return "";
-      if (items.length === 1) return items[0];
-      if (items.length === 2) return `${items[0]} dan ${items[1]}`;
-      return `${items.slice(0, -1).join(", ")}, dan ${items[items.length - 1]}`;
+      const cleaned = items.map((i) => i.trim().replace(/\.+$/, ""));
+      if (cleaned.length === 0) return "";
+      if (cleaned.length === 1) return cleaned[0];
+      if (cleaned.length === 2) return `${cleaned[0]} dan ${cleaned[1]}`;
+      return `${cleaned.slice(0, -1).join(", ")}, dan ${cleaned[cleaned.length - 1]}`;
     };
 
     let text = "";
 
     if (achieved.length > 0 && needImprovement.length === 0) {
-      text = `Alhamdulillah, ananda ${name} dalam pembelajaran ${subjectName || "mata pelajaran ini"} menunjukkan penguasaan yang sangat optimal dalam mencapai seluruh tujuan pembelajaran (${joinItems(achieved)}). Pertahankan prestasi dan semangat belajarnya!`;
+      text = `Alhamdulillah, ananda ${name} dalam pembelajaran ${subjectName || "mata pelajaran ini"} menunjukkan penguasaan yang optimal dalam ${joinItems(achieved)}. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.`;
     } else if (achieved.length > 0 && needImprovement.length > 0) {
-      text = `Alhamdulillah, ananda ${name} dalam pembelajaran ${subjectName || "mata pelajaran ini"} menunjukkan penguasaan yang optimal dalam hal ${joinItems(achieved)}. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam hal ${joinItems(needImprovement)}.`;
+      text = `Alhamdulillah, ananda ${name} dalam pembelajaran ${subjectName || "mata pelajaran ini"} menunjukkan penguasaan yang optimal dalam ${joinItems(achieved)}. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam ${joinItems(needImprovement)}. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.`;
     } else if (needImprovement.length > 0) {
-      text = `Ananda ${name} dalam pembelajaran ${subjectName || "mata pelajaran ini"} masih memerlukan bimbingan dan pendampingan lebih lanjut untuk mencapai tujuan pembelajaran terutama terkait ${joinItems(needImprovement)}. Tetap semangat dan tingkatkan motivasi belajarnya.`;
+      text = `Ananda ${name} dalam pembelajaran ${subjectName || "mata pelajaran ini"} masih memerlukan bimbingan dan pendampingan lebih lanjut dalam ${joinItems(needImprovement)}. Jangan berkecil hati, percayalah pada kemampuan dirimu; dengan kesabaran, doa, dan usaha yang tekun, ananda pasti mampu meraih hal yang lebih baik.`;
     }
 
     return text;

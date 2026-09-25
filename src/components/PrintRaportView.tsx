@@ -220,19 +220,21 @@ export default function PrintRaportView({
       .filter(Boolean);
 
     const joinItems = (items: string[]) => {
-      if (items.length === 0) return "";
-      if (items.length === 1) return items[0];
-      if (items.length === 2) return `${items[0]} dan ${items[1]}`;
-      return `${items.slice(0, -1).join(", ")}, dan ${items[items.length - 1]}`;
+      const cleaned = items.map((i) => i.trim().replace(/\.+$/, ""));
+      if (cleaned.length === 0) return "";
+      if (cleaned.length === 1) return cleaned[0];
+      if (cleaned.length === 2) return `${cleaned[0]} dan ${cleaned[1]}`;
+      return `${cleaned.slice(0, -1).join(", ")}, dan ${cleaned[cleaned.length - 1]}`;
     };
 
+    const sub = g.subject || "mata pelajaran ini";
     let desc = "";
     if (achieved.length > 0 && needImprovement.length === 0) {
-      desc = `Alhamdulillah, ananda ${name} menunjukkan penguasaan yang sangat optimal dalam mencapai seluruh tujuan pembelajaran (${joinItems(achieved)}). Pertahankan semangat serta konsistensi belajarnya!`;
+      desc = `Alhamdulillah, ananda ${name} dalam pembelajaran ${sub} menunjukkan penguasaan yang optimal dalam ${joinItems(achieved)}. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.`;
     } else if (achieved.length > 0 && needImprovement.length > 0) {
-      desc = `Alhamdulillah, ananda ${name} menunjukkan penguasaan yang optimal dalam hal ${joinItems(achieved)}. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam hal ${joinItems(needImprovement)}.`;
+      desc = `Alhamdulillah, ananda ${name} dalam pembelajaran ${sub} menunjukkan penguasaan yang optimal dalam ${joinItems(achieved)}. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam ${joinItems(needImprovement)}. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.`;
     } else if (needImprovement.length > 0) {
-      desc = `Ananda ${name} masih memerlukan pendampingan dan bimbingan lebih lanjut untuk mencapai tujuan pembelajaran terutama terkait ${joinItems(needImprovement)}.`;
+      desc = `Ananda ${name} dalam pembelajaran ${sub} masih memerlukan bimbingan dan pendampingan lebih lanjut dalam ${joinItems(needImprovement)}. Jangan berkecil hati, percayalah pada kemampuan dirimu; dengan kesabaran, doa, dan usaha yang tekun, ananda pasti mampu meraih hal yang lebih baik.`;
     }
 
     return desc.trim();
