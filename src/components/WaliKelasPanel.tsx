@@ -762,7 +762,6 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                   rows={2}
                   placeholder={`Contoh: Ananda ${selectedStudent.name} merupakan siswa teladan dengan kepatuhan tinggi serta akhlak yang baik...`}
                   className="w-full px-2.5 py-2 border border-slate-350 rounded text-[11px] focus:outline-none focus:border-emerald-600 focus:bg-white text-slate-800"
-                  required
                 />
               </div>
 

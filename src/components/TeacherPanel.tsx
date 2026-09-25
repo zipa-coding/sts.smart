@@ -266,25 +266,19 @@ export default function TeacherPanel({
       return;
     }
 
-    if (tpTemplates.length === 0) {
-      setError(
-        "Harap isi atau tambahkan template Tujuan Pembelajaran (TP) terlebih dahulu.",
-      );
-      return;
-    }
-
     setSaveLoading(true);
 
-    // Format TP list for post payload
-    const formattedTps: TPItem[] = tpTemplates.map((tp) => ({
+    // Format TP list for post payload (supports empty TP list)
+    const safeTemplates = Array.isArray(tpTemplates) ? tpTemplates : [];
+    const formattedTps: TPItem[] = safeTemplates.map((tp) => ({
       id: tp.id,
       text: tp.text,
       achieved: tpAchievements[tp.id] ?? true,
     }));
 
     const finalDescription = isCustomDescActive
-      ? customDescription
-      : getAutoDescription();
+      ? customDescription.trim()
+      : (customDescription.trim() || getAutoDescription());
 
     try {
       const response = await fetch("/api/grades", {
@@ -696,10 +690,13 @@ export default function TeacherPanel({
                   id="tp-grading-list"
                 >
                   {!Array.isArray(tpTemplates) || tpTemplates.length === 0 ? (
-                    <div className="p-3 bg-amber-50 text-amber-900 text-xs rounded border border-amber-200 text-center font-medium">
-                      Belum ada Tujuan Pembelajaran (TP) untuk mapel{" "}
-                      <strong>{user.subject}</strong>. Silakan tambahkan pada
-                      tab "Kelola TP".
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs rounded border border-slate-200 dark:border-slate-700 text-center">
+                      <p className="font-semibold text-slate-700 dark:text-slate-200 mb-0.5">
+                        Belum ada template Tujuan Pembelajaran (TP) Kelas {selectedClass}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Anda tetap dapat menyimpan nilai serta menuliskan narasi deskripsi raport secara manual pada kolom di bawah.
+                      </p>
                     </div>
                   ) : (
                     tpTemplates
@@ -754,8 +751,9 @@ export default function TeacherPanel({
                       Narasi Deskripsi Raport
                     </h4>
                     <p className="text-[10px] text-slate-400">
-                      Secara otomatis dihasilkan berdasarkan kriteria Usaha,
-                      Proses, Capaian dan status TP di atas.
+                      {tpTemplates.length > 0
+                        ? "Dihasilkan otomatis berdasarkan kriteria & TP, atau aktifkan 'Edit Manual' untuk mengetik langsung."
+                        : "Ketik narasi deskripsi capaian raport siswa secara manual di bawah (dapat disimpan tanpa TP)."}
                     </p>
                   </div>
                   <label className="flex items-center gap-1 cursor-pointer text-[10px] font-semibold text-slate-650 hover:text-slate-800">
@@ -763,9 +761,11 @@ export default function TeacherPanel({
                       type="checkbox"
                       checked={isCustomDescActive}
                       onChange={(e) => {
-                        setIsCustomDescActive(e.target.checked);
-                        if (e.target.checked)
+                        const checked = e.target.checked;
+                        setIsCustomDescActive(checked);
+                        if (checked && !customDescription) {
                           setCustomDescription(getAutoDescription());
+                        }
                       }}
                       className="w-3 h-3 rounded"
                     />
@@ -777,13 +777,21 @@ export default function TeacherPanel({
                   value={
                     isCustomDescActive
                       ? customDescription
-                      : getAutoDescription()
+                      : (customDescription || getAutoDescription())
                   }
-                  onChange={(e) => setCustomDescription(e.target.value)}
-                  disabled={!isCustomDescActive}
+                  onChange={(e) => {
+                    setIsCustomDescActive(true);
+                    setCustomDescription(e.target.value);
+                  }}
+                  onFocus={() => {
+                    if (!isCustomDescActive && !customDescription) {
+                      setCustomDescription(getAutoDescription());
+                      setIsCustomDescActive(true);
+                    }
+                  }}
                   rows={4}
-                  placeholder="Deskripsi nilai rapor otomatis..."
-                  className="w-full p-2 border border-slate-200 rounded text-xs bg-slate-50 border-slate-205 focus:bg-white text-slate-700 leading-relaxed font-sans focus:outline-none"
+                  placeholder="Ketik deskripsi capaian nilai rapor secara manual di sini..."
+                  className="w-full p-2 border border-slate-200 rounded text-xs bg-white text-slate-700 leading-relaxed font-sans focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 />
               </div>
 
@@ -791,7 +799,7 @@ export default function TeacherPanel({
               <div className="border-t border-slate-150 pt-3 text-right">
                 <button
                   type="submit"
-                  disabled={saveLoading || tpTemplates.length === 0}
+                  disabled={saveLoading}
                   className="px-4 py-2 bg-emerald-800 hover:bg-emerald-950 text-white rounded text-xs font-bold flex items-center gap-1.5 ml-auto shadow-xs transition disabled:opacity-50 cursor-pointer"
                   id="submit-grades-button"
                 >
