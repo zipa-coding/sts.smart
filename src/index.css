@@ -74,27 +74,27 @@
 
 /* ==========================================================================
    Universal High-Contrast, Professional Dark Mode Theme System
-   Deep Midnight Dark Navy (#080d1a / #0c1322 / #101c34)
+   Deep Midnight Navy (#080d1a / #0c1322 / #0f172a)
    ========================================================================== */
 html, body {
   background-color: #080d1a !important;
-  color: #f1f5f9 !important;
+  color: #f8fafc !important;
 }
 
 .dark, body.dark {
   background-color: #080d1a !important;
-  color: #f1f5f9 !important;
+  color: #f8fafc !important;
 }
 
 .dark #applet-viewport {
   background-color: #080d1a !important;
-  color: #f1f5f9 !important;
+  color: #f8fafc !important;
 }
 
 .dark #app-navbar {
   background-color: #0c1322 !important;
   border-color: #1a2948 !important;
-  color: #f1f5f9 !important;
+  color: #f8fafc !important;
 }
 
 .dark #app-workspace {
@@ -106,29 +106,33 @@ html, body {
   border-right: 1px solid #1a2948 !important;
 }
 
-/* Card components */
+/* Base Card Components */
 .dark .bg-white {
   background-color: #0f172a !important;
-  color: #f1f5f9 !important;
+  color: #f8fafc !important;
   border-color: #1e2e4a !important;
 }
 
-/* Containers & subcards */
+/* Containers, Subcards & Section Boxes */
 .dark .bg-slate-50,
 .dark .bg-slate-50\/40,
 .dark .bg-slate-50\/50,
 .dark .bg-slate-50\/70,
 .dark .bg-slate-100,
 .dark .bg-gray-50,
+.dark .bg-gray-50\/40,
 .dark .bg-gray-50\/50,
 .dark .bg-gray-50\/70,
-.dark .bg-gray-100 {
-  background-color: #0b1222 !important;
-  color: #e2e8f0 !important;
-  border-color: #1a2948 !important;
+.dark .bg-gray-100,
+.dark .bg-emerald-50\/40,
+.dark .bg-emerald-50\/50,
+.dark .bg-emerald-50\/70 {
+  background-color: #141f36 !important;
+  color: #f1f5f9 !important;
+  border-color: #203254 !important;
 }
 
-/* Borders */
+/* Universal Crisp Borders */
 .dark .border-gray-100,
 .dark .border-gray-150,
 .dark .border-gray-200,
@@ -137,10 +141,25 @@ html, body {
 .dark .border-slate-100,
 .dark .border-slate-150,
 .dark .border-slate-200,
+.dark .border-slate-205,
 .dark .border-slate-250,
 .dark .border-slate-300,
 .dark .border-slate-350 {
   border-color: #1e2e4a !important;
+}
+
+/* Headings & Main Labels - Pure High Contrast White */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #ffffff !important;
+}
+
+.dark label {
+  color: #ffffff !important;
 }
 
 /* High Contrast Text Elements */
@@ -165,6 +184,7 @@ html, body {
   color: #f8fafc !important;
 }
 
+/* Secondary & Helper Text - Clear Crisp Slate-300 */
 .dark .text-slate-550,
 .dark .text-slate-500,
 .dark .text-slate-450,
@@ -173,10 +193,10 @@ html, body {
 .dark .text-gray-500,
 .dark .text-gray-450,
 .dark .text-gray-400 {
-  color: #94a3b8 !important;
+  color: #cbd5e1 !important;
 }
 
-/* Green & Emerald text overrides (important for links, success messages, scores, grades) */
+/* Green & Emerald text (high-contrast glowing green) */
 .dark .text-emerald-950,
 .dark .text-emerald-900,
 .dark .text-emerald-850,
@@ -193,7 +213,7 @@ html, body {
   color: #34d399 !important;
 }
 
-/* Warning & Amber text overrides */
+/* Warning & Amber text */
 .dark .text-amber-955,
 .dark .text-amber-950,
 .dark .text-amber-900,
@@ -211,7 +231,7 @@ html, body {
   color: #fbbf24 !important;
 }
 
-/* Info & Blue/Sky text overrides */
+/* Info & Sky text */
 .dark .text-sky-950,
 .dark .text-sky-900,
 .dark .text-sky-800,
@@ -225,7 +245,7 @@ html, body {
   color: #38bdf8 !important;
 }
 
-/* Danger & Red/Rose text overrides */
+/* Danger & Red text */
 .dark .text-red-950,
 .dark .text-red-900,
 .dark .text-red-800,
@@ -247,7 +267,7 @@ html, body {
 .dark textarea {
   background-color: #0b1222 !important;
   color: #ffffff !important;
-  border-color: #1e2e4a !important;
+  border: 1px solid #293e66 !important;
 }
 
 .dark input::placeholder,
@@ -258,73 +278,220 @@ html, body {
 .dark input:focus,
 .dark select:focus,
 .dark textarea:focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
+  background-color: #0e182c !important;
   outline: none;
 }
 
-/* Dynamic Table cells and text colors */
+/* Tables in Dark Mode */
 .dark th {
-  background-color: #0e172a !important;
+  background-color: #131f38 !important;
   color: #ffffff !important;
-  border-color: #1a2948 !important;
+  border-color: #223554 !important;
+  font-weight: 700 !important;
 }
 
 .dark td {
-  border-color: #1a2948 !important;
-  color: #e2e8f0 !important;
+  border-color: #1e2e4a !important;
+  color: #f1f5f9 !important;
 }
 
 .dark .divide-y > :not([hidden]) ~ :not([hidden]) {
-  border-color: #1a2948 !important;
+  border-color: #1e2e4a !important;
 }
 
-/* Badges / statuses */
+/* High Contrast Status Badges */
 .dark .bg-amber-50,
 .dark .bg-amber-100 {
-  background-color: rgba(245, 158, 11, 0.15) !important;
-  border-color: rgba(245, 158, 11, 0.35) !important;
+  background-color: rgba(245, 158, 11, 0.16) !important;
+  border: 1px solid rgba(251, 191, 36, 0.45) !important;
   color: #fbbf24 !important;
+  font-weight: 700 !important;
 }
 
 .dark .bg-emerald-50,
 .dark .bg-emerald-100 {
-  background-color: rgba(16, 185, 129, 0.15) !important;
-  border-color: rgba(16, 185, 129, 0.35) !important;
+  background-color: rgba(16, 185, 129, 0.16) !important;
+  border: 1px solid rgba(52, 211, 153, 0.45) !important;
   color: #34d399 !important;
+  font-weight: 700 !important;
 }
 
 .dark .bg-rose-50,
 .dark .bg-rose-100,
 .dark .bg-red-50,
 .dark .bg-red-100 {
-  background-color: rgba(244, 63, 94, 0.15) !important;
-  border-color: rgba(244, 63, 94, 0.35) !important;
+  background-color: rgba(244, 63, 94, 0.16) !important;
+  border: 1px solid rgba(248, 113, 113, 0.45) !important;
   color: #f87171 !important;
+  font-weight: 700 !important;
 }
 
 .dark .bg-sky-50,
 .dark .bg-sky-100,
 .dark .bg-blue-50,
 .dark .bg-blue-100 {
-  background-color: rgba(56, 189, 248, 0.15) !important;
-  border-color: rgba(56, 189, 248, 0.35) !important;
+  background-color: rgba(56, 189, 248, 0.16) !important;
+  border: 1px solid rgba(56, 189, 248, 0.45) !important;
   color: #38bdf8 !important;
+  font-weight: 700 !important;
 }
 
-/* Table/List Row Hover Effects in Dark Mode */
+.dark .bg-purple-50,
+.dark .bg-purple-100,
+.dark .bg-violet-50,
+.dark .bg-violet-100 {
+  background-color: rgba(168, 85, 247, 0.16) !important;
+  border: 1px solid rgba(168, 85, 247, 0.45) !important;
+  color: #c084fc !important;
+  font-weight: 700 !important;
+}
+
+/* Nav Tabs Headers across Admin, Teacher, and Wali Kelas */
+.dark #admin-nav-tabs button,
+.dark #teacher-view-tabs button {
+  color: #94a3b8 !important;
+  border-color: transparent !important;
+}
+
+.dark #admin-nav-tabs button:hover,
+.dark #teacher-view-tabs button:hover {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark #admin-nav-tabs button.border-emerald-850,
+.dark #teacher-view-tabs button.border-emerald-800 {
+  color: #34d399 !important;
+  border-color: #34d399 !important;
+  background-color: rgba(52, 211, 153, 0.12) !important;
+  font-weight: 700 !important;
+}
+
+/* Class Button Selectors (Kelas 7, 8, 9) */
+.dark #class-button-selectors button.bg-emerald-800,
+.dark #class-button-selectors button.bg-emerald-700,
+.dark #class-button-selectors button.bg-emerald-600 {
+  background: linear-gradient(135deg, #059669, #0d9488) !important;
+  color: #ffffff !important;
+  border: 1px solid #34d399 !important;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.35) !important;
+  font-weight: 700 !important;
+}
+
+.dark #class-button-selectors button.bg-slate-50 {
+  background-color: #141f36 !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #223554 !important;
+}
+
+.dark #class-button-selectors button.bg-slate-50:hover {
+  background-color: #1c2b48 !important;
+  color: #ffffff !important;
+}
+
+/* Student Vertical List Items (Teacher & Wali Kelas Panels) */
+.dark #student-vertical-list button {
+  background-color: #0f172a !important;
+  border: 1px solid #1e2e4a !important;
+  color: #e2e8f0 !important;
+}
+
+.dark #student-vertical-list button:hover {
+  background-color: #16233a !important;
+  border-color: #2a3e66 !important;
+  color: #ffffff !important;
+}
+
+.dark #student-vertical-list button.bg-emerald-50\/70,
+.dark #student-vertical-list button.border-emerald-400 {
+  background-color: #132a48 !important;
+  border: 1.5px solid #38bdf8 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* Table/List Row Hover Effects */
 .dark .hover\:bg-slate-50:hover,
 .dark .hover\:bg-gray-50:hover,
 .dark .hover\:bg-gray-100:hover,
 .dark .hover\:bg-slate-100:hover {
-  background-color: #131f38 !important;
+  background-color: #16233c !important;
 }
 
 /* Modal Dialogs in Dark Mode */
+.dark .fixed.bg-black\/60,
+.dark .fixed.bg-black\/50,
+.dark .fixed.bg-slate-900\/60 {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
 .dark .fixed .bg-white {
-  background-color: #0e172a !important;
-  border-color: #1e2e4a !important;
+  background-color: #0f172a !important;
+  border: 1px solid #293e66 !important;
   color: #f8fafc !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+}
+
+.dark .fixed .bg-emerald-800,
+.dark .fixed .bg-emerald-900 {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+}
+
+/* Action Buttons */
+.dark button.bg-emerald-800,
+.dark button.bg-emerald-700,
+.dark button.bg-emerald-600 {
+  background: linear-gradient(135deg, #059669, #0d9488) !important;
+  color: #ffffff !important;
+  border: 1px solid #34d399 !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3) !important;
+  font-weight: 700 !important;
+}
+
+.dark button.bg-emerald-800:hover,
+.dark button.bg-emerald-700:hover,
+.dark button.bg-emerald-600:hover {
+  background: linear-gradient(135deg, #047857, #0f766e) !important;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.5) !important;
+}
+
+/* Checkboxes in Dark Mode */
+.dark input[type="checkbox"] {
+  background-color: #0b1222 !important;
+  border: 1.5px solid #475569 !important;
+}
+
+.dark input[type="checkbox"]:checked {
+  background-color: #059669 !important;
+  border-color: #34d399 !important;
+}
+
+/* Settings Signature Layout Cards */
+.dark #school-settings-panel .grid > div.cursor-pointer {
+  background-color: #0c1424 !important;
+  border-color: #203254 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark #school-settings-panel .grid > div.cursor-pointer:hover {
+  background-color: #121e36 !important;
+  border-color: #38bdf8 !important;
+}
+
+.dark #school-settings-panel .grid > div.border-emerald-600 {
+  background-color: #132742 !important;
+  border-color: #34d399 !important;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.3) !important;
+}
+
+.dark #school-settings-panel .grid > div .bg-slate-50 {
+  background-color: #080d1a !important;
+  border-color: #1e2e4a !important;
 }
 
 /* ==========================================================================
@@ -333,129 +500,43 @@ html, body {
 .dark #raport-sheet-print,
 .dark #raport-sheet-print * {
   background-color: #ffffff !important;
-  color: #0d121f !important; /* Rich static slate-900 / slate-950 equivalent for text-black/slate-950 */
+  color: #0d121f !important;
 }
 
-/* Specific border colors for elements within white raport card in dark mode */
 .dark #raport-sheet-print {
-  border-color: #d1d5db !important; /* border-gray-300 */
+  border-color: #d1d5db !important;
 }
 
 .dark #raport-sheet-print table,
 .dark #raport-sheet-print th,
 .dark #raport-sheet-print td,
 .dark #raport-sheet-print div {
-  border-color: #d1d5db !important; /* border-gray-300 */
+  border-color: #d1d5db !important;
 }
 
-/* Maintain proper custom font colors in the white sheet */
 .dark #raport-sheet-print .text-emerald-800 {
-  color: #065f46 !important; /* text-emerald-800 */
+  color: #065f46 !important;
 }
 
 .dark #raport-sheet-print .text-gray-800 {
-  color: #1f2937 !important; /* text-gray-800 */
+  color: #1f2937 !important;
 }
 
 .dark #raport-sheet-print .text-gray-500 {
-  color: #6b7280 !important; /* text-gray-500 */
+  color: #6b7280 !important;
 }
 
 .dark #raport-sheet-print .text-gray-450 {
-  color: #9ca3af !important; /* text-gray-400 */
+  color: #9ca3af !important;
 }
 
 .dark #raport-sheet-print .text-gray-650 {
-  color: #4b5563 !important; /* text-gray-600 */
+  color: #4b5563 !important;
 }
 
 .dark #raport-sheet-print .bg-slate-50,
 .dark #raport-sheet-print th {
-  background-color: #f8fafc !important; /* bg-slate-50 style */
-}
-
-/* ==========================================================================
-   Dark Mode High-Contrast Overrides for Teacher & Wali Kelas Panels
-   - Changes green/emerald text to white (#ffffff) or bright yellow (#fbbf24) for perfect readability
-   ========================================================================== */
-.dark #teacher-panel .text-emerald-950,
-.dark #teacher-panel .text-emerald-900,
-.dark #teacher-panel .text-emerald-850,
-.dark #teacher-panel .text-emerald-800,
-.dark #teacher-panel .text-emerald-700,
-.dark #teacher-panel .text-emerald-600,
-.dark #teacher-panel .text-emerald-500,
-.dark #teacher-panel .text-green-950,
-.dark #teacher-panel .text-green-900,
-.dark #teacher-panel .text-green-800,
-.dark #teacher-panel .text-green-700,
-.dark #teacher-panel .text-green-600,
-.dark #teacher-panel .text-green-500,
-.dark #wali-kelas-panel .text-emerald-950,
-.dark #wali-kelas-panel .text-emerald-900,
-.dark #wali-kelas-panel .text-emerald-850,
-.dark #wali-kelas-panel .text-emerald-800,
-.dark #wali-kelas-panel .text-emerald-700,
-.dark #wali-kelas-panel .text-emerald-600,
-.dark #wali-kelas-panel .text-emerald-500,
-.dark #wali-kelas-panel .text-green-950,
-.dark #wali-kelas-panel .text-green-900,
-.dark #wali-kelas-panel .text-green-800,
-.dark #wali-kelas-panel .text-green-700,
-.dark #wali-kelas-panel .text-green-600,
-.dark #wali-kelas-panel .text-green-500 {
-  color: #ffffff !important; /* Extremely readable white text by default */
-}
-
-/* Specific yellow highlights for badges, selected list indicators, and success states */
-.dark #teacher-panel .bg-emerald-100,
-.dark #wali-kelas-panel .bg-emerald-100 {
-  background-color: rgba(251, 191, 36, 0.1) !important; /* Light amber/yellow background */
-  border-color: rgba(251, 191, 36, 0.35) !important;
-}
-
-.dark #teacher-panel .bg-emerald-100 *,
-.dark #wali-kelas-panel .bg-emerald-100 *,
-.dark #teacher-panel .bg-emerald-100,
-.dark #wali-kelas-panel .bg-emerald-100,
-.dark #teacher-panel .text-emerald-400,
-.dark #wali-kelas-panel .text-emerald-400 {
-  color: #fbbf24 !important; /* Bright high-contrast yellow */
-}
-
-/* Yellow status override for filled student cards in list */
-.dark #teacher-panel .bg-emerald-50\/70,
-.dark #wali-kelas-panel .bg-emerald-50\/70,
-.dark #teacher-panel .bg-emerald-50,
-.dark #wali-kelas-panel .bg-emerald-50,
-.dark #teacher-panel .bg-emerald-50\/40,
-.dark #wali-kelas-panel .bg-emerald-50\/40 {
-  background-color: rgba(251, 191, 36, 0.08) !important;
-  border-color: rgba(251, 191, 36, 0.3) !important;
-  color: #fbbf24 !important;
-}
-
-/* Ensure selected items' text/chevron/borders show in brilliant yellow/white */
-.dark #teacher-panel .border-emerald-450,
-.dark #teacher-panel .border-emerald-400,
-.dark #wali-kelas-panel .border-emerald-400 {
-  border-color: #fbbf24 !important;
-}
-
-.dark #teacher-panel .border-emerald-800,
-.dark #wali-kelas-panel .border-emerald-800 {
-  border-color: #fbbf24 !important;
-  color: #fbbf24 !important;
-}
-
-/* Match icons and active states, like Chevron, checkmarks or selesai status badge text */
-.dark #teacher-panel .text-emerald-800,
-.dark #wali-kelas-panel .text-emerald-800,
-.dark #teacher-panel .text-emerald-900,
-.dark #wali-kelas-panel .text-emerald-900,
-.dark #teacher-panel .text-emerald-950,
-.dark #wali-kelas-panel .text-emerald-950 {
-  color: #fbbf24 !important; /* Fallback highlight for critical green markers */
+  background-color: #f8fafc !important;
 }
 
 
