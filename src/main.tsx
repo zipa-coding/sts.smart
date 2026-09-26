@@ -625,11 +625,25 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         showCatatan: true,
         fontFamily: "Times New Roman",
         paperSize: "A4",
-        tanggalRaport: "17 Juni 2026"
+        tanggalRaport: "17 Juni 2026",
+        principalSignaturePosition: "bottom_center",
+        signatureCity: "Pangkal Pinang",
+        principalTitle: "Kepala Sekolah",
+        showPrincipalNip: true,
+        showParentSignature: true,
+        watermarkSize: 440,
+        watermarkOpacity: 0.05
       };
-      // If format doesn't have tanggalRaport, default it
-      if (format && !format.tanggalRaport) {
-        format.tanggalRaport = "17 Juni 2026";
+      // If format doesn't have defaults, set them
+      if (format) {
+        if (!format.tanggalRaport) format.tanggalRaport = "17 Juni 2026";
+        if (!format.principalSignaturePosition) format.principalSignaturePosition = "bottom_center";
+        if (!format.signatureCity) format.signatureCity = "Pangkal Pinang";
+        if (!format.principalTitle) format.principalTitle = "Kepala Sekolah";
+        if (format.showPrincipalNip === undefined) format.showPrincipalNip = true;
+        if (format.showParentSignature === undefined) format.showParentSignature = true;
+        if (format.watermarkSize === undefined) format.watermarkSize = 440;
+        if (format.watermarkOpacity === undefined) format.watermarkOpacity = 0.05;
       }
       return new Response(JSON.stringify({ principalName, principalNip, format }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
@@ -653,7 +667,14 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           showCatatan: format.showCatatan !== undefined ? format.showCatatan : true,
           fontFamily: format.fontFamily || "Times New Roman",
           paperSize: format.paperSize || "A4",
-          tanggalRaport: format.tanggalRaport || "17 Juni 2026"
+          tanggalRaport: format.tanggalRaport || "17 Juni 2026",
+          principalSignaturePosition: format.principalSignaturePosition || "bottom_center",
+          signatureCity: format.signatureCity || "Pangkal Pinang",
+          principalTitle: format.principalTitle || "Kepala Sekolah",
+          showPrincipalNip: format.showPrincipalNip !== undefined ? format.showPrincipalNip : true,
+          showParentSignature: format.showParentSignature !== undefined ? format.showParentSignature : true,
+          watermarkSize: format.watermarkSize !== undefined ? Number(format.watermarkSize) : 440,
+          watermarkOpacity: format.watermarkOpacity !== undefined ? Number(format.watermarkOpacity) : 0.05
         };
       }
       saveDB(db);

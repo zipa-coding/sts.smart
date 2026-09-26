@@ -54,6 +54,11 @@ export default function PrintRaportView({
     fontFamily: "Times New Roman",
     paperSize: "A4",
     tanggalRaport: "17 Juni 2026",
+    principalSignaturePosition: "bottom_center",
+    signatureCity: "Pangkal Pinang",
+    principalTitle: "Kepala Sekolah",
+    showPrincipalNip: true,
+    showParentSignature: true,
     watermarkSize: 440,
     watermarkOpacity: 0.05,
   });
@@ -101,6 +106,18 @@ export default function PrintRaportView({
             fontFamily: data.format.fontFamily || "Times New Roman",
             paperSize: data.format.paperSize || "A4",
             tanggalRaport: data.format.tanggalRaport || "17 Juni 2026",
+            principalSignaturePosition:
+              data.format.principalSignaturePosition || "bottom_center",
+            signatureCity: data.format.signatureCity || "Pangkal Pinang",
+            principalTitle: data.format.principalTitle || "Kepala Sekolah",
+            showPrincipalNip:
+              data.format.showPrincipalNip !== undefined
+                ? !!data.format.showPrincipalNip
+                : true,
+            showParentSignature:
+              data.format.showParentSignature !== undefined
+                ? !!data.format.showParentSignature
+                : true,
             watermarkSize:
               data.format.watermarkSize !== undefined
                 ? Number(data.format.watermarkSize)
@@ -715,25 +732,135 @@ export default function PrintRaportView({
 
           <br />
 
-          <table class="pdf-signature-table" style="page-break-inside: avoid;">
-            <tr>
-              <td style="width: 50%; padding-bottom: 50px;">
-                <p style="margin: 0 0 55px 0;">&nbsp;<br />Orang Tua/Wali Siswa</p>
-                <p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>
-              </td>
-              <td style="width: 50%; padding-bottom: 50px;">
-                <p style="margin: 0 0 55px 0;">Pangkal Pinang, ${format.tanggalRaport || "17 Juni 2026"}<br />Wali Kelas Kelas ${student.kelas}</p>
-                <p style="margin: 0; font-weight: bold; font-size: 11pt;">${waliKelas ? waliKelas.name : "……………………………"}</p>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="2" style="text-align: center; padding-top: 15px;">
-                <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />Kepala Sekolah</p>
-                <p style="margin: 0; font-weight: bold; font-size: 11pt;">${principal.name}</p>
-                <p style="margin: 3px 0 0 0; font-size: 9.5pt; color: #555;">NIP. ${principal.nip}</p>
-              </td>
-            </tr>
-          </table>
+          ${(() => {
+            const pos = format.principalSignaturePosition || "bottom_center";
+            const city = format.signatureCity || "Pangkal Pinang";
+            const dateStr = format.tanggalRaport || "17 Juni 2026";
+            const pTitle = format.principalTitle || "Kepala Sekolah";
+            const showNip = format.showPrincipalNip !== false;
+            const showParent = format.showParentSignature !== false;
+            const pName = principal?.name || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
+            const pNip = principal?.nip || "19780512 200501 1 002";
+            const wName = waliKelas ? waliKelas.name : "……………………………";
+            const nipHtml = showNip && pNip ? `<p style="margin: 3px 0 0 0; font-size: 9.5pt; color: #555;">NIP. ${pNip}</p>` : "";
+            const parentHtml = showParent ? `<p style="margin: 0 0 55px 0;">&nbsp;<br />Orang Tua/Wali Siswa</p><p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>` : "";
+
+            if (pos === "inline_three_columns") {
+              return `
+                <table class="pdf-signature-table" style="width: 100%; border: none; page-break-inside: avoid;">
+                  <tr>
+                    <td style="width: 33.33%; text-align: center; vertical-align: top; border: none;">
+                      ${parentHtml}
+                    </td>
+                    <td style="width: 33.33%; text-align: center; vertical-align: top; border: none;">
+                      <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                      ${nipHtml}
+                    </td>
+                    <td style="width: 33.33%; text-align: center; vertical-align: top; border: none;">
+                      <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+                    </td>
+                  </tr>
+                </table>
+              `;
+            }
+
+            if (pos === "bottom_left") {
+              return `
+                <table class="pdf-signature-table" style="width: 100%; border: none; page-break-inside: avoid;">
+                  <tr>
+                    <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
+                      ${parentHtml}
+                    </td>
+                    <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
+                      <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none;">
+                      <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                      ${nipHtml}
+                    </td>
+                    <td style="width: 50%; border: none;"></td>
+                  </tr>
+                </table>
+              `;
+            }
+
+            if (pos === "bottom_right") {
+              return `
+                <table class="pdf-signature-table" style="width: 100%; border: none; page-break-inside: avoid;">
+                  <tr>
+                    <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
+                      ${parentHtml}
+                    </td>
+                    <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
+                      <p style="margin: 0 0 55px 0;">&nbsp;<br />Wali Kelas Kelas ${student.kelas}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="width: 50%; border: none;"></td>
+                    <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none;">
+                      <p style="margin: 0 0 55px 0; line-height: 1.3;">${city}, ${dateStr}<br />Mengetahui,<br />${pTitle}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                      ${nipHtml}
+                    </td>
+                  </tr>
+                </table>
+              `;
+            }
+
+            if (pos === "top_left") {
+              return `
+                <table class="pdf-signature-table" style="width: 100%; border: none; page-break-inside: avoid;">
+                  <tr>
+                    <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
+                      <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                      ${nipHtml}
+                    </td>
+                    <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
+                      <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+                    </td>
+                  </tr>
+                  ${showParent ? `
+                  <tr>
+                    <td colspan="2" style="text-align: center; padding-top: 15px; vertical-align: top; border: none;">
+                      <p style="margin: 0 0 55px 0;">&nbsp;<br />Orang Tua/Wali Siswa</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>
+                    </td>
+                  </tr>` : ""}
+                </table>
+              `;
+            }
+
+            // Default: bottom_center
+            return `
+              <table class="pdf-signature-table" style="width: 100%; border: none; page-break-inside: avoid;">
+                <tr>
+                  <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
+                    ${parentHtml}
+                  </td>
+                  <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
+                    <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                    <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="text-align: center; padding-top: 15px; vertical-align: top; border: none;">
+                    <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
+                    <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                    ${nipHtml}
+                  </td>
+                </tr>
+              </table>
+            `;
+          })()}
           </div>
         </div>
       `;
@@ -1331,25 +1458,135 @@ export default function PrintRaportView({
 
       <br />
 
-      <table style="width: 100%; border: none; margin-top: 25px; margin-left: auto; margin-right: auto; font-family: 'Times New Roman', Times, serif;">
-        <tr>
-          <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
-            <p style="margin: 0 0 50px 0; font-size: 11pt;">&nbsp;<br />Orang Tua/Wali Siswa</p>
-            <p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>
-          </td>
-          <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
-            <p style="margin: 0 0 50px 0; font-size: 11pt;">Pangkal Pinang, ${format.tanggalRaport || "17 Juni 2026"}<br />Wali Kelas Kelas ${student.kelas}</p>
-            <p style="margin: 0; font-weight: bold; font-size: 11pt;">${waliKelas ? waliKelas.name : "……………………………"}</p>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2" style="text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
-            <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />Kepala Sekolah</p>
-            <p style="margin: 0; font-weight: bold; font-size: 11pt;">${principal.name}</p>
-            <p style="margin: 3px 0 0 0; font-size: 9.5pt; color: #555555;">NIP. ${principal.nip}</p>
-          </td>
-        </tr>
-      </table>
+      ${(() => {
+        const pos = format.principalSignaturePosition || "bottom_center";
+        const city = format.signatureCity || "Pangkal Pinang";
+        const dateStr = format.tanggalRaport || "17 Juni 2026";
+        const pTitle = format.principalTitle || "Kepala Sekolah";
+        const showNip = format.showPrincipalNip !== false;
+        const showParent = format.showParentSignature !== false;
+        const pName = principal?.name || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
+        const pNip = principal?.nip || "19780512 200501 1 002";
+        const wName = waliKelas ? waliKelas.name : "……………………………";
+        const nipHtml = showNip && pNip ? `<p style="margin: 3px 0 0 0; font-size: 9.5pt; color: #555555; font-family: monospace;">NIP. ${pNip}</p>` : "";
+        const parentHtml = showParent ? `<p style="margin: 0 0 50px 0; font-size: 11pt;">&nbsp;<br />Orang Tua/Wali Siswa</p><p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>` : "";
+
+        if (pos === "inline_three_columns") {
+          return `
+            <table style="width: 100%; border: none; margin-top: 25px; margin-left: auto; margin-right: auto; font-family: 'Times New Roman', Times, serif;">
+              <tr>
+                <td style="width: 33.33%; text-align: center; vertical-align: top; border: none; color: #000000;">
+                  ${parentHtml}
+                </td>
+                <td style="width: 33.33%; text-align: center; vertical-align: top; border: none; color: #000000;">
+                  <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                  ${nipHtml}
+                </td>
+                <td style="width: 33.33%; text-align: center; vertical-align: top; border: none; color: #000000;">
+                  <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+                </td>
+              </tr>
+            </table>
+          `;
+        }
+
+        if (pos === "bottom_left") {
+          return `
+            <table style="width: 100%; border: none; margin-top: 25px; margin-left: auto; margin-right: auto; font-family: 'Times New Roman', Times, serif;">
+              <tr>
+                <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
+                  ${parentHtml}
+                </td>
+                <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
+                  <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
+                  <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                  ${nipHtml}
+                </td>
+                <td style="width: 50%; border: none;"></td>
+              </tr>
+            </table>
+          `;
+        }
+
+        if (pos === "bottom_right") {
+          return `
+            <table style="width: 100%; border: none; margin-top: 25px; margin-left: auto; margin-right: auto; font-family: 'Times New Roman', Times, serif;">
+              <tr>
+                <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
+                  ${parentHtml}
+                </td>
+                <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
+                  <p style="margin: 0 0 50px 0; font-size: 11pt;">&nbsp;<br />Wali Kelas Kelas ${student.kelas}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="width: 50%; border: none;"></td>
+                <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
+                  <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">${city}, ${dateStr}<br />Mengetahui,<br />${pTitle}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                  ${nipHtml}
+                </td>
+              </tr>
+            </table>
+          `;
+        }
+
+        if (pos === "top_left") {
+          return `
+            <table style="width: 100%; border: none; margin-top: 25px; margin-left: auto; margin-right: auto; font-family: 'Times New Roman', Times, serif;">
+              <tr>
+                <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
+                  <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                  ${nipHtml}
+                </td>
+                <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
+                  <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+                </td>
+              </tr>
+              ${showParent ? `
+              <tr>
+                <td colspan="2" style="text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
+                  <p style="margin: 0 0 50px 0; font-size: 11pt;">&nbsp;<br />Orang Tua/Wali Siswa</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>
+                </td>
+              </tr>` : ""}
+            </table>
+          `;
+        }
+
+        // Default: bottom_center
+        return `
+          <table style="width: 100%; border: none; margin-top: 25px; margin-left: auto; margin-right: auto; font-family: 'Times New Roman', Times, serif;">
+            <tr>
+              <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
+                ${parentHtml}
+              </td>
+              <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
+                <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
+                <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
+                <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                ${nipHtml}
+              </td>
+            </tr>
+          </table>
+        `;
+      })()}
     `;
 
     const htmlFooter = `
@@ -2262,49 +2499,260 @@ export default function PrintRaportView({
             </table>
           </div>
 
-          {/* Signatures section aligned side-by-side */}
-          <div className="text-xs mt-8 space-y-12 font-serif page-break-avoid text-black">
-            {/* Wali Kelas and Parent side-by-side */}
-            <div className="grid grid-cols-2 text-center gap-4">
-              <div>
-                <p className="mb-16 text-black font-semibold">
-                  <span className="invisible block">&nbsp;</span>
-                  Orang Tua/Wali Siswa
-                </p>
-                <div className="font-bold inline-block w-44 text-center text-black">
-                  ……………………………
+          {/* Signatures section aligned dynamically based on settings */}
+          <div className="text-xs mt-8 space-y-10 font-serif page-break-avoid text-black">
+            {/* 1. Bottom Center (Standar) */}
+            {(format.principalSignaturePosition === "bottom_center" || !format.principalSignaturePosition) && (
+              <>
+                <div className="grid grid-cols-2 text-center gap-4">
+                  <div>
+                    {format.showParentSignature !== false ? (
+                      <>
+                        <p className="mb-16 text-black font-semibold">
+                          <span className="invisible block">&nbsp;</span>
+                          Orang Tua/Wali Siswa
+                        </p>
+                        <div className="font-bold inline-block w-44 text-center text-black">
+                          ……………………………
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                  <div>
+                    <p className="mb-16 text-black">
+                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                      <br />
+                      <span className="font-semibold">
+                        Wali Kelas Kelas {student.kelas}
+                      </span>
+                    </p>
+                    <div className="font-bold inline-block text-center text-black">
+                      {waliKelas ? waliKelas.name : "……………………………"}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className="mb-16 text-black">
-                  Pangkal Pinang, {format.tanggalRaport || "17 Juni 2026"}
-                  <br />
-                  <span className="font-semibold">
-                    Wali Kelas Kelas {student.kelas}
-                  </span>
-                </p>
-                <div className="font-bold inline-block text-center text-black">
-                  {waliKelas ? waliKelas.name : "……………………………"}
-                </div>
-              </div>
-            </div>
 
-            {/* Underneath: Kepala sekolah centring */}
-            <div className="text-center pt-4">
-              <div className="max-w-md mx-auto justify-center text-black">
-                <p className="mb-16 uppercase font-bold tracking-wide text-black">
-                  Mengetahui,
-                  <br />
-                  Kepala Sekolah
-                </p>
-                <div className="font-bold inline-block text-center text-black">
-                  {principal.name}
+                <div className="text-center pt-2">
+                  <div className="max-w-md mx-auto justify-center text-black">
+                    <p className="mb-16 uppercase font-bold tracking-wide text-black">
+                      Mengetahui,
+                      <br />
+                      {format.principalTitle || "Kepala Sekolah"}
+                    </p>
+                    <div className="font-bold inline-block text-center text-black">
+                      {principal.name}
+                    </div>
+                    {format.showPrincipalNip !== false && principal.nip && (
+                      <p className="text-[10px] text-gray-500 font-mono mt-1 font-bold">
+                        NIP. {principal.nip}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <p className="text-[10px] text-gray-500 font-mono mt-1 font-bold">
-                  NIP. {principal.nip}
-                </p>
+              </>
+            )}
+
+            {/* 2. Inline Three Columns */}
+            {format.principalSignaturePosition === "inline_three_columns" && (
+              <div className="grid grid-cols-3 text-center gap-2 pt-2">
+                <div>
+                  {format.showParentSignature !== false ? (
+                    <>
+                      <p className="mb-16 text-black font-semibold text-[11px]">
+                        <span className="invisible block">&nbsp;</span>
+                        Orang Tua/Wali Siswa
+                      </p>
+                      <div className="font-bold inline-block text-center text-black text-[11px]">
+                        ……………………………
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+                <div>
+                  <p className="mb-16 uppercase font-bold tracking-wide text-black text-[11px]">
+                    Mengetahui,
+                    <br />
+                    {format.principalTitle || "Kepala Sekolah"}
+                  </p>
+                  <div className="font-bold inline-block text-center text-black text-[11px]">
+                    {principal.name}
+                  </div>
+                  {format.showPrincipalNip !== false && principal.nip && (
+                    <p className="text-[9.5px] text-gray-500 font-mono mt-1 font-bold">
+                      NIP. {principal.nip}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="mb-16 text-black text-[11px]">
+                    {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                    <br />
+                    <span className="font-semibold">
+                      Wali Kelas Kelas {student.kelas}
+                    </span>
+                  </p>
+                  <div className="font-bold inline-block text-center text-black text-[11px]">
+                    {waliKelas ? waliKelas.name : "……………………………"}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* 3. Bottom Left */}
+            {format.principalSignaturePosition === "bottom_left" && (
+              <>
+                <div className="grid grid-cols-2 text-center gap-4">
+                  <div>
+                    {format.showParentSignature !== false ? (
+                      <>
+                        <p className="mb-16 text-black font-semibold">
+                          <span className="invisible block">&nbsp;</span>
+                          Orang Tua/Wali Siswa
+                        </p>
+                        <div className="font-bold inline-block w-44 text-center text-black">
+                          ……………………………
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                  <div>
+                    <p className="mb-16 text-black">
+                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                      <br />
+                      <span className="font-semibold">
+                        Wali Kelas Kelas {student.kelas}
+                      </span>
+                    </p>
+                    <div className="font-bold inline-block text-center text-black">
+                      {waliKelas ? waliKelas.name : "……………………………"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 text-center gap-4 pt-2">
+                  <div>
+                    <p className="mb-16 uppercase font-bold tracking-wide text-black">
+                      Mengetahui,
+                      <br />
+                      {format.principalTitle || "Kepala Sekolah"}
+                    </p>
+                    <div className="font-bold inline-block text-center text-black">
+                      {principal.name}
+                    </div>
+                    {format.showPrincipalNip !== false && principal.nip && (
+                      <p className="text-[10px] text-gray-500 font-mono mt-1 font-bold">
+                        NIP. {principal.nip}
+                      </p>
+                    )}
+                  </div>
+                  <div />
+                </div>
+              </>
+            )}
+
+            {/* 4. Bottom Right */}
+            {format.principalSignaturePosition === "bottom_right" && (
+              <>
+                <div className="grid grid-cols-2 text-center gap-4">
+                  <div>
+                    {format.showParentSignature !== false ? (
+                      <>
+                        <p className="mb-16 text-black font-semibold">
+                          <span className="invisible block">&nbsp;</span>
+                          Orang Tua/Wali Siswa
+                        </p>
+                        <div className="font-bold inline-block w-44 text-center text-black">
+                          ……………………………
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                  <div>
+                    <p className="mb-16 text-black">
+                      <span className="invisible block">&nbsp;</span>
+                      <span className="font-semibold">
+                        Wali Kelas Kelas {student.kelas}
+                      </span>
+                    </p>
+                    <div className="font-bold inline-block text-center text-black">
+                      {waliKelas ? waliKelas.name : "……………………………"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 text-center gap-4 pt-2">
+                  <div />
+                  <div>
+                    <p className="mb-16 text-black">
+                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                      <br />
+                      <span className="uppercase font-bold tracking-wide">
+                        Mengetahui,
+                        <br />
+                        {format.principalTitle || "Kepala Sekolah"}
+                      </span>
+                    </p>
+                    <div className="font-bold inline-block text-center text-black">
+                      {principal.name}
+                    </div>
+                    {format.showPrincipalNip !== false && principal.nip && (
+                      <p className="text-[10px] text-gray-500 font-mono mt-1 font-bold">
+                        NIP. {principal.nip}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* 5. Top Left */}
+            {format.principalSignaturePosition === "top_left" && (
+              <>
+                <div className="grid grid-cols-2 text-center gap-4">
+                  <div>
+                    <p className="mb-16 uppercase font-bold tracking-wide text-black">
+                      Mengetahui,
+                      <br />
+                      {format.principalTitle || "Kepala Sekolah"}
+                    </p>
+                    <div className="font-bold inline-block text-center text-black">
+                      {principal.name}
+                    </div>
+                    {format.showPrincipalNip !== false && principal.nip && (
+                      <p className="text-[10px] text-gray-500 font-mono mt-1 font-bold">
+                        NIP. {principal.nip}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="mb-16 text-black">
+                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                      <br />
+                      <span className="font-semibold">
+                        Wali Kelas Kelas {student.kelas}
+                      </span>
+                    </p>
+                    <div className="font-bold inline-block text-center text-black">
+                      {waliKelas ? waliKelas.name : "……………………………"}
+                    </div>
+                  </div>
+                </div>
+
+                {format.showParentSignature !== false && (
+                  <div className="text-center pt-2">
+                    <div className="max-w-md mx-auto justify-center text-black">
+                      <p className="mb-16 text-black font-semibold">
+                        <span className="invisible block">&nbsp;</span>
+                        Orang Tua/Wali Siswa
+                      </p>
+                      <div className="font-bold inline-block w-44 text-center text-black">
+                        ……………………………
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
 

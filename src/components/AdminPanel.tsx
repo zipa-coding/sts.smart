@@ -20,6 +20,11 @@ import {
   Search,
   FileText,
   Copy,
+  PenTool,
+  LayoutTemplate,
+  MapPin,
+  Sparkles,
+  Check,
 } from "lucide-react";
 
 interface AdminPanelProps {
@@ -63,6 +68,15 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   const [tanggalRaport, setTanggalRaport] = useState("17 Juni 2026");
   const [watermarkSize, setWatermarkSize] = useState(440);
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.05);
+
+  // Signature Position & Layout settings
+  const [principalSignaturePosition, setPrincipalSignaturePosition] = useState<
+    "bottom_center" | "bottom_left" | "bottom_right" | "inline_three_columns" | "top_left"
+  >("bottom_center");
+  const [signatureCity, setSignatureCity] = useState("Pangkal Pinang");
+  const [principalTitle, setPrincipalTitle] = useState("Kepala Sekolah");
+  const [showPrincipalNip, setShowPrincipalNip] = useState(true);
+  const [showParentSignature, setShowParentSignature] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -439,6 +453,21 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           setFontFamily(setData.format.fontFamily || "Times New Roman");
           setPaperSize(setData.format.paperSize || "A4");
           setTanggalRaport(setData.format.tanggalRaport || "17 Juni 2026");
+          setPrincipalSignaturePosition(
+            setData.format.principalSignaturePosition || "bottom_center"
+          );
+          setSignatureCity(setData.format.signatureCity || "Pangkal Pinang");
+          setPrincipalTitle(setData.format.principalTitle || "Kepala Sekolah");
+          setShowPrincipalNip(
+            setData.format.showPrincipalNip !== undefined
+              ? setData.format.showPrincipalNip
+              : true
+          );
+          setShowParentSignature(
+            setData.format.showParentSignature !== undefined
+              ? setData.format.showParentSignature
+              : true
+          );
           setWatermarkSize(
             setData.format.watermarkSize !== undefined
               ? Number(setData.format.watermarkSize)
@@ -746,6 +775,11 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
             fontFamily,
             paperSize,
             tanggalRaport,
+            principalSignaturePosition,
+            signatureCity,
+            principalTitle,
+            showPrincipalNip,
+            showParentSignature,
             watermarkSize,
             watermarkOpacity,
           },
@@ -758,7 +792,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           data.error || "Gagal menyimpan rincian kepala sekolah.",
         );
 
-      showSuccess("Rincian Kepala Sekolah berhasil diperbarui!");
+      showSuccess("Pengaturan format & tanda tangan raport berhasil disimpan!");
       onRefreshTrigger();
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan.");
@@ -1355,27 +1389,31 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       {/* SETTINGS (PENGATURAN RAPORT) TAB */}
       {activeTab === "settings" && (
         <div
-          className="bg-white rounded-xl border border-gray-150 shadow-sm p-6 max-w-2xl animate-fade-in"
+          className="bg-white rounded-xl border border-gray-150 shadow-sm p-6 max-w-3xl animate-fade-in"
           id="school-settings-panel"
         >
           <div className="mb-6">
             <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
-              <span>Pengaturan Format & Atribut Raport</span>
+              <PenTool className="w-4 h-4 text-emerald-700" />
+              <span>Pengaturan Format & Tata Letak Raport</span>
               <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Akses Admin
               </span>
             </h2>
             <p className="text-[10px] text-slate-400 mt-1">
-              Sesuaikan identitas, tampilan, font, ukuran, serta bagian-bagian
-              format yang ingin ditampilkan pada cetak raport siswa.
+              Sesuaikan identitas, format penandatanganan kepala sekolah, posisi tanda tangan, font, ukuran, serta komponen yang ditampilkan pada cetak raport siswa.
             </p>
           </div>
 
           <form onSubmit={handleSettingsSubmit} className="space-y-6">
-            {/* Bagian 1: Identitas Kepala Sekolah */}
-            <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-4">
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-1">
-                1. Identitas Penandatangan
+            {/* Bagian 1: Identitas Penandatangan */}
+            <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-100 space-y-4">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
+                  1. Identitas Kepala Sekolah & Pengesahan
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal lowercase">Wajib diisi untuk keabsahan raport</span>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1405,13 +1443,418 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Sebutan Jabatan / Titimangsa
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={principalTitle}
+                    onChange={(e) => setPrincipalTitle(e.target.value)}
+                    placeholder="Contoh: Kepala Sekolah / Plt. Kepala Sekolah"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Teks di atas tanda tangan kepala sekolah (default: "Kepala Sekolah")</p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Kota / Domisili Penerbitan Raport
+                  </label>
+                  <div className="relative">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      required
+                      value={signatureCity}
+                      onChange={(e) => setSignatureCity(e.target.value)}
+                      placeholder="Contoh: Pangkal Pinang"
+                      className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">Digunakan untuk format tanggal: <em>{signatureCity}, {tanggalRaport}</em></p>
+                </div>
               </div>
             </div>
 
-            {/* Bagian 2: Kustomisasi Teks & Sesi */}
+            {/* Bagian 2: Posisi & Tata Letak Tanda Tangan */}
+            <div className="bg-emerald-50/40 p-4 rounded-xl border border-emerald-100 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-emerald-200/60 pb-2">
+                <h3 className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <LayoutTemplate className="w-3.5 h-3.5 text-emerald-700" />
+                  2. Pengaturan Posisi Tanda Tangan Kepala Sekolah
+                </h3>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">
+                  Format Tata Letak
+                </span>
+              </div>
+              
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Pilih susunan tata letak penandatanganan raport di lembar akhir. Penataan ini akan otomatis diselaraskan pada pratinjau, unduhan PDF, cetak langsung, serta ekspor dokumen Word.
+              </p>
+
+              {/* Position Selection Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {/* 1. Bottom Center (Standar) */}
+                <div
+                  onClick={() => setPrincipalSignaturePosition("bottom_center")}
+                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
+                    principalSignaturePosition === "bottom_center"
+                      ? "border-emerald-600 bg-white shadow-sm ring-2 ring-emerald-500/20"
+                      : "border-slate-200 bg-white/70 hover:border-emerald-300 hover:bg-white"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-800">Tengah Bawah (Standar)</span>
+                      {principalSignaturePosition === "bottom_center" && (
+                        <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+                    </div>
+                    {/* Mini Diagram */}
+                    <div className="bg-slate-50 border border-slate-200 rounded p-2 mb-2 space-y-1 text-[9px] font-medium text-slate-500 text-center">
+                      <div className="flex justify-between gap-1">
+                        <div className="w-1/2 bg-slate-200/70 py-0.5 rounded text-[8px]">Orang Tua</div>
+                        <div className="w-1/2 bg-blue-100 text-blue-800 py-0.5 rounded text-[8px]">Wali Kelas</div>
+                      </div>
+                      <div className="w-3/4 mx-auto bg-emerald-100 text-emerald-800 font-bold py-1 rounded text-[8px] mt-1 shadow-xs">
+                        Kepala Sekolah
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      Orang Tua di kiri, Wali Kelas di kanan, dan Kepala Sekolah di tengah bawah. Standar resmi rapor sekolah.
+                    </p>
+                  </div>
+                  <div className="mt-2 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded w-fit">
+                    Rekomendasi Resmi
+                  </div>
+                </div>
+
+                {/* 2. Inline Three Columns (Sejajar 3 Kolom) */}
+                <div
+                  onClick={() => setPrincipalSignaturePosition("inline_three_columns")}
+                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
+                    principalSignaturePosition === "inline_three_columns"
+                      ? "border-emerald-600 bg-white shadow-sm ring-2 ring-emerald-500/20"
+                      : "border-slate-200 bg-white/70 hover:border-emerald-300 hover:bg-white"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-800">Sejajar 3 Kolom</span>
+                      {principalSignaturePosition === "inline_three_columns" && (
+                        <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+                    </div>
+                    {/* Mini Diagram */}
+                    <div className="bg-slate-50 border border-slate-200 rounded p-2 mb-2 text-[9px] font-medium text-slate-500 text-center">
+                      <div className="flex justify-between gap-1">
+                        <div className="w-1/3 bg-slate-200/70 py-1.5 rounded text-[7.5px] truncate">Orang Tua</div>
+                        <div className="w-1/3 bg-emerald-100 text-emerald-800 font-bold py-1.5 rounded text-[7.5px] truncate">Kepala Sek.</div>
+                        <div className="w-1/3 bg-blue-100 text-blue-800 py-1.5 rounded text-[7.5px] truncate">Wali Kelas</div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      Ketiga tanda tangan diletakkan sejajar 1 baris. Sangat ringkas dan menghemat ruang vertikal halaman.
+                    </p>
+                  </div>
+                  <div className="mt-2 text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded w-fit">
+                    Hemat Halaman
+                  </div>
+                </div>
+
+                {/* 3. Bottom Left (Kiri Bawah) */}
+                <div
+                  onClick={() => setPrincipalSignaturePosition("bottom_left")}
+                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
+                    principalSignaturePosition === "bottom_left"
+                      ? "border-emerald-600 bg-white shadow-sm ring-2 ring-emerald-500/20"
+                      : "border-slate-200 bg-white/70 hover:border-emerald-300 hover:bg-white"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-800">Kiri Bawah</span>
+                      {principalSignaturePosition === "bottom_left" && (
+                        <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+                    </div>
+                    {/* Mini Diagram */}
+                    <div className="bg-slate-50 border border-slate-200 rounded p-2 mb-2 space-y-1 text-[9px] font-medium text-slate-500 text-center">
+                      <div className="flex justify-between gap-1">
+                        <div className="w-1/2 bg-slate-200/70 py-0.5 rounded text-[8px]">Orang Tua</div>
+                        <div className="w-1/2 bg-blue-100 text-blue-800 py-0.5 rounded text-[8px]">Wali Kelas</div>
+                      </div>
+                      <div className="flex justify-start">
+                        <div className="w-1/2 bg-emerald-100 text-emerald-800 font-bold py-1 rounded text-[8px]">
+                          Kepala Sekolah
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      Orang Tua & Wali Kelas di atas, tanda tangan Kepala Sekolah di sudut kiri bawah (mengetahui).
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4. Bottom Right (Kanan Bawah) */}
+                <div
+                  onClick={() => setPrincipalSignaturePosition("bottom_right")}
+                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
+                    principalSignaturePosition === "bottom_right"
+                      ? "border-emerald-600 bg-white shadow-sm ring-2 ring-emerald-500/20"
+                      : "border-slate-200 bg-white/70 hover:border-emerald-300 hover:bg-white"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-800">Kanan Bawah</span>
+                      {principalSignaturePosition === "bottom_right" && (
+                        <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+                    </div>
+                    {/* Mini Diagram */}
+                    <div className="bg-slate-50 border border-slate-200 rounded p-2 mb-2 space-y-1 text-[9px] font-medium text-slate-500 text-center">
+                      <div className="flex justify-between gap-1">
+                        <div className="w-1/2 bg-slate-200/70 py-0.5 rounded text-[8px]">Orang Tua</div>
+                        <div className="w-1/2 bg-blue-100 text-blue-800 py-0.5 rounded text-[8px]">Wali Kelas</div>
+                      </div>
+                      <div className="flex justify-end">
+                        <div className="w-1/2 bg-emerald-100 text-emerald-800 font-bold py-1 rounded text-[8px]">
+                          Kepala Sekolah
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      Orang Tua & Wali Kelas di atas, tanda tangan Kepala Sekolah di sudut kanan bawah disertai tanggal.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 5. Top Left (Kiri Atas Sejajar Wali Kelas) */}
+                <div
+                  onClick={() => setPrincipalSignaturePosition("top_left")}
+                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
+                    principalSignaturePosition === "top_left"
+                      ? "border-emerald-600 bg-white shadow-sm ring-2 ring-emerald-500/20"
+                      : "border-slate-200 bg-white/70 hover:border-emerald-300 hover:bg-white"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-800">Kiri Atas (Sejajar Wali)</span>
+                      {principalSignaturePosition === "top_left" && (
+                        <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+                    </div>
+                    {/* Mini Diagram */}
+                    <div className="bg-slate-50 border border-slate-200 rounded p-2 mb-2 space-y-1 text-[9px] font-medium text-slate-500 text-center">
+                      <div className="flex justify-between gap-1">
+                        <div className="w-1/2 bg-emerald-100 text-emerald-800 font-bold py-0.5 rounded text-[8px]">Kepala Sekolah</div>
+                        <div className="w-1/2 bg-blue-100 text-blue-800 py-0.5 rounded text-[8px]">Wali Kelas</div>
+                      </div>
+                      <div className="w-3/4 mx-auto bg-slate-200/70 py-1 rounded text-[8px] mt-1">
+                        Orang Tua/Wali
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      Kepala Sekolah di kiri atas sejajar dengan Wali Kelas di kanan atas, Orang Tua di tengah bawah.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Toggles for Signatures */}
+              <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition text-xs text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={showPrincipalNip}
+                    onChange={(e) => setShowPrincipalNip(e.target.checked)}
+                    className="rounded text-emerald-600 focus:ring-emerald-550 w-4 h-4"
+                  />
+                  <span>Tampilkan Nomor Induk Pegawai (NIP)</span>
+                </label>
+
+                <label className="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition text-xs text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={showParentSignature}
+                    onChange={(e) => setShowParentSignature(e.target.checked)}
+                    className="rounded text-emerald-600 focus:ring-emerald-550 w-4 h-4"
+                  />
+                  <span>Tampilkan Kolom Tanda Tangan Orang Tua/Wali</span>
+                </label>
+              </div>
+
+              {/* Live Interactive Signature Preview Box */}
+              <div className="mt-4 p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wide">
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    Simulasi Pratinjau Tanda Tangan Raport
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    Font: {fontFamily}
+                  </span>
+                </div>
+
+                <div 
+                  className="bg-slate-50/70 p-4 rounded-lg border border-dashed border-slate-200 text-black text-center text-xs space-y-4"
+                  style={{ fontFamily: fontFamily === 'Arial' ? 'Arial, sans-serif' : fontFamily === 'Georgia' ? 'Georgia, serif' : fontFamily === 'Courier New' ? 'Courier New, monospace' : '"Times New Roman", Times, serif' }}
+                >
+                  {/* Rendering the active layout in the live preview */}
+                  {principalSignaturePosition === "bottom_center" && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          {showParentSignature ? (
+                            <>
+                              <p className="mb-10 text-slate-700">&nbsp;<br />Orang Tua/Wali Siswa</p>
+                              <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">……………………………</p>
+                            </>
+                          ) : null}
+                        </div>
+                        <div>
+                          <p className="mb-10 text-slate-700">{signatureCity}, {tanggalRaport}<br />Wali Kelas Kelas 7</p>
+                          <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">Ustadzah Nama Wali Kelas</p>
+                        </div>
+                      </div>
+                      <div className="pt-2 text-center">
+                        <p className="mb-10 text-slate-800 font-medium">Mengetahui,<br />{principalTitle}</p>
+                        <p className="font-bold">{principalName}</p>
+                        {showPrincipalNip && (
+                          <p className="text-[10px] text-slate-500 font-mono">NIP. {principalNip}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {principalSignaturePosition === "inline_three_columns" && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        {showParentSignature ? (
+                          <>
+                            <p className="mb-10 text-slate-700 text-[11px]">&nbsp;<br />Orang Tua/Wali</p>
+                            <p className="font-bold text-[11px] border-b border-dotted border-slate-400 inline-block px-2">………………………</p>
+                          </>
+                        ) : null}
+                      </div>
+                      <div>
+                        <p className="mb-10 text-slate-800 font-medium text-[11px]">Mengetahui,<br />{principalTitle}</p>
+                        <p className="font-bold text-[11px]">{principalName}</p>
+                        {showPrincipalNip && (
+                          <p className="text-[9px] text-slate-500 font-mono">NIP. {principalNip}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="mb-10 text-slate-700 text-[11px]">{signatureCity}, {tanggalRaport}<br />Wali Kelas</p>
+                        <p className="font-bold text-[11px] border-b border-dotted border-slate-400 inline-block px-2">Nama Wali Kelas</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {principalSignaturePosition === "bottom_left" && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          {showParentSignature ? (
+                            <>
+                              <p className="mb-10 text-slate-700">&nbsp;<br />Orang Tua/Wali Siswa</p>
+                              <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">……………………………</p>
+                            </>
+                          ) : null}
+                        </div>
+                        <div>
+                          <p className="mb-10 text-slate-700">{signatureCity}, {tanggalRaport}<br />Wali Kelas Kelas 7</p>
+                          <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">Nama Wali Kelas</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="text-center">
+                          <p className="mb-10 text-slate-800 font-medium">Mengetahui,<br />{principalTitle}</p>
+                          <p className="font-bold">{principalName}</p>
+                          {showPrincipalNip && (
+                            <p className="text-[10px] text-slate-500 font-mono">NIP. {principalNip}</p>
+                          )}
+                        </div>
+                        <div />
+                      </div>
+                    </>
+                  )}
+
+                  {principalSignaturePosition === "bottom_right" && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          {showParentSignature ? (
+                            <>
+                              <p className="mb-10 text-slate-700">&nbsp;<br />Orang Tua/Wali Siswa</p>
+                              <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">……………………………</p>
+                            </>
+                          ) : null}
+                        </div>
+                        <div>
+                          <p className="mb-10 text-slate-700">&nbsp;<br />Wali Kelas Kelas 7</p>
+                          <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">Nama Wali Kelas</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div />
+                        <div className="text-center">
+                          <p className="mb-10 text-slate-800 font-medium">{signatureCity}, {tanggalRaport}<br />Mengetahui,<br />{principalTitle}</p>
+                          <p className="font-bold">{principalName}</p>
+                          {showPrincipalNip && (
+                            <p className="text-[10px] text-slate-500 font-mono">NIP. {principalNip}</p>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {principalSignaturePosition === "top_left" && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center">
+                          <p className="mb-10 text-slate-800 font-medium">Mengetahui,<br />{principalTitle}</p>
+                          <p className="font-bold">{principalName}</p>
+                          {showPrincipalNip && (
+                            <p className="text-[10px] text-slate-500 font-mono">NIP. {principalNip}</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="mb-10 text-slate-700">{signatureCity}, {tanggalRaport}<br />Wali Kelas Kelas 7</p>
+                          <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">Nama Wali Kelas</p>
+                        </div>
+                      </div>
+                      {showParentSignature && (
+                        <div className="pt-2 text-center">
+                          <p className="mb-10 text-slate-700">&nbsp;<br />Orang Tua/Wali Siswa</p>
+                          <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">……………………………</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bagian 3: Kustomisasi Teks & Sesi */}
             <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-4">
               <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-1">
-                2. Informasi Semester, Tahun Pelajaran & Tanggal Rapor
+                3. Informasi Semester, Tahun Pelajaran & Tanggal Rapor
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -1458,10 +1901,10 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               </div>
             </div>
 
-            {/* Bagian 3: Tata Letak & Gaya */}
+            {/* Bagian 4: Tata Letak & Gaya */}
             <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-4">
               <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-1">
-                3. Gaya & Desain Cetak
+                4. Gaya & Desain Cetak
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -1521,10 +1964,10 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               </div>
             </div>
 
-            {/* Bagian 4: Visibilitas Komponen */}
+            {/* Bagian 5: Visibilitas Komponen */}
             <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-4">
               <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-1">
-                4. Visibilitas Elemen Raport
+                5. Visibilitas Elemen Raport
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700">
                 <label className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition">
@@ -1579,10 +2022,10 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               </div>
             </div>
 
-            {/* Bagian 5: Pengaturan Watermark */}
+            {/* Bagian 6: Pengaturan Watermark */}
             <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-4">
               <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-1">
-                5. Pengaturan Watermark
+                6. Pengaturan Watermark
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

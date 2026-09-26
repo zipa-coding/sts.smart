@@ -500,8 +500,11 @@ export const firebaseApi = {
     const docSnap = await withTimeout(getDoc(ref), 2500);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      if (data.format && !data.format.tanggalRaport) {
-        data.format.tanggalRaport = "17 Juni 2026";
+      if (data.format) {
+        if (!data.format.tanggalRaport) data.format.tanggalRaport = "17 Juni 2026";
+        if (!data.format.principalSignaturePosition) data.format.principalSignaturePosition = "bottom_center";
+        if (!data.format.signatureCity) data.format.signatureCity = "Pangkal Pinang";
+        if (!data.format.principalTitle) data.format.principalTitle = "Kepala Sekolah";
       }
       return data;
     }
@@ -519,7 +522,14 @@ export const firebaseApi = {
         showCatatan: true,
         fontFamily: "Times New Roman",
         paperSize: "A4",
-        tanggalRaport: "17 Juni 2026"
+        tanggalRaport: "17 Juni 2026",
+        principalSignaturePosition: "bottom_center",
+        signatureCity: "Pangkal Pinang",
+        principalTitle: "Kepala Sekolah",
+        showPrincipalNip: true,
+        showParentSignature: true,
+        watermarkSize: 440,
+        watermarkOpacity: 0.05
       }
     };
   },
@@ -540,7 +550,14 @@ export const firebaseApi = {
         showCatatan: format.showCatatan !== undefined ? format.showCatatan : true,
         fontFamily: format.fontFamily || "Times New Roman",
         paperSize: format.paperSize || "A4",
-        tanggalRaport: format.tanggalRaport || "17 Juni 2026"
+        tanggalRaport: format.tanggalRaport || "17 Juni 2026",
+        principalSignaturePosition: format.principalSignaturePosition || "bottom_center",
+        signatureCity: format.signatureCity || "Pangkal Pinang",
+        principalTitle: format.principalTitle || "Kepala Sekolah",
+        showPrincipalNip: format.showPrincipalNip !== undefined ? format.showPrincipalNip : true,
+        showParentSignature: format.showParentSignature !== undefined ? format.showParentSignature : true,
+        watermarkSize: format.watermarkSize !== undefined ? Number(format.watermarkSize) : 440,
+        watermarkOpacity: format.watermarkOpacity !== undefined ? Number(format.watermarkOpacity) : 0.05
       } : {}
     };
     await withTimeout(setDoc(doc(db, "settings", "app"), settingsData), 2500);
