@@ -43,21 +43,14 @@ export default function App() {
   // Responsive mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
-  // Global screen dark mode state synced with local storage
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    return localStorage.getItem("smp_islam_smart_theme") === "dark";
-  });
+  // Global screen dark mode state - permanently dark mode
+  const darkMode = true;
 
   useEffect(() => {
-    localStorage.setItem("smp_islam_smart_theme", darkMode ? "dark" : "light");
-    if (darkMode) {
-      document.body.classList.add("dark");
-      document.documentElement.classList.add("dark");
-    } else {
-      document.body.classList.remove("dark");
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
+    localStorage.setItem("smp_islam_smart_theme", "dark");
+    document.body.classList.add("dark");
+    document.documentElement.classList.add("dark");
+  }, []);
 
   // Track tab visits for fast DOM persistence
   useEffect(() => {
@@ -462,22 +455,11 @@ export default function App() {
               <span>Mode SMP STS</span>
             </div>
 
-            {/* Theme Toggle Button */}
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-xl text-xs font-bold transition cursor-pointer select-none border ${
-                darkMode 
-                  ? "bg-[#131f38] hover:bg-[#1c2c4e] text-amber-400 border-[#1a2948]" 
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
-              }`}
-              title={darkMode ? "Beralih ke Mode Terang" : "Beralih ke Mode Gelap"}
-            >
-              {darkMode ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
-            </button>
+            {/* Dark Mode Indicator Badge */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#131f38] border border-[#1e3458] text-amber-400 text-xs font-semibold select-none shadow-2xs">
+              <Moon className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[11px] font-mono font-bold tracking-tight">Mode Gelap</span>
+            </div>
 
             {/* User Profile Badge (Blue highlight style from screenshot) */}
             <div className={`hidden sm:flex items-center gap-2 px-3 py-1 rounded-xl text-xs font-bold border ${

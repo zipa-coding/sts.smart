@@ -31,10 +31,8 @@ export default function PrintRaportView({
   waliKelas,
   onBack,
 }: PrintRaportViewProps) {
-  // Use React state to toggle between screen light and dark modes
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("smp_islam_smart_theme") === "dark";
-  });
+  // Permanently in dark mode
+  const darkMode = true;
 
   // Dynamic state for Headmaster/Principal info & Raport format configurations
   const [principal, setPrincipal] = useState({
@@ -131,19 +129,6 @@ export default function PrintRaportView({
       })
       .catch((err) => console.error("Error loading principal settings:", err));
   }, []);
-
-  const handleToggleDarkMode = () => {
-    const nextDark = !darkMode;
-    setDarkMode(nextDark);
-    localStorage.setItem("smp_islam_smart_theme", nextDark ? "dark" : "light");
-    if (nextDark) {
-      document.body.classList.add("dark");
-      document.documentElement.classList.add("dark");
-    } else {
-      document.body.classList.remove("dark");
-      document.documentElement.classList.remove("dark");
-    }
-  };
 
   // Categorized Subject lists in Kurikulum Merdeka preferred order
   const umumSubjects = [
@@ -1755,25 +1740,11 @@ export default function PrintRaportView({
               </select>
             </div>
 
-            {/* Light/Dark Mode Switcher */}
-            <button
-              id="theme-toggle-view"
-              onClick={handleToggleDarkMode}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer border shadow-2xs ${darkMode ? "bg-amber-500 hover:bg-amber-600 text-slate-950 border-amber-600" : "bg-slate-800 hover:bg-slate-900 text-white border-slate-950"}`}
-              title="Ganti Mode Tampilan"
-            >
-              {darkMode ? (
-                <>
-                  <Sun className="w-3.5 h-3.5 text-slate-950" />
-                  <span>Mode Terang</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-3.5 h-3.5 text-white" />
-                  <span>Mode Gelap</span>
-                </>
-              )}
-            </button>
+            {/* Dark Mode Indicator Badge */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-[#1e3458] bg-[#131f38] text-amber-400 select-none shadow-2xs">
+              <Moon className="w-3.5 h-3.5 text-amber-400" />
+              <span className="font-mono text-[11px]">Mode Gelap</span>
+            </div>
           </div>
         </div>
 
