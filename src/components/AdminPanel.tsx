@@ -1192,25 +1192,25 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       {/* TPS (MATA PELAJARAN / LEARNING OBJECTIVES TEMPLATES) TAB */}
       {activeTab === "tps" && (
         <div
-          className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-6 animate-fade-in"
+          className="bg-[#0f172a] rounded-xl border border-[#1e2e4a] shadow-sm p-6 space-y-6 animate-fade-in"
           id="tp-templates-panel"
         >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-100 pb-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#1e2e4a] pb-4">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <span>Template Capaian / Tujuan Pembelajaran (TP)</span>
-                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                   Berdasarkan Kelas
                 </span>
               </h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-slate-300 mt-0.5">
                 Setiap tingkat rombel (Kelas 7, 8, dan 9) memiliki Capaian Pembelajaran dan TP spesifik sesuai Kurikulum Merdeka.
               </p>
             </div>
 
             {/* Filter by class buttons */}
-            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2">
+            <div className="flex items-center gap-1.5 bg-[#0b1222] border border-[#1e2e4a] p-1 rounded-lg">
+              <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider px-2">
                 Filter:
               </span>
               {[
@@ -1230,8 +1230,8 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   }}
                   className={`px-3 py-1 rounded text-xs font-bold transition cursor-pointer ${
                     tpFilterClass === tab.id
-                      ? "bg-white text-emerald-850 shadow-xs"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-emerald-700 text-white shadow-xs border border-emerald-500/40"
+                      : "text-slate-300 hover:text-white hover:bg-slate-800"
                   }`}
                 >
                   {tab.label}
@@ -1243,10 +1243,10 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           {/* Form to add new TP with class selector */}
           <form
             onSubmit={addTpObjective}
-            className="p-4 bg-emerald-50/70 border border-emerald-150 rounded-xl grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end shadow-3xs"
+            className="p-4 bg-[#142036] border border-[#253e66] rounded-xl grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end shadow-3xs"
           >
             <div className="md:col-span-3">
-              <label className="block text-xs font-semibold text-emerald-900 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-white uppercase tracking-wider mb-1.5">
                 Mata Pelajaran
               </label>
               <select
@@ -1254,7 +1254,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 onChange={(e) =>
                   setTpForm((prev) => ({ ...prev, subject: e.target.value }))
                 }
-                className="w-full p-2 bg-white border border-emerald-200 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 transition"
+                className="w-full p-2 bg-[#0b1222] border border-[#293e66] rounded-lg text-xs md:text-sm text-white focus:outline-none focus:border-emerald-500 transition"
               >
                 {SUBJECT_LIST.map((sub, i) => (
                   <option key={i} value={sub}>
@@ -1265,7 +1265,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-emerald-900 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-white uppercase tracking-wider mb-1.5">
                 Tingkat Kelas
               </label>
               <select
@@ -1273,7 +1273,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 onChange={(e) =>
                   setTpForm((prev) => ({ ...prev, kelas: e.target.value }))
                 }
-                className="w-full p-2 bg-white border border-emerald-200 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 font-bold text-slate-800 transition"
+                className="w-full p-2 bg-[#0b1222] border border-[#293e66] rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-500 font-bold text-white transition"
               >
                 <option value="7">Kelas 7</option>
                 <option value="8">Kelas 8</option>
@@ -1283,7 +1283,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
             </div>
 
             <div className="md:col-span-5">
-              <label className="block text-xs font-semibold text-emerald-900 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-white uppercase tracking-wider mb-1.5">
                 Deskripsi Ringkas Tujuan Pembelajaran (TP)
               </label>
               <input
@@ -1293,14 +1293,14 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   setTpForm((prev) => ({ ...prev, text: e.target.value }))
                 }
                 placeholder="Contoh: Mengidentifikasi rumus kuadratik dan diagram koordinat..."
-                className="w-full p-2 bg-white border border-emerald-200 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 transition"
+                className="w-full p-2 bg-[#0b1222] border border-[#293e66] rounded-lg text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
               />
             </div>
 
             <div className="md:col-span-2">
               <button
                 type="submit"
-                className="w-full py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-1 transition cursor-pointer"
+                className="w-full py-2 bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-1 transition cursor-pointer border border-emerald-500/40"
               >
                 <Plus className="w-4 h-4" /> Simpan TP
               </button>
@@ -1322,21 +1322,21 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               return (
                 <div
                   key={subject}
-                  className="bg-white rounded-xl border border-gray-150 p-4 shadow-3xs flex flex-col justify-between"
+                  className="bg-[#0f172a] rounded-xl border border-[#1e2e4a] p-4 shadow-3xs flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2.5 mb-3">
-                      <span className="px-3 py-1 bg-emerald-800 text-white rounded text-2xs uppercase tracking-wider font-bold">
+                    <div className="flex items-center justify-between gap-2 border-b border-[#1e2e4a] pb-2.5 mb-3">
+                      <span className="px-3 py-1 bg-emerald-700 text-white rounded text-2xs uppercase tracking-wider font-bold shadow-2xs">
                         {subject}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-500 font-semibold">
+                      <span className="text-[11px] font-mono text-slate-300 font-bold bg-[#142036] px-2 py-0.5 rounded border border-[#253e66]">
                         {items.length} TP {tpFilterClass !== "all" ? `(Kelas ${tpFilterClass})` : "Total"}
                       </span>
                     </div>
 
                     <div className="space-y-2">
                       {items.length === 0 ? (
-                        <p className="text-2xs text-gray-450 italic py-3 text-center bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
+                        <p className="text-xs text-slate-400 italic py-4 text-center bg-[#0b1222] rounded-lg border border-dashed border-[#1e2e4a]">
                           Belum ada tujuan pembelajaran {tpFilterClass !== "all" ? `untuk Kelas ${tpFilterClass}` : ""} pada mapel ini.
                         </p>
                       ) : (
@@ -1344,31 +1344,31 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                           const itemClass = String(item.kelas || "7").trim();
                           const badgeColor =
                             itemClass === "7"
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
                               : itemClass === "8"
-                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                              ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
                               : itemClass === "9"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-slate-50 text-slate-700 border-slate-200";
+                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                              : "bg-amber-500/20 text-amber-300 border-amber-500/40";
 
                           return (
                             <div
                               key={item.id}
-                              className="p-2.5 bg-gray-50/60 rounded-lg border border-gray-150 flex items-start justify-between gap-3 text-xs hover:bg-emerald-50/20 hover:border-emerald-200 transition"
+                              className="p-3 bg-[#142036] rounded-lg border border-[#203254] flex items-start justify-between gap-3 text-xs hover:bg-[#182844] hover:border-emerald-500/50 transition"
                             >
-                              <div className="flex-1 space-y-1">
-                                <p className="text-gray-800 leading-relaxed text-justify">
+                              <div className="flex-1 space-y-1.5">
+                                <p className="text-white leading-relaxed text-justify font-medium">
                                   {item.text}
                                 </p>
                                 <span
-                                  className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide border ${badgeColor}`}
+                                  className={`inline-block px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide border ${badgeColor}`}
                                 >
                                   {itemClass === "all" ? "Semua Kelas" : `Kelas ${itemClass}`}
                                 </span>
                               </div>
                               <button
                                 onClick={() => deleteTpObjective(subject, item.id)}
-                                className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition cursor-pointer shrink-0 mt-0.5"
+                                className="text-red-400 hover:text-red-300 p-1.5 rounded hover:bg-red-500/20 transition cursor-pointer shrink-0 mt-0.5"
                                 title="Hapus TP"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />

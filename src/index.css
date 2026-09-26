@@ -442,6 +442,35 @@ html, body {
   color: #ffffff !important;
 }
 
+/* High Contrast Rules for TP (Tujuan Pembelajaran) Templates & Checklist */
+.dark #tp-templates-panel .text-gray-800,
+.dark #tp-templates-panel .text-slate-800,
+.dark #tp-templates-panel .text-gray-900,
+.dark #tp-templates-panel p {
+  color: #ffffff !important;
+}
+
+.dark #tp-templates-panel .bg-gray-50\/60,
+.dark #tp-templates-panel .bg-gray-50\/50,
+.dark #tp-templates-panel .bg-gray-50 {
+  background-color: #142036 !important;
+  border-color: #203254 !important;
+  color: #ffffff !important;
+}
+
+.dark #tp-grading-list p {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+.dark #teacher-tplocal-management p {
+  color: #ffffff !important;
+}
+
+.dark #teacher-tplocal-management .text-slate-700 {
+  color: #ffffff !important;
+}
+
 /* Action Buttons */
 .dark button.bg-emerald-800,
 .dark button.bg-emerald-700,
