@@ -156,14 +156,14 @@ export default function HalaqohRaportView({
     halaqoh: Halaqoh,
     subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0]
   ) => {
-    const idSet = new Set(halaqoh.studentIds || []);
-    const memberStudents = students.filter((s) => idSet.has(s.id));
+    const idSet = new Set((halaqoh.studentIds || []).map((id) => String(id).trim()));
+    const memberStudents = students.filter((s) => idSet.has(String(s.id).trim()));
 
     const studentCardsHTML = memberStudents
       .map((student, idx) => {
         // Find existing grade for this student in this Keislaman subject
         const gradeObj = grades.find(
-          (g) => g.studentId === student.id && g.subject === subjectMeta.key
+          (g) => String(g.studentId).trim() === String(student.id).trim() && g.subject === subjectMeta.key
         );
 
         const usahaVal = gradeObj?.usaha || "-";
@@ -176,46 +176,46 @@ export default function HalaqohRaportView({
             : "");
 
         return `
-        <div style="margin-bottom: 24px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif;">
-          <table style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 4px; font-size: 11pt;">
-            <tr>
-              <td style="width: 110px; font-weight: normal; vertical-align: top; border: none; padding: 2px 0;">${idx + 1}. Nama</td>
-              <td style="width: 15px; text-align: center; vertical-align: top; border: none; padding: 2px 0;">:</td>
-              <td style="font-weight: bold; vertical-align: top; border: none; padding: 2px 0;">${student.name}</td>
+        <div style="margin-bottom: 24px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000;">
+          <table style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 4px; font-size: 11pt; background-color: #ffffff; color: #000000;">
+            <tr style="background-color: #ffffff;">
+              <td style="width: 110px; font-weight: normal; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">${idx + 1}. Nama</td>
+              <td style="width: 15px; text-align: center; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">:</td>
+              <td style="font-weight: bold; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">${student.name}</td>
             </tr>
-            <tr>
-              <td style="font-weight: normal; vertical-align: top; border: none; padding: 2px 0;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</td>
-              <td style="text-align: center; vertical-align: top; border: none; padding: 2px 0;">:</td>
-              <td style="vertical-align: top; border: none; padding: 2px 0;">${formatKelasName(student.kelas)}</td>
+            <tr style="background-color: #ffffff;">
+              <td style="font-weight: normal; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</td>
+              <td style="text-align: center; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">:</td>
+              <td style="vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">${formatKelasName(student.kelas)}</td>
             </tr>
           </table>
 
           <!-- Score Table -->
-          <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000000; font-size: 10.5pt; text-align: center;">
+          <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000000; font-size: 10.5pt; text-align: center; background-color: #ffffff; color: #000000;">
             <thead>
               <tr style="background-color: #ffffff;">
-                <th style="border: 1px solid #000000; padding: 5px 8px; width: 26%; font-weight: bold; text-align: center;">${subjectMeta.tableHeader}</th>
-                <th style="border: 1px solid #000000; padding: 5px 8px; width: 24%; font-weight: bold; text-align: center;">Usaha</th>
-                <th style="border: 1px solid #000000; padding: 5px 8px; width: 25%; font-weight: bold; text-align: center;">Proses</th>
-                <th style="border: 1px solid #000000; padding: 5px 8px; width: 25%; font-weight: bold; text-align: center;">Capaian</th>
+                <th style="border: 1px solid #000000; padding: 5px 8px; width: 26%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">${subjectMeta.tableHeader}</th>
+                <th style="border: 1px solid #000000; padding: 5px 8px; width: 24%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">Usaha</th>
+                <th style="border: 1px solid #000000; padding: 5px 8px; width: 25%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">Proses</th>
+                <th style="border: 1px solid #000000; padding: 5px 8px; width: 25%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">Capaian</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: bold; text-align: center;">&nbsp;</td>
-                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: bold; text-align: center;">${usahaVal}</td>
-                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: bold; text-align: center;">${prosesVal}</td>
-                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: bold; text-align: center;">${capaianVal}</td>
+              <tr style="background-color: #ffffff;">
+                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">&nbsp;</td>
+                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">${usahaVal}</td>
+                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">${prosesVal}</td>
+                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">${capaianVal}</td>
               </tr>
             </tbody>
           </table>
 
           <!-- Description Box -->
-          <div style="border: 1.5px solid #000000; border-top: none; padding: 8px 10px; font-size: 10pt; line-height: 1.45; min-height: 52px; background-color: #ffffff;">
-            <strong>Deskripsi :</strong> ${
+          <div style="border: 1.5px solid #000000; border-top: none; padding: 8px 10px; font-size: 10pt; line-height: 1.45; min-height: 52px; background-color: #ffffff; color: #000000;">
+            <strong style="color: #000000;">Deskripsi :</strong> ${
               descText
                 ? descText
-                : `<span style="color: #444444;">...........................................................................................................................................................................................................................................................................................................................................................................................................................</span>`
+                : `<span style="color: #000000;">...........................................................................................................................................................................................................................................................................................................................................................................................................................</span>`
             }
           </div>
         </div>
@@ -224,97 +224,114 @@ export default function HalaqohRaportView({
       .join("");
 
     const fullHTML = `
-      <div style="font-family: 'Times New Roman', Times, serif; color: #000000; background-color: #ffffff; padding: 20px 25px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+      <div class="raport-pdf-wrapper" style="font-family: 'Times New Roman', Times, serif; color: #000000; background-color: #ffffff; padding: 20px 25px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+        <style>
+          .raport-pdf-wrapper, .raport-pdf-wrapper * {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border-color: #000000 !important;
+            box-shadow: none !important;
+            font-family: 'Times New Roman', Times, serif !important;
+          }
+          .raport-pdf-wrapper table {
+            background-color: #ffffff !important;
+            border-collapse: collapse !important;
+          }
+          .raport-pdf-wrapper td, .raport-pdf-wrapper th {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+          }
+        </style>
         
         <!-- Kop Surat Resmi -->
-        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3.5px double #000000; padding-bottom: 10px; margin-bottom: 18px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3.5px double #000000; padding-bottom: 10px; margin-bottom: 18px; background-color: #ffffff;">
           <!-- Left: JSIT and Yayasan Cahaya Amal Logos -->
-          <div style="width: 140px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
-            <div style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center;">
-              <img src="${logoJsitUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
+          <div style="width: 140px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 8px; background-color: #ffffff;">
+            <div style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
+              <img src="${logoJsitUrl}" style="width: 100%; height: 100%; object-fit: contain; background-color: transparent;" />
             </div>
-            <div style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center;">
-              <img src="${logoCahayaAmalUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
+            <div style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
+              <img src="${logoCahayaAmalUrl}" style="width: 100%; height: 100%; object-fit: contain; background-color: transparent;" />
             </div>
           </div>
 
           <!-- Center: Kop Details -->
-          <div style="text-align: center; flex-grow: 1; padding: 0 10px;">
-            <h2 style="margin: 0; font-size: 11pt; font-weight: bold; text-transform: uppercase; line-height: 1.2;">YAYASAN CAHAYA AMAL BABEL</h2>
-            <h1 style="margin: 2px 0 3px 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.2;">SMP ISLAM SMART PANGKALPINANG</h1>
-            <p style="margin: 1px 0; font-size: 7.5pt; line-height: 1.25;">Jl. Padang Lama, Kelurahan Air Itam, Kecamatan Bukit Intan, Kota Pangkalpinang,</p>
-            <p style="margin: 1px 0; font-size: 7.5pt; line-height: 1.25;">Prov. Kep. Bangka Belitung Kode Pos : 33149, No. HP : 0857-1844-0064,</p>
-            <p style="margin: 1px 0; font-size: 7.5pt; line-height: 1.25;">NPSN : 70002556, No. Reg. JSIT : 2.19.71.03.001, E-Mail : smpsmartpkp@gmail.com</p>
+          <div style="text-align: center; flex-grow: 1; padding: 0 10px; background-color: #ffffff; color: #000000;">
+            <h2 style="margin: 0; font-size: 11pt; font-weight: bold; text-transform: uppercase; line-height: 1.2; color: #000000;">YAYASAN CAHAYA AMAL BABEL</h2>
+            <h1 style="margin: 2px 0 3px 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.2; color: #000000;">SMP ISLAM SMART PANGKALPINANG</h1>
+            <p style="margin: 1px 0; font-size: 7.5pt; line-height: 1.25; color: #000000;">Jl. Padang Lama, Kelurahan Air Itam, Kecamatan Bukit Intan, Kota Pangkalpinang,</p>
+            <p style="margin: 1px 0; font-size: 7.5pt; line-height: 1.25; color: #000000;">Prov. Kep. Bangka Belitung Kode Pos : 33149, No. HP : 0857-1844-0064,</p>
+            <p style="margin: 1px 0; font-size: 7.5pt; line-height: 1.25; color: #000000;">NPSN : 70002556, No. Reg. JSIT : 2.19.71.03.001, E-Mail : smpsmartpkp@gmail.com</p>
           </div>
 
           <!-- Right: SMP Logo -->
-          <div style="width: 140px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end;">
-            <div style="width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; border: 1.5px solid #cccccc;">
-              <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
+          <div style="width: 140px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; background-color: #ffffff;">
+            <div style="width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; border: 1.5px solid #cccccc; background-color: #ffffff;">
+              <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover; background-color: transparent;" />
             </div>
           </div>
         </div>
 
         <!-- Document Main Header Title -->
-        <div style="text-align: center; margin-bottom: 22px;">
-          <h2 style="margin: 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ</h2>
-          <h3 style="margin: 3px 0; font-size: 12pt; font-weight: bold; text-transform: uppercase; line-height: 1.3;">${subjectMeta.shortTitle}</h3>
-          <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; line-height: 1.3;">Semester-1, Tahun Pelajaran 2026/2027</p>
+        <div style="text-align: center; margin-bottom: 22px; background-color: #ffffff; color: #000000;">
+          <h2 style="margin: 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)</h2>
+          <h3 style="margin: 3px 0; font-size: 12pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000;">${subjectMeta.shortTitle}</h3>
+          <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; line-height: 1.3; color: #000000;">Semester-1, Tahun Pelajaran 2026/2027</p>
         </div>
 
         <!-- List of Student Cards -->
-        <div style="margin-bottom: 25px;">
+        <div style="margin-bottom: 25px; background-color: #ffffff;">
           ${
             memberStudents.length > 0
               ? studentCardsHTML
-              : `<div style="text-align: center; padding: 30px; font-style: italic; border: 1px dashed #999;">Belum ada santri/siswa yang dimasukkan ke dalam halaqoh ini. Silakan input/pilih santri di Panel Admin.</div>`
+              : `<div style="text-align: center; padding: 30px; font-style: italic; border: 1px dashed #999; color: #000000; background-color: #ffffff;">Belum ada santri/siswa yang dimasukkan ke dalam halaqoh ini. Silakan input/pilih santri di Panel Admin.</div>`
           }
         </div>
 
         <!-- Bottom Footer: Signature and Grading Legend (Keterangan) -->
-        <div style="margin-top: 30px; page-break-inside: avoid; break-inside: avoid;">
+        <div style="margin-top: 30px; page-break-inside: avoid; break-inside: avoid; background-color: #ffffff; color: #000000;">
           <!-- Signature right aligned -->
-          <div style="display: flex; justify-content: flex-end; margin-bottom: 25px;">
-            <div style="width: 250px; text-align: center; font-size: 10.5pt;">
-              <p style="margin: 0 0 4px 0;">Pangkalpinang, 30 September 2025</p>
-              <p style="margin: 0 0 55px 0;">Ustadz/ah Pembimbing,</p>
-              <p style="margin: 0; font-weight: bold; text-decoration: underline;">( ${halaqoh.mentorName || "........................................"} )</p>
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 25px; background-color: #ffffff;">
+            <div style="width: 250px; text-align: center; font-size: 10.5pt; background-color: #ffffff; color: #000000;">
+              <p style="margin: 0 0 4px 0; color: #000000;">Pangkalpinang, 30 September 2025</p>
+              <p style="margin: 0 0 55px 0; color: #000000;">Ustadz/ah Pembimbing,</p>
+              <p style="margin: 0; font-weight: bold; text-decoration: underline; color: #000000;">( ${halaqoh.mentorName || "........................................"} )</p>
             </div>
           </div>
 
           <!-- Keterangan Legend Table -->
-          <div style="border: 1.5px solid #000000; font-size: 9pt; background-color: #ffffff; line-height: 1.4;">
-            <div style="padding: 4px 8px; border-bottom: 1px solid #000000; font-weight: bold; background-color: #f9f9f9;">
+          <div style="border: 1.5px solid #000000; font-size: 9pt; background-color: #ffffff; color: #000000; line-height: 1.4;">
+            <div style="padding: 4px 8px; border-bottom: 1px solid #000000; font-weight: bold; background-color: #ffffff; color: #000000;">
               Keterangan :
             </div>
-            <table style="width: 100%; border-collapse: collapse; border: none; font-size: 8.5pt;">
-              <tr>
-                <td style="width: 120px; border-right: 1px solid #000000; border-bottom: none; padding: 6px 8px; vertical-align: top;">
+            <table style="width: 100%; border-collapse: collapse; border: none; font-size: 8.5pt; background-color: #ffffff; color: #000000;">
+              <tr style="background-color: #ffffff;">
+                <td style="width: 120px; border-right: 1px solid #000000; border-bottom: none; padding: 6px 8px; vertical-align: top; background-color: #ffffff; color: #000000;">
                   <div>A : 90 – 100</div>
                   <div>B : 75 – 89</div>
                   <div>C : 60 – 74</div>
                 </td>
-                <td style="border-bottom: none; padding: 6px 8px; vertical-align: top;">
-                  <table style="width: 100%; border: none; border-collapse: collapse;">
-                    <tr>
-                      <td style="width: 80px; border: none; font-weight: normal; padding: 1px 0;">Usaha</td>
-                      <td style="width: 10px; border: none; padding: 1px 0;">:</td>
-                      <td style="border: none; padding: 1px 0;">Ikhtiar yang dilakukan siswa untuk menghafal dan setoran.</td>
+                <td style="border-bottom: none; padding: 6px 8px; vertical-align: top; background-color: #ffffff; color: #000000;">
+                  <table style="width: 100%; border: none; border-collapse: collapse; background-color: #ffffff; color: #000000;">
+                    <tr style="background-color: #ffffff;">
+                      <td style="width: 80px; border: none; font-weight: normal; padding: 1px 0; background-color: #ffffff; color: #000000;">Usaha</td>
+                      <td style="width: 10px; border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">:</td>
+                      <td style="border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">Ikhtiar yang dilakukan siswa untuk menghafal dan setoran.</td>
                     </tr>
-                    <tr>
-                      <td style="border: none; font-weight: normal; padding: 1px 0;">Proses</td>
-                      <td style="border: none; padding: 1px 0;">:</td>
-                      <td style="border: none; padding: 1px 0;">Teknis ketika siswa setoran ke pembimbing TnT dan penguji.</td>
+                    <tr style="background-color: #ffffff;">
+                      <td style="border: none; font-weight: normal; padding: 1px 0; background-color: #ffffff; color: #000000;">Proses</td>
+                      <td style="border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">:</td>
+                      <td style="border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">Teknis ketika siswa setoran ke pembimbing TnT dan penguji.</td>
                     </tr>
-                    <tr>
-                      <td style="border: none; font-weight: normal; padding: 1px 0;">Capaian</td>
-                      <td style="border: none; padding: 1px 0;">:</td>
-                      <td style="border: none; padding: 1px 0;">Hasil dari ETTQ</td>
+                    <tr style="background-color: #ffffff;">
+                      <td style="border: none; font-weight: normal; padding: 1px 0; background-color: #ffffff; color: #000000;">Capaian</td>
+                      <td style="border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">:</td>
+                      <td style="border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">Hasil dari ETTQ</td>
                     </tr>
-                    <tr>
-                      <td style="border: none; font-weight: normal; padding: 1px 0; vertical-align: top;">Deskripsi</td>
-                      <td style="border: none; padding: 1px 0; vertical-align: top;">:</td>
-                      <td style="border: none; padding: 1px 0;">Keadaan reel siswa dalam pembelajarn Tahsin (apa saja yang harus diperbaiki dalam tahsinnya)</td>
+                    <tr style="background-color: #ffffff;">
+                      <td style="border: none; font-weight: normal; padding: 1px 0; vertical-align: top; background-color: #ffffff; color: #000000;">Deskripsi</td>
+                      <td style="border: none; padding: 1px 0; vertical-align: top; background-color: #ffffff; color: #000000;">:</td>
+                      <td style="border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">Keadaan reel siswa dalam pembelajarn Tahsin (apa saja yang harus diperbaiki dalam tahsinnya)</td>
                     </tr>
                   </table>
                 </td>
@@ -337,23 +354,36 @@ export default function HalaqohRaportView({
     setDownloadingSubject(subjectMeta.key);
 
     try {
-      const element = document.createElement("div");
-      element.innerHTML = generateHalaqohHTML(activeHalaqoh, subjectMeta);
-      document.body.appendChild(element);
+      const container = document.createElement("div");
+      container.className = "raport-pdf-wrapper";
+      container.style.position = "fixed";
+      container.style.left = "-9999px";
+      container.style.top = "0";
+      container.style.width = "800px";
+      container.style.backgroundColor = "#ffffff";
+      container.style.color = "#000000";
+      container.style.padding = "0";
+      container.style.margin = "0";
+      container.style.zIndex = "-9999";
+      container.innerHTML = generateHalaqohHTML(activeHalaqoh, subjectMeta);
+      document.body.appendChild(container);
 
-      const fileName = `Raport_${subjectMeta.shortTitle.replace(/\s+/g, "_")}_${activeHalaqoh.name.replace(/\s+/g, "_")}.pdf`;
+      // Brief delay to ensure html/styles are calculated
+      await new Promise((resolve) => setTimeout(resolve, 350));
+
+      const fileName = `Raport_${subjectMeta.shortTitle.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
 
       const opt = {
         margin: [8, 8, 8, 8] as [number, number, number, number],
         filename: fileName,
         image: { type: "jpeg" as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff" },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       };
 
-      await html2pdf().set(opt).from(element).save();
-      document.body.removeChild(element);
+      await html2pdf().set(opt).from(container).save();
+      document.body.removeChild(container);
     } catch (e) {
       console.error("Gagal mendownload PDF halaqoh", e);
       alert("Gagal mengunduh berkas PDF. Silakan coba cetak langsung.");
