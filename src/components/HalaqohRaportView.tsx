@@ -264,7 +264,8 @@ export default function HalaqohRaportView({
         }
         .pdf-wrapper { 
           background-color: #ffffff !important;
-          width: 720px;
+          width: 794px;
+          box-sizing: border-box;
           margin: 0 auto;
         }
         .pdf-wrapper table { 
@@ -280,21 +281,21 @@ export default function HalaqohRaportView({
           background: transparent !important;
         }
       </style>
-      <div class="pdf-wrapper" style="background-color: #ffffff !important; color: #000000 !important;">
+      <div class="pdf-wrapper" style="background-color: #ffffff !important; color: #000000 !important; width: 100%; box-sizing: border-box;">
         <!-- Kop Surat Resmi Identik Format Asli & Master Raport -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; width: 100%; border-bottom: 3px double #000000; padding-bottom: 10px; background-color: #ffffff !important;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; width: 100%; border-bottom: 3px double #000000; padding-bottom: 10px; background-color: #ffffff !important; box-sizing: border-box;">
           <!-- Left Side: JSIT and Yayasan Cahaya Amal logos -->
-          <div style="width: 155px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
-            <div style="width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; background-color: #ffffff !important;">
+          <div style="width: 145px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 6px;">
+            <div style="width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; background-color: #ffffff !important;">
               <img src="${logoJsitUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
             </div>
-            <div style="width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; background-color: #ffffff !important;">
+            <div style="width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; background-color: #ffffff !important;">
               <img src="${logoCahayaAmalUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
             </div>
           </div>
 
           <!-- Center: School name and address -->
-          <div style="text-align: center; flex-grow: 1; padding: 0 10px;">
+          <div style="text-align: center; flex-grow: 1; padding: 0 8px;">
             <h2 style="margin: 0 0 2px 0; font-size: 11.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.35; color: #000000 !important; font-family: 'Times New Roman', serif;">YAYASAN CAHAYA AMAL BABEL</h2>
             <h1 style="margin: 2px 0 3px 0; font-size: 13.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.35; color: #000000 !important; font-family: 'Times New Roman', serif;">SMP ISLAM SMART PANGKALPINANG</h1>
             <p style="margin: 0; font-size: 7.5pt; line-height: 1.45; color: #000000 !important; font-family: 'Times New Roman', serif;">Jl. Padang Lama, Kelurahan Air Itam, Kecamatan Bukit Intan, Kota Pangkalpinang,</p>
@@ -303,8 +304,8 @@ export default function HalaqohRaportView({
           </div>
 
           <!-- Right Side: SMP logo -->
-          <div style="width: 155px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end;">
-            <div style="width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; border: 1.5px solid #cccccc; background-color: #ffffff !important;">
+          <div style="width: 145px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end;">
+            <div style="width: 68px; height: 68px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; border: 1.5px solid #cccccc; background-color: #ffffff !important;">
               <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
             </div>
           </div>
@@ -392,17 +393,17 @@ export default function HalaqohRaportView({
       wrapper.style.position = "fixed";
       wrapper.style.left = "-9999px";
       wrapper.style.top = "-9999px";
-      wrapper.style.width = "720px";
+      wrapper.style.width = "794px";
       wrapper.style.backgroundColor = "#ffffff";
       wrapper.style.color = "#000000";
 
       const pdfContainer = document.createElement("div");
       pdfContainer.className = "pdf-wrapper light-mode-forced";
       pdfContainer.style.position = "relative";
-      pdfContainer.style.width = "720px";
+      pdfContainer.style.width = "794px";
       pdfContainer.style.backgroundColor = "#ffffff";
       pdfContainer.style.color = "#000000";
-      pdfContainer.style.padding = "0px";
+      pdfContainer.style.padding = "24px 30px";
       pdfContainer.style.boxSizing = "border-box";
 
       // 2. Generate isolated HTML
@@ -416,7 +417,7 @@ export default function HalaqohRaportView({
       const fileName = `Raport_ETTQ_${safeSubName}_${safeHalaqohName}.pdf`;
 
       const opt = {
-        margin: [15, 15, 15, 15],
+        margin: 0, // Hilangkan margin PDF agar seluruh tampilan raport dan logo utuh tidak terpotong
         filename: fileName,
         image: { type: "jpeg", quality: 1.0 },
         html2canvas: {
@@ -425,7 +426,7 @@ export default function HalaqohRaportView({
           logging: false,
           scrollY: 0,
           scrollX: 0,
-          windowWidth: 720,
+          windowWidth: 794,
           backgroundColor: "#ffffff",
           letterRendering: true,
         },
@@ -532,8 +533,8 @@ export default function HalaqohRaportView({
         <head>
           <title>Raport Keislaman ${activeSubject.shortTitle} - ${activeHalaqoh.name}</title>
           <style>
-            @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
-            html, body { margin: 0; padding: 0; background: #ffffff; color: #000000; font-family: 'Times New Roman', serif; }
+            @page { size: A4 portrait; margin: 0; }
+            html, body { margin: 0; padding: 24px 30px; background: #ffffff; color: #000000; font-family: 'Times New Roman', serif; box-sizing: border-box; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
             .student-card-item { page-break-inside: avoid !important; break-inside: avoid !important; }
           </style>
