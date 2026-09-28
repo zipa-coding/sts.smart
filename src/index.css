@@ -356,25 +356,57 @@ html, body {
    Statically White Raport Sheet Preview Container - Even in Dark Mode
    ========================================================================== */
 .pdf-wrapper,
-.pdf-wrapper *,
 .dark .pdf-wrapper,
-.dark .pdf-wrapper *,
 #raport-pdf-export-wrapper,
-#raport-pdf-export-wrapper *,
 .dark #raport-pdf-export-wrapper,
-.dark #raport-pdf-export-wrapper *,
 .light-mode-forced,
-.light-mode-forced *,
 .dark .light-mode-forced,
-.dark .light-mode-forced *,
-.dark #raport-sheet-print,
-.dark #raport-sheet-print * {
+#raport-sheet-print,
+.dark #raport-sheet-print {
   background-color: #ffffff !important;
   background: #ffffff !important;
   color: #000000 !important;
   border-color: #000000 !important;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
+}
+
+/* Ensure text tags in print/PDF wrapper inherit black text with transparent background */
+.pdf-wrapper p,
+.pdf-wrapper span,
+.pdf-wrapper strong,
+.pdf-wrapper b,
+.pdf-wrapper h1,
+.pdf-wrapper h2,
+.pdf-wrapper h3,
+.pdf-wrapper h4,
+#raport-pdf-export-wrapper p,
+#raport-pdf-export-wrapper span,
+#raport-pdf-export-wrapper strong,
+#raport-pdf-export-wrapper b,
+#raport-pdf-export-wrapper h1,
+#raport-pdf-export-wrapper h2,
+#raport-pdf-export-wrapper h3,
+#raport-pdf-export-wrapper h4,
+.light-mode-forced p,
+.light-mode-forced span,
+.light-mode-forced strong,
+.light-mode-forced b,
+.light-mode-forced h1,
+.light-mode-forced h2,
+.light-mode-forced h3,
+.light-mode-forced h4,
+#raport-sheet-print p,
+#raport-sheet-print span,
+#raport-sheet-print strong,
+#raport-sheet-print b,
+#raport-sheet-print h1,
+#raport-sheet-print h2,
+#raport-sheet-print h3,
+#raport-sheet-print h4 {
+  color: #000000 !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* Force table elements in print/PDF export to be strictly white with black text and borders */
