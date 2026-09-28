@@ -44,7 +44,7 @@ export default function PrintRaportView({
     semesterName: "Ganjil",
     tahunPelajaran: "2026/2027",
     fontSize: "11pt",
-    showLogo: false,
+    showLogo: true,
     showSpiritual: true,
     showSosial: true,
     showAttendance: true,
@@ -84,7 +84,10 @@ export default function PrintRaportView({
             semesterName: data.format.semesterName || "Ganjil",
             tahunPelajaran: data.format.tahunPelajaran || "2026/2027",
             fontSize: data.format.fontSize || "11pt",
-            showLogo: !!data.format.showLogo,
+            showLogo:
+              data.format.showLogo !== undefined
+                ? !!data.format.showLogo
+                : true,
             showSpiritual:
               data.format.showSpiritual !== undefined
                 ? !!data.format.showSpiritual
