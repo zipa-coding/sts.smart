@@ -759,13 +759,13 @@ export default function TeacherPanel({
               </div>
 
               {/* TP Objectives Checklist (Tujuan Pembelajaran) */}
-              <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+              <div className="border-t border-[#1e2e4a] pt-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
                   <div>
-                    <h4 className="font-extrabold text-[10px] text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                    <h4 className="font-extrabold text-[11px] text-white uppercase tracking-wider">
                       Tujuan Pembelajaran (TP) untuk Anak Ini
                     </h4>
-                    <p className="text-[10px] text-slate-400 leading-tight">
+                    <p className="text-[10px] text-slate-300 leading-tight">
                       Centang jika anak sudah optimal (Sangat Baik). Un-centang jika masih butuh bimbingan.
                     </p>
                   </div>
@@ -774,14 +774,14 @@ export default function TeacherPanel({
                       <button
                         type="button"
                         onClick={() => setAllTpStatus(true)}
-                        className="px-2 py-0.5 text-[9px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded transition cursor-pointer"
+                        className="px-2 py-0.5 text-[9px] font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded transition cursor-pointer"
                       >
                         Semua Optimal ✓
                       </button>
                       <button
                         type="button"
                         onClick={() => setAllTpStatus(false)}
-                        className="px-2 py-0.5 text-[9px] font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded transition cursor-pointer"
+                        className="px-2 py-0.5 text-[9px] font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded transition cursor-pointer"
                       >
                         Semua Butuh Bimbingan ⚠️
                       </button>
@@ -790,15 +790,15 @@ export default function TeacherPanel({
                 </div>
 
                 <div
-                  className="space-y-1.5 max-h-48 overflow-y-auto"
+                  className="space-y-2 max-h-56 overflow-y-auto pr-1"
                   id="tp-grading-list"
                 >
                   {!Array.isArray(tpTemplates) || tpTemplates.length === 0 ? (
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs rounded border border-slate-200 dark:border-slate-700 text-center">
-                      <p className="font-semibold text-slate-700 dark:text-slate-200 mb-0.5">
+                    <div className="p-3 bg-[#0b1222] text-slate-300 text-xs rounded-lg border border-dashed border-[#1e2e4a] text-center">
+                      <p className="font-bold text-white mb-0.5">
                         Belum ada template Tujuan Pembelajaran (TP) Kelas {selectedClass}
                       </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="text-[11px] text-slate-400">
                         Anda tetap dapat menyimpan nilai serta menuliskan narasi deskripsi raport secara manual pada kolom di bawah.
                       </p>
                     </div>
@@ -812,10 +812,10 @@ export default function TeacherPanel({
                           <div
                             key={tp.id}
                             onClick={() => toggleTp(tp.id)}
-                            className={`p-2 rounded-lg border text-[11px] transition cursor-pointer select-none flex items-start gap-2.5 ${
+                            className={`p-2.5 rounded-lg border text-xs transition cursor-pointer select-none flex items-start gap-3 ${
                               isChecked
-                                ? "bg-emerald-50/20 border-emerald-200/80 hover:bg-emerald-50/50 dark:border-emerald-900/60 dark:bg-emerald-950/20"
-                                : "bg-amber-50/20 border-amber-200/80 hover:bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10"
+                                ? "bg-[#0d2820] border-[#059669] text-white hover:bg-[#11352a]"
+                                : "bg-[#241a0e] border-[#d97706] text-white hover:bg-[#302313]"
                             }`}
                           >
                             <input
@@ -823,17 +823,17 @@ export default function TeacherPanel({
                               checked={isChecked}
                               onChange={() => toggleTp(tp.id)}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer mt-0.5 dark:bg-slate-900 dark:border-slate-700"
+                              className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 cursor-pointer mt-0.5"
                             />
-                            <div className="flex-1">
-                              <p className="text-slate-800 dark:text-slate-200 leading-normal font-medium">
+                            <div className="flex-1 space-y-1">
+                              <p className="text-white leading-relaxed font-semibold">
                                 {tp.text}
                               </p>
                               <span
-                                className={`text-[9px] font-bold tracking-wide mt-1 inline-flex items-center gap-1 uppercase px-1.5 py-0.5 rounded ${
+                                className={`text-[9px] font-extrabold tracking-wide inline-flex items-center gap-1 uppercase px-2 py-0.5 rounded border ${
                                   isChecked
-                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
-                                    : "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300"
+                                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                                    : "bg-amber-500/20 text-amber-300 border-amber-500/40"
                                 }`}
                               >
                                 {isChecked
@@ -923,15 +923,15 @@ export default function TeacherPanel({
             className="space-y-4 animate-fade-in"
             id="teacher-tplocal-management"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#1e2e4a] pb-3">
               <div>
-                <h3 className="font-bold text-xs text-slate-800 uppercase flex items-center gap-2">
+                <h3 className="font-bold text-xs text-white uppercase flex items-center gap-2">
                   <span>Kelola Tujuan Pembelajaran (TP) - {user.subject}</span>
-                  <span className="px-2 py-0.5 bg-emerald-800 text-white rounded text-[10px] font-bold">
+                  <span className="px-2 py-0.5 bg-emerald-700 text-white rounded text-[10px] font-bold shadow-2xs border border-emerald-500/40">
                     Kelas {selectedClass}
                   </span>
                 </h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">
+                <p className="text-[11px] text-slate-300 mt-0.5">
                   Tujuan pembelajaran otomatis disesuaikan secara spesifik untuk tingkat Kelas {selectedClass}. Anda dapat menambah atau memperbarui sesuai kebutuhan materi.
                 </p>
               </div>
@@ -940,12 +940,12 @@ export default function TeacherPanel({
             {/* Form to add custom learning objective directly by the teacher */}
             <form
               onSubmit={handleAddLocalTp}
-              className="p-3 bg-emerald-50 rounded-lg border border-emerald-150 flex gap-2 items-end"
+              className="p-3.5 bg-[#142036] rounded-xl border border-[#253e66] flex gap-2.5 items-end shadow-2xs"
             >
               <div className="flex-1">
-                <label className="block text-[9px] font-bold text-emerald-900 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                <label className="block text-[10px] font-bold text-white uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                   <span>Tambah Tujuan Pembelajaran Baru:</span>
-                  <span className="text-emerald-700 font-extrabold">(Tingkat Kelas {selectedClass})</span>
+                  <span className="text-emerald-300 font-extrabold">(Tingkat Kelas {selectedClass})</span>
                 </label>
                 <input
                   type="text"
@@ -953,13 +953,13 @@ export default function TeacherPanel({
                   value={newTpText}
                   onChange={(e) => setNewTpText(e.target.value)}
                   placeholder={`Contoh: Menguasai kompetensi dasar materi kelas ${selectedClass}...`}
-                  className="w-full p-1.5 bg-white border border-emerald-250 rounded text-xs focus:outline-none focus:border-emerald-700"
+                  className="w-full p-2 bg-[#0b1222] border border-[#293e66] rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <button
                 type="submit"
                 disabled={tpSubmitLoading || !newTpText.trim()}
-                className="bg-emerald-800 hover:bg-emerald-900 disabled:opacity-50 text-white p-1.5 rounded cursor-pointer transition flex items-center justify-center h-[32px] w-[36px]"
+                className="bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 text-white p-2 rounded-lg cursor-pointer transition flex items-center justify-center h-[36px] w-[40px] border border-emerald-500/40 shrink-0"
                 title="Tambahkan TP"
               >
                 {tpSubmitLoading ? (
@@ -971,21 +971,21 @@ export default function TeacherPanel({
             </form>
 
             {/* List of current objectives for this subject with delete buttons */}
-            <div className="border border-slate-200 rounded-lg overflow-hidden">
-              <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+            <div className="border border-[#1e2e4a] rounded-xl overflow-hidden bg-[#0f172a]">
+              <div className="bg-[#131f38] px-3.5 py-2.5 border-b border-[#223554] flex items-center justify-between">
+                <span className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
                   <span>Daftar TP Kelas {selectedClass}</span>
-                  <span className="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-mono">
+                  <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold">
                     {!Array.isArray(tpTemplates) ? 0 : tpTemplates.length} TP
                   </span>
                 </span>
-                <span className="text-[9px] text-slate-400 italic">
+                <span className="text-[10px] text-slate-300 italic font-medium">
                   Khusus Rombel {selectedClass}
                 </span>
               </div>
-              <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
+              <div className="divide-y divide-[#1e2e4a] max-h-[320px] overflow-y-auto">
                 {!Array.isArray(tpTemplates) || tpTemplates.length === 0 ? (
-                  <p className="p-4 text-center text-xs text-slate-400 italic">
+                  <p className="p-6 text-center text-xs text-slate-400 italic bg-[#0b1222]">
                     Belum ada Tujuan Pembelajaran untuk Kelas {selectedClass}. Silakan tambahkan pada form di atas.
                   </p>
                 ) : (
@@ -994,24 +994,24 @@ export default function TeacherPanel({
                     .map((tp, idx) => (
                       <div
                         key={tp.id}
-                        className="p-2.5 flex items-start justify-between gap-3 bg-white hover:bg-slate-50/50 transition"
+                        className="p-3 flex items-start justify-between gap-3 bg-[#0f172a] hover:bg-[#16233c] transition"
                       >
-                        <div className="flex gap-2">
-                          <span className="text-[10px] font-mono text-slate-350">
+                        <div className="flex gap-2.5">
+                          <span className="text-xs font-mono font-bold text-slate-400 mt-0.5">
                             {idx + 1}.
                           </span>
-                          <div>
-                            <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
+                          <div className="space-y-1">
+                            <p className="text-xs text-white font-semibold leading-relaxed">
                               {tp.text}
                             </p>
-                            <span className="inline-block mt-1 text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span className="inline-block text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                               Kelas {tp.kelas || selectedClass}
                             </span>
                           </div>
                         </div>
                         <button
                           onClick={() => handleDeleteLocalTp(tp.id)}
-                          className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition cursor-pointer shrink-0"
+                          className="text-red-400 hover:text-red-300 p-1.5 rounded hover:bg-red-500/20 transition cursor-pointer shrink-0"
                           title="Hapus TP"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

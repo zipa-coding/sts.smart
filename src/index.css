@@ -78,23 +78,23 @@
    ========================================================================== */
 html, body {
   background-color: #080d1a !important;
-  color: #f1f5f9 !important;
+  color: #f8fafc !important;
 }
 
 .dark, body.dark {
   background-color: #080d1a !important;
-  color: #f1f5f9 !important;
+  color: #f8fafc !important;
 }
 
 .dark #applet-viewport {
   background-color: #080d1a !important;
-  color: #f1f5f9 !important;
+  color: #f8fafc !important;
 }
 
 .dark #app-navbar {
   background-color: #0c1322 !important;
-  border-color: #1a2948 !important;
-  color: #f1f5f9 !important;
+  border-color: #1e3256 !important;
+  color: #f8fafc !important;
 }
 
 .dark #app-workspace {
@@ -102,15 +102,15 @@ html, body {
 }
 
 .dark #app-sidebar {
-  background-color: #0a0f1d !important;
-  border-right: 1px solid #1a2948 !important;
+  background-color: #090e1c !important;
+  border-right: 1px solid #1e3256 !important;
 }
 
 /* Card components */
 .dark .bg-white {
   background-color: #0f172a !important;
-  color: #f1f5f9 !important;
-  border-color: #1e2e4a !important;
+  color: #f8fafc !important;
+  border-color: #223658 !important;
 }
 
 /* Containers & subcards */
@@ -123,9 +123,9 @@ html, body {
 .dark .bg-gray-50\/50,
 .dark .bg-gray-50\/70,
 .dark .bg-gray-100 {
-  background-color: #0b1222 !important;
-  color: #e2e8f0 !important;
-  border-color: #1a2948 !important;
+  background-color: #0d1527 !important;
+  color: #f1f5f9 !important;
+  border-color: #1e3256 !important;
 }
 
 /* Borders */
@@ -140,10 +140,10 @@ html, body {
 .dark .border-slate-250,
 .dark .border-slate-300,
 .dark .border-slate-350 {
-  border-color: #1e2e4a !important;
+  border-color: #223658 !important;
 }
 
-/* High Contrast Text Elements */
+/* High Contrast Text Elements - Maximum Legibility */
 .dark .text-slate-950,
 .dark .text-slate-900,
 .dark .text-slate-850,
@@ -161,8 +161,15 @@ html, body {
 .dark .text-gray-700,
 .dark .text-gray-650,
 .dark .text-gray-600,
+.dark .text-zinc-900,
+.dark .text-zinc-800,
+.dark .text-zinc-700,
+.dark .text-zinc-600,
+.dark .text-neutral-900,
+.dark .text-neutral-800,
+.dark .text-neutral-700,
 .dark .text-black {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 .dark .text-slate-550,
@@ -172,8 +179,26 @@ html, body {
 .dark .text-gray-550,
 .dark .text-gray-500,
 .dark .text-gray-450,
-.dark .text-gray-400 {
-  color: #94a3b8 !important;
+.dark .text-gray-400,
+.dark .text-zinc-500,
+.dark .text-zinc-400,
+.dark .text-neutral-500,
+.dark .text-neutral-400 {
+  color: #cbd5e1 !important; /* Crisp high-contrast readable light slate */
+}
+
+.dark .text-slate-350,
+.dark .text-slate-300,
+.dark .text-gray-350,
+.dark .text-gray-300 {
+  color: #e2e8f0 !important;
+}
+
+.dark .text-slate-200,
+.dark .text-gray-200,
+.dark .text-slate-100,
+.dark .text-gray-100 {
+  color: #ffffff !important;
 }
 
 /* Green & Emerald text overrides (important for links, success messages, scores, grades) */
@@ -241,75 +266,75 @@ html, body {
   color: #f87171 !important;
 }
 
-/* Dynamic Forms & Controls with Crisp Focus */
+/* Dynamic Forms & Controls with Crisp Focus & Contrast */
 .dark input,
 .dark select,
 .dark textarea {
   background-color: #0b1222 !important;
   color: #ffffff !important;
-  border-color: #1e2e4a !important;
+  border-color: #243b64 !important;
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #64748b !important;
+  color: #94a3b8 !important;
 }
 
 .dark input:focus,
 .dark select:focus,
 .dark textarea:focus {
   border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35) !important;
   outline: none;
 }
 
 /* Dynamic Table cells and text colors */
 .dark th {
-  background-color: #0e172a !important;
+  background-color: #101c34 !important;
   color: #ffffff !important;
-  border-color: #1a2948 !important;
+  border-color: #22385e !important;
 }
 
 .dark td {
-  border-color: #1a2948 !important;
-  color: #e2e8f0 !important;
+  border-color: #1a2c4e !important;
+  color: #f1f5f9 !important;
 }
 
 .dark .divide-y > :not([hidden]) ~ :not([hidden]) {
-  border-color: #1a2948 !important;
+  border-color: #1e3256 !important;
 }
 
 /* Badges / statuses */
 .dark .bg-amber-50,
 .dark .bg-amber-100 {
-  background-color: rgba(245, 158, 11, 0.15) !important;
-  border-color: rgba(245, 158, 11, 0.35) !important;
-  color: #fbbf24 !important;
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  color: #fde047 !important;
 }
 
 .dark .bg-emerald-50,
 .dark .bg-emerald-100 {
-  background-color: rgba(16, 185, 129, 0.15) !important;
-  border-color: rgba(16, 185, 129, 0.35) !important;
-  color: #34d399 !important;
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  color: #4ade80 !important;
 }
 
 .dark .bg-rose-50,
 .dark .bg-rose-100,
 .dark .bg-red-50,
 .dark .bg-red-100 {
-  background-color: rgba(244, 63, 94, 0.15) !important;
-  border-color: rgba(244, 63, 94, 0.35) !important;
-  color: #f87171 !important;
+  background-color: rgba(244, 63, 94, 0.2) !important;
+  border-color: rgba(244, 63, 94, 0.45) !important;
+  color: #fb7185 !important;
 }
 
 .dark .bg-sky-50,
 .dark .bg-sky-100,
 .dark .bg-blue-50,
 .dark .bg-blue-100 {
-  background-color: rgba(56, 189, 248, 0.15) !important;
-  border-color: rgba(56, 189, 248, 0.35) !important;
-  color: #38bdf8 !important;
+  background-color: rgba(56, 189, 248, 0.2) !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
+  color: #60a5fa !important;
 }
 
 /* Table/List Row Hover Effects in Dark Mode */
@@ -317,13 +342,13 @@ html, body {
 .dark .hover\:bg-gray-50:hover,
 .dark .hover\:bg-gray-100:hover,
 .dark .hover\:bg-slate-100:hover {
-  background-color: #131f38 !important;
+  background-color: #162442 !important;
 }
 
 /* Modal Dialogs in Dark Mode */
 .dark .fixed .bg-white {
   background-color: #0e172a !important;
-  border-color: #1e2e4a !important;
+  border-color: #243b64 !important;
   color: #f8fafc !important;
 }
 
