@@ -355,10 +355,62 @@ html, body {
 /* ==========================================================================
    Statically White Raport Sheet Preview Container - Even in Dark Mode
    ========================================================================== */
+.pdf-wrapper,
+.pdf-wrapper *,
+.dark .pdf-wrapper,
+.dark .pdf-wrapper *,
+#raport-pdf-export-wrapper,
+#raport-pdf-export-wrapper *,
+.dark #raport-pdf-export-wrapper,
+.dark #raport-pdf-export-wrapper *,
+.light-mode-forced,
+.light-mode-forced *,
+.dark .light-mode-forced,
+.dark .light-mode-forced *,
 .dark #raport-sheet-print,
 .dark #raport-sheet-print * {
   background-color: #ffffff !important;
-  color: #0d121f !important; /* Rich static slate-900 / slate-950 equivalent for text-black/slate-950 */
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* Force table elements in print/PDF export to be strictly white with black text and borders */
+.pdf-wrapper table,
+.dark .pdf-wrapper table,
+#raport-pdf-export-wrapper table,
+.dark #raport-pdf-export-wrapper table,
+.light-mode-forced table,
+.dark .light-mode-forced table,
+#raport-sheet-print table,
+.dark #raport-sheet-print table {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  border-collapse: collapse !important;
+}
+
+.pdf-wrapper td,
+.dark .pdf-wrapper td,
+.pdf-wrapper th,
+.dark .pdf-wrapper th,
+#raport-pdf-export-wrapper td,
+.dark #raport-pdf-export-wrapper td,
+#raport-pdf-export-wrapper th,
+.dark #raport-pdf-export-wrapper th,
+.light-mode-forced td,
+.dark .light-mode-forced td,
+.light-mode-forced th,
+.dark .light-mode-forced th,
+#raport-sheet-print td,
+.dark #raport-sheet-print td,
+#raport-sheet-print th,
+.dark #raport-sheet-print th {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
 }
 
 /* Specific border colors for elements within white raport card in dark mode */
