@@ -20,6 +20,8 @@ import {
 import logoUrl from "../assets/images/smp_logo_exact_match_revised_1783840969621.jpg";
 import logoJsitUrl from "../assets/images/logo_jsit_indonesia_1783956323407.jpg";
 import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.jpg";
+import kopSuratBannerUrl from "../assets/images/kop_surat_banner.png";
+import { exportHalaqohToWord } from "../lib/wordExport";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
 
@@ -72,11 +74,48 @@ export default function HalaqohRaportView({
     null
   );
   const [isBatchDownloading, setIsBatchDownloading] = useState(false);
+  const [downloadingWordSubject, setDownloadingWordSubject] = useState<string | null>(
+    null
+  );
+  const [isBatchDownloadingWord, setIsBatchDownloadingWord] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const printAreaRef = useRef<HTMLDivElement>(null);
+
+  // Handle single Word export
+  const handleDownloadSingleWord = async (
+    subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0]
+  ) => {
+    if (!activeHalaqoh) return;
+    setDownloadingWordSubject(subjectMeta.key);
+    try {
+      await exportHalaqohToWord(
+        activeHalaqoh,
+        subjectMeta,
+        students,
+        grades,
+        teachers
+      );
+    } catch (err) {
+      console.error("Gagal mengekspor file Word:", err);
+      alert("Gagal mengunduh berkas Word. Silakan coba kembali.");
+    } finally {
+      setDownloadingWordSubject(null);
+    }
+  };
+
+  // Handle batch download of all 4 Word files
+  const handleDownloadAllSeparateWord = async () => {
+    if (!activeHalaqoh) return;
+    setIsBatchDownloadingWord(true);
+    for (const sub of KEISLAMAN_SUBJECTS) {
+      await handleDownloadSingleWord(sub);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+    setIsBatchDownloadingWord(false);
+  };
 
   // Fetch all necessary data
   const fetchData = async () => {
@@ -244,41 +283,17 @@ export default function HalaqohRaportView({
       `;
     };
 
-    // 4. Kop Surat HTML
+    // 4. Kop Surat HTML using the exact photo banner sent by user
     const kopSuratHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; width: 100%; border-bottom: 3px double #000000; padding-bottom: 8px; background-color: #ffffff; box-sizing: border-box;">
-        <!-- Left Side: JSIT and Yayasan Cahaya Amal logos -->
-        <div style="width: 140px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
-          <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
-            <img src="${logoJsitUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
-          </div>
-          <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
-            <img src="${logoCahayaAmalUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
-          </div>
-        </div>
-
-        <!-- Center: School name and address -->
-        <div style="text-align: center; flex-grow: 1; padding: 0 4px;">
-          <h2 style="margin: 0 0 2px 0; font-size: 11pt; font-weight: bold; text-transform: uppercase; line-height: 1.25; color: #000000; font-family: 'Times New Roman', serif;">YAYASAN CAHAYA AMAL BABEL</h2>
-          <h1 style="margin: 2px 0 3px 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.25; color: #000000; font-family: 'Times New Roman', serif;">SMP ISLAM SMART PANGKALPINANG</h1>
-          <p style="margin: 0; font-size: 7.5pt; line-height: 1.35; color: #000000; font-family: 'Times New Roman', serif;">Jl. Padang Lama, Kelurahan Air Itam, Kecamatan Bukit Intan, Kota Pangkalpinang,</p>
-          <p style="margin: 0; font-size: 7.5pt; line-height: 1.35; color: #000000; font-family: 'Times New Roman', serif;">Prov. Kep. Bangka Belitung Kode Pos : 33149, No. HP : 0857-1844-0064,</p>
-          <p style="margin: 0; font-size: 7.5pt; line-height: 1.35; color: #000000; font-family: 'Times New Roman', serif;">NPSN : 70002556, No. Reg. JSIT : 2.19.71.03.001, E-Mail : smpsmartpkp@gmail.com</p>
-        </div>
-
-        <!-- Right Side: SMP logo safely centered within container -->
-        <div style="width: 140px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-          <div style="width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; border: 1.5px solid #cccccc; background-color: #ffffff;">
-            <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
-          </div>
-        </div>
+      <div style="width: 100%; margin-bottom: 8px; text-align: center; background-color: #ffffff; box-sizing: border-box;">
+        <img src="${kopSuratBannerUrl}" alt="Kop Surat SMP Islam Smart" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto;" />
       </div>
     `;
 
     // 5. Document Title HTML exactly matching reference PDF 2
     const docTitleHTML = `
       <div style="text-align: center; margin-bottom: 12px;">
-        <h2 style="margin: 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ</h2>
+        <h2 style="margin: 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)</h2>
         <h3 style="margin: 2px 0 0 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">${subjectMeta.shortTitle}</h3>
         <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Semester-1, Tahun Pelajaran 2025/2026</p>
       </div>
@@ -328,7 +343,7 @@ export default function HalaqohRaportView({
                   <tr style="background: transparent;">
                     <td style="border: none !important; font-weight: normal; padding: 1px 0; vertical-align: top; color: #000000; vertical-align: top;">Deskripsi</td>
                     <td style="border: none !important; padding: 1px 0; vertical-align: top; text-align: center; color: #000000; vertical-align: top;">:</td>
-                    <td style="border: none !important; padding: 1px 0; color: #000000; vertical-align: top;">Keadaan reel siswa dalam pembelajaran ${subjectMeta.shortTitle} (apa saja yang harus diperbaiki dalam tahsinnya)</td>
+                    <td style="border: none !important; padding: 1px 0; color: #000000; vertical-align: top;">${subjectMeta.descNote || `Keadaan reel siswa dalam pembelajaran ${subjectMeta.shortTitle} (apa saja yang harus diperbaiki)`}</td>
                   </tr>
                 </table>
               </td>
@@ -338,7 +353,10 @@ export default function HalaqohRaportView({
       </div>
     `;
 
-    // 7. Partition students into explicit pages matching PDF 1 structure
+    // 7. Partition students into explicit pages matching user's exact format:
+    // Page 1: Kop Banner + Title + First 4 students
+    // Page 2: Next 5 students (students 5 to 9)
+    // Page 3: Signature & Keterangan Legend (or next students if > 9)
     interface PageSpec {
       students: { student: Student; globalIdx: number }[];
       hasKop: boolean;
@@ -348,83 +366,39 @@ export default function HalaqohRaportView({
     const pages: PageSpec[] = [];
     const totalStudents = memberStudents.length;
 
-    if (totalStudents <= 3) {
+    if (totalStudents <= 4) {
       pages.push({
         students: memberStudents.map((s, idx) => ({ student: s, globalIdx: idx })),
         hasKop: true,
-        hasSig: true,
-      });
-    } else if (totalStudents === 4) {
-      pages.push({
-        students: memberStudents.slice(0, 3).map((s, idx) => ({ student: s, globalIdx: idx })),
-        hasKop: true,
         hasSig: false,
       });
       pages.push({
-        students: memberStudents.slice(3).map((s, idx) => ({ student: s, globalIdx: idx + 3 })),
-        hasKop: false,
-        hasSig: true,
-      });
-    } else if (totalStudents <= 8) {
-      // 5 to 8 students: 2 pages (4 on page 1, remaining on page 2 with signature)
-      pages.push({
-        students: memberStudents.slice(0, 4).map((s, idx) => ({ student: s, globalIdx: idx })),
-        hasKop: true,
-        hasSig: false,
-      });
-      pages.push({
-        students: memberStudents.slice(4).map((s, idx) => ({ student: s, globalIdx: idx + 4 })),
-        hasKop: false,
-        hasSig: true,
-      });
-    } else if (totalStudents <= 12) {
-      // 9 to 12 students: 3 pages (4 on page 1, rest split cleanly between page 2 and page 3)
-      pages.push({
-        students: memberStudents.slice(0, 4).map((s, idx) => ({ student: s, globalIdx: idx })),
-        hasKop: true,
-        hasSig: false,
-      });
-
-      const rem = memberStudents.slice(4);
-      const p2Count = Math.ceil(rem.length / 2);
-      pages.push({
-        students: rem.slice(0, p2Count).map((s, idx) => ({ student: s, globalIdx: idx + 4 })),
-        hasKop: false,
-        hasSig: false,
-      });
-      pages.push({
-        students: rem.slice(p2Count).map((s, idx) => ({ student: s, globalIdx: idx + 4 + p2Count })),
+        students: [],
         hasKop: false,
         hasSig: true,
       });
     } else {
-      // 13+ students (e.g. 17 students like sample PDF 1): 4 pages
+      // Page 1: first 4 students
       pages.push({
         students: memberStudents.slice(0, 4).map((s, idx) => ({ student: s, globalIdx: idx })),
         hasKop: true,
         hasSig: false,
       });
 
-      const rem = memberStudents.slice(4);
-      const p2 = rem.slice(0, 6);
-      pages.push({
-        students: p2.map((s, idx) => ({ student: s, globalIdx: idx + 4 })),
-        hasKop: false,
-        hasSig: false,
-      });
+      const remaining = memberStudents.slice(4);
+      const chunkSize = 5;
+      for (let i = 0; i < remaining.length; i += chunkSize) {
+        const chunk = remaining.slice(i, i + chunkSize);
+        pages.push({
+          students: chunk.map((s, idx) => ({ student: s, globalIdx: 4 + i + idx })),
+          hasKop: false,
+          hasSig: false,
+        });
+      }
 
-      const rem2 = rem.slice(6);
-      const p3Count = rem2.length > 3 ? Math.ceil(rem2.length / 2) : Math.max(1, rem2.length - 1);
-      const p3 = rem2.slice(0, p3Count);
-      const p4 = rem2.slice(p3Count);
-
+      // Final page for Signature & Keterangan
       pages.push({
-        students: p3.map((s, idx) => ({ student: s, globalIdx: idx + 10 })),
-        hasKop: false,
-        hasSig: false,
-      });
-      pages.push({
-        students: p4.map((s, idx) => ({ student: s, globalIdx: idx + 10 + p3Count })),
+        students: [],
         hasKop: false,
         hasSig: true,
       });
@@ -443,9 +417,7 @@ export default function HalaqohRaportView({
           <div class="raport-single-page" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative; margin: 0; padding: 0; ${!isLastPage ? 'page-break-after: always; break-after: page;' : ''}">
             ${p.hasKop ? kopSuratHTML : ""}
             ${p.hasKop ? docTitleHTML : ""}
-            <div style="margin: 0; padding: 0;">
-              ${studentCards}
-            </div>
+            ${studentCards ? `<div style="margin: 0; padding: 0;">${studentCards}</div>` : ""}
             ${p.hasSig ? signatureKeteranganHTML : ""}
           </div>
         `;
@@ -735,14 +707,40 @@ export default function HalaqohRaportView({
           </button>
 
           <button
+            onClick={() => handleDownloadSingleWord(activeSubject)}
+            disabled={!activeHalaqoh || halaqohStudents.length === 0 || downloadingWordSubject === activeSubject.key}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-950/50 border border-blue-400/40 cursor-pointer transition disabled:opacity-50"
+          >
+            {downloadingWordSubject === activeSubject.key ? (
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+            ) : (
+              <FileText className="w-4 h-4 text-white" />
+            )}
+            <span>Download Word Ini (.docx)</span>
+          </button>
+
+          <button
+            onClick={handleDownloadAllSeparateWord}
+            disabled={!activeHalaqoh || halaqohStudents.length === 0 || isBatchDownloadingWord}
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-950/50 border border-indigo-400/40 cursor-pointer transition disabled:opacity-50"
+          >
+            {isBatchDownloadingWord ? (
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+            ) : (
+              <FileDown className="w-4 h-4 text-white" />
+            )}
+            <span>Download 4 Berkas Word (.docx)</span>
+          </button>
+
+          <button
             onClick={handleDownloadAllSeparatePDFs}
             disabled={!activeHalaqoh || halaqohStudents.length === 0 || isBatchDownloading}
-            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-950/50 border border-emerald-400/40 cursor-pointer transition disabled:opacity-50"
+            className="px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#162442] border border-[#223658] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
           >
             {isBatchDownloading ? (
               <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
             ) : (
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 text-emerald-400" />
             )}
             <span>Download 4 Berkas PDF Terpisah</span>
           </button>
@@ -786,7 +784,8 @@ export default function HalaqohRaportView({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             {KEISLAMAN_SUBJECTS.map((sub) => {
               const isActive = selectedSubjectKey === sub.key;
-              const isDownloading = downloadingSubject === sub.key;
+              const isDownloadingPdf = downloadingSubject === sub.key;
+              const isDownloadingWord = downloadingWordSubject === sub.key;
 
               return (
                 <button
@@ -799,21 +798,37 @@ export default function HalaqohRaportView({
                   }`}
                 >
                   <span className="truncate">{sub.tableHeader}</span>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span className="text-[9px] font-mono opacity-80">PDF</span>
+                  <div className="mt-1.5 flex items-center justify-between gap-1">
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadSingleWord(sub);
+                      }}
+                      className="px-1.5 py-0.5 rounded bg-blue-500 hover:bg-blue-400 text-white text-[9px] font-mono flex items-center gap-1 transition"
+                      title={`Download File Word (.docx) ${sub.tableHeader}`}
+                    >
+                      {isDownloadingWord ? (
+                        <div className="w-2.5 h-2.5 border border-white/40 border-t-white rounded-full animate-spin"></div>
+                      ) : (
+                        <FileText className="w-2.5 h-2.5" />
+                      )}
+                      <span>DOCX</span>
+                    </span>
+
                     <span
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDownloadSinglePDF(sub);
                       }}
-                      className="p-1 rounded bg-black/30 hover:bg-black/60 text-white transition"
+                      className="px-1.5 py-0.5 rounded bg-black/40 hover:bg-black/70 text-slate-200 text-[9px] font-mono flex items-center gap-1 transition"
                       title={`Download PDF ${sub.tableHeader}`}
                     >
-                      {isDownloading ? (
-                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      {isDownloadingPdf ? (
+                        <div className="w-2.5 h-2.5 border border-white/30 border-t-white rounded-full animate-spin"></div>
                       ) : (
-                        <Download className="w-3 h-3" />
+                        <Download className="w-2.5 h-2.5" />
                       )}
+                      <span>PDF</span>
                     </span>
                   </div>
                 </button>
@@ -828,7 +843,7 @@ export default function HalaqohRaportView({
         {activeHalaqoh ? (
           <div className="w-full max-w-4xl space-y-4">
             {/* Info Badge */}
-            <div className="bg-[#0e172a] p-3.5 rounded-xl border border-[#223658] flex items-center justify-between gap-3 text-xs text-slate-200">
+            <div className="bg-[#0e172a] p-3.5 rounded-xl border border-[#223658] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-200">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>
@@ -836,18 +851,33 @@ export default function HalaqohRaportView({
                   <strong>{activeHalaqoh.name}</strong> ({halaqohStudents.length} santri)
                 </span>
               </div>
-              <button
-                onClick={() => handleDownloadSinglePDF(activeSubject)}
-                disabled={downloadingSubject === activeSubject.key}
-                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-md"
-              >
-                {downloadingSubject === activeSubject.key ? (
-                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <Download className="w-3.5 h-3.5" />
-                )}
-                <span>Download PDF Ini</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => handleDownloadSingleWord(activeSubject)}
+                  disabled={downloadingWordSubject === activeSubject.key}
+                  className="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-md border border-blue-400/40"
+                >
+                  {downloadingWordSubject === activeSubject.key ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <FileText className="w-3.5 h-3.5" />
+                  )}
+                  <span>Download Word Ini (.docx)</span>
+                </button>
+
+                <button
+                  onClick={() => handleDownloadSinglePDF(activeSubject)}
+                  disabled={downloadingSubject === activeSubject.key}
+                  className="px-3 py-2 rounded-lg bg-[#162442] hover:bg-[#1e3256] text-slate-200 hover:text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition border border-[#2d4672]"
+                >
+                  {downloadingSubject === activeSubject.key ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  )}
+                  <span>Download PDF Ini</span>
+                </button>
+              </div>
             </div>
 
             {/* Document Paper Preview (Exact A4 Styling) */}
