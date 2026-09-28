@@ -177,50 +177,48 @@ export default function HalaqohRaportView({
 
         return `
         <div style="margin-bottom: 22px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000;">
-          <!-- Aligned Name & Class Header -->
-          <table style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 4px; font-size: 11pt; background-color: #ffffff; color: #000000;">
+          <!-- Perfectly Aligned 3-Column Name & Class Header -->
+          <table style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 4px; font-size: 11pt; background-color: #ffffff; color: #000000; line-height: 1.35;">
             <tr style="background-color: #ffffff;">
-              <td style="width: 25px; font-weight: normal; vertical-align: top; border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">${idx + 1}.</td>
-              <td style="width: 70px; font-weight: normal; vertical-align: top; border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">Nama</td>
-              <td style="width: 15px; text-align: center; vertical-align: top; border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">:</td>
-              <td style="font-weight: bold; vertical-align: top; border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">${student.name}</td>
+              <td style="width: 110px; font-weight: normal; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000; white-space: nowrap;">${idx + 1}. Nama</td>
+              <td style="width: 15px; text-align: center; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">:</td>
+              <td style="font-weight: bold; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">${student.name}</td>
             </tr>
             <tr style="background-color: #ffffff;">
-              <td style="border: none; padding: 1px 0; background-color: #ffffff;"></td>
-              <td style="font-weight: normal; vertical-align: top; border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">Kelas</td>
-              <td style="text-align: center; vertical-align: top; border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">:</td>
-              <td style="vertical-align: top; border: none; padding: 1px 0; background-color: #ffffff; color: #000000;">${formatKelasName(student.kelas)}</td>
+              <td style="width: 110px; font-weight: normal; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000; white-space: nowrap;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</td>
+              <td style="width: 15px; text-align: center; vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">:</td>
+              <td style="vertical-align: top; border: none; padding: 2px 0; background-color: #ffffff; color: #000000;">${formatKelasName(student.kelas)}</td>
             </tr>
           </table>
 
-          <!-- Unified Score & Description Table -->
-          <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; font-size: 10.5pt; text-align: center; background-color: #ffffff; color: #000000;">
+          <!-- Score Table -->
+          <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000000; font-size: 10.5pt; text-align: center; background-color: #ffffff; color: #000000; table-layout: fixed;">
             <thead>
               <tr style="background-color: #ffffff;">
-                <th style="border: 1px solid #000000; padding: 4px 6px; width: 28%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">${subjectMeta.tableHeader}</th>
-                <th style="border: 1px solid #000000; padding: 4px 6px; width: 24%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">Usaha</th>
-                <th style="border: 1px solid #000000; padding: 4px 6px; width: 24%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">Proses</th>
-                <th style="border: 1px solid #000000; padding: 4px 6px; width: 24%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">Capaian</th>
+                <th style="border: 1px solid #000000; padding: 6px 6px; width: 28%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', Times, serif;">${subjectMeta.tableHeader}</th>
+                <th style="border: 1px solid #000000; padding: 6px 6px; width: 24%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', Times, serif;">Usaha</th>
+                <th style="border: 1px solid #000000; padding: 6px 6px; width: 24%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', Times, serif;">Proses</th>
+                <th style="border: 1px solid #000000; padding: 6px 6px; width: 24%; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', Times, serif;">Capaian</th>
               </tr>
             </thead>
             <tbody>
               <tr style="background-color: #ffffff;">
-                <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">&nbsp;</td>
-                <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">${usahaVal}</td>
-                <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">${prosesVal}</td>
-                <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000;">${capaianVal}</td>
-              </tr>
-              <tr style="background-color: #ffffff;">
-                <td colspan="4" style="border: 1px solid #000000; padding: 6px 8px; text-align: left; font-size: 10pt; line-height: 1.45; background-color: #ffffff; color: #000000; vertical-align: top;">
-                  <strong style="color: #000000;">Deskripsi :</strong> ${
-                    descText
-                      ? descText
-                      : `<span style="color: #000000;">...........................................................................................................................................................................................................................................................................................................................................................................................................................</span>`
-                  }
-                </td>
+                <td style="border: 1px solid #000000; padding: 7px 6px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', Times, serif;">&nbsp;</td>
+                <td style="border: 1px solid #000000; padding: 7px 6px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', Times, serif;">${usahaVal}</td>
+                <td style="border: 1px solid #000000; padding: 7px 6px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', Times, serif;">${prosesVal}</td>
+                <td style="border: 1px solid #000000; padding: 7px 6px; font-weight: bold; text-align: center; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', Times, serif;">${capaianVal}</td>
               </tr>
             </tbody>
           </table>
+
+          <!-- Description Box -->
+          <div style="border: 1.5px solid #000000; border-top: none; padding: 8px 10px; font-size: 10pt; line-height: 1.5; min-height: 52px; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', Times, serif; box-sizing: border-box;">
+            <strong style="color: #000000;">Deskripsi :</strong> ${
+              descText
+                ? descText
+                : `<span style="color: #000000;">...........................................................................................................................................................................................................................................................................................................................................................................................................................</span>`
+            }
+          </div>
         </div>
       `;
       })
@@ -235,6 +233,9 @@ export default function HalaqohRaportView({
             border-color: #000000 !important;
             box-shadow: none !important;
             font-family: 'Times New Roman', Times, serif !important;
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
           }
           .raport-pdf-wrapper table {
             background-color: #ffffff !important;
@@ -380,11 +381,12 @@ export default function HalaqohRaportView({
         filename: fileName,
         image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: {
-          scale: 2,
+          scale: 3,
           useCORS: true,
           allowTaint: true,
           logging: false,
           backgroundColor: "#ffffff",
+          letterRendering: true,
           scrollY: -window.scrollY,
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
