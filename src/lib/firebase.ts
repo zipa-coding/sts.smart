@@ -270,20 +270,6 @@ export const firebaseApi = {
     await withTimeout(deleteDoc(doc(db, "teachers", id)), 2500);
     return { message: "Guru berhasil dihapus." };
   },
-  deleteTeachersBulk: async (ids: string[]) => {
-    if (!db) throw new Error("Database not connected");
-    const validIds = ids.filter(id => id && id !== 't1');
-    let deletedCount = 0;
-    for (const id of validIds) {
-      try {
-        await withTimeout(deleteDoc(doc(db, "teachers", id)), 3000);
-        deletedCount++;
-      } catch (err) {
-        console.warn(`Failed to delete teacher ${id}:`, err);
-      }
-    }
-    return { success: true, deletedCount, message: `Berhasil menghapus ${deletedCount} guru.` };
-  },
 
   // 3. GET, POST, PUT, DELETE /api/students
   getStudents: async (): Promise<any[]> => {
@@ -400,35 +386,6 @@ export const firebaseApi = {
     // Clean up notes
     await deleteDoc(doc(db, "walikelas_notes", id)).catch(() => {});
     return { message: "Siswa berhasil dihapus." };
-  },
-  deleteStudentsBulk: async (ids: string[]) => {
-    if (!db) throw new Error("Database not connected");
-    const validIds = new Set(ids.filter(Boolean));
-    let deletedCount = 0;
-    
-    for (const id of validIds) {
-      try {
-        await withTimeout(deleteDoc(doc(db, "students", id)), 3000);
-        await deleteDoc(doc(db, "walikelas_notes", id)).catch(() => {});
-        deletedCount++;
-      } catch (err) {
-        console.warn(`Failed to delete student ${id}:`, err);
-      }
-    }
-
-    // Bulk cleanup grades
-    try {
-      const gradesSnap = await withTimeout(getDocs(collection(db, "grades")), 5000).catch(() => ({ docs: [] }));
-      for (const gDoc of gradesSnap.docs) {
-        if (validIds.has(gDoc.data().studentId)) {
-          await deleteDoc(doc(db, "grades", gDoc.id)).catch(() => {});
-        }
-      }
-    } catch (err) {
-      console.warn("Failed cleaning up grades:", err);
-    }
-
-    return { success: true, deletedCount, message: `Berhasil menghapus ${deletedCount} siswa.` };
   },
 
   // 4. GET & POST /api/grades

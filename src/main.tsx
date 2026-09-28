@@ -162,17 +162,6 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           }
         }
 
-        // POST /api/teachers/bulk-delete
-        if (path === '/api/teachers/bulk-delete' && method === 'POST') {
-          try {
-            const ids = body?.ids || [];
-            const res = await firebaseApi.deleteTeachersBulk(ids);
-            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-          } catch (e: any) {
-            return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-          }
-        }
-
         // 3. GET /api/students
         if (path === '/api/students' && method === 'GET') {
           const s = await firebaseApi.getStudents();
@@ -215,17 +204,6 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           const id = path.split('/').pop() || "";
           const res = await firebaseApi.deleteStudent(id);
           return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // POST /api/students/bulk-delete
-        if (path === '/api/students/bulk-delete' && method === 'POST') {
-          try {
-            const ids = body?.ids || [];
-            const res = await firebaseApi.deleteStudentsBulk(ids);
-            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-          } catch (e: any) {
-            return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-          }
         }
 
         // 4. GET /api/grades
@@ -412,18 +390,6 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       return new Response(JSON.stringify({ message: "Guru berhasil dihapus." }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // POST /api/teachers/bulk-delete
-    if (path === '/api/teachers/bulk-delete' && method === 'POST') {
-      const ids = body?.ids || [];
-      const db = getDB();
-      const validIds = new Set(ids.filter((id: string) => id && id !== 't1'));
-      const beforeCount = db.teachers.length;
-      db.teachers = db.teachers.filter((t: any) => !validIds.has(t.id));
-      const deletedCount = beforeCount - db.teachers.length;
-      saveDB(db);
-      return new Response(JSON.stringify({ success: true, deletedCount, message: `Berhasil menghapus ${deletedCount} guru.` }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    }
-
     // 3. GET /api/students
     if (path === '/api/students' && method === 'GET') {
       const db = getDB();
@@ -524,26 +490,6 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       }
       saveDB(db);
       return new Response(JSON.stringify({ message: "Siswa berhasil dihapus." }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    // POST /api/students/bulk-delete
-    if (path === '/api/students/bulk-delete' && method === 'POST') {
-      const ids = body?.ids || [];
-      const validIds = new Set(ids.filter(Boolean));
-      const db = getDB();
-      const beforeCount = db.students.length;
-      db.students = db.students.filter((s: any) => !validIds.has(s.id));
-      db.grades = db.grades.filter((g: any) => !validIds.has(g.studentId));
-      if (db.walikelas_notes) {
-        for (const sId of validIds) {
-          if (db.walikelas_notes[sId as string]) {
-            delete db.walikelas_notes[sId as string];
-          }
-        }
-      }
-      const deletedCount = beforeCount - db.students.length;
-      saveDB(db);
-      return new Response(JSON.stringify({ success: true, deletedCount, message: `Berhasil menghapus ${deletedCount} siswa.` }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // 4. GET /api/grades
