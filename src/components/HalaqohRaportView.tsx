@@ -201,21 +201,19 @@ export default function HalaqohRaportView({
       }
 
       return `
-        <div class="student-card-item" style="margin-bottom: 14px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000;">
+        <div class="student-card-item" style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000;">
           <!-- Perfectly Aligned Name & Class Header matching PDF 1 -->
-          <div style="margin-bottom: 3px; font-family: 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.35; color: #000000;">
-            <table style="border: none !important; border-collapse: collapse; background: transparent; color: #000000; font-size: 10.5pt; width: 100%;">
-              <tr style="background: transparent;">
-                <td style="border: none !important; padding: 1px 0; width: 60px; color: #000000; font-weight: normal; white-space: nowrap; background: transparent; vertical-align: top;">${cardNum}. Nama</td>
-                <td style="border: none !important; padding: 1px 4px; width: 12px; text-align: center; color: #000000; font-weight: normal; background: transparent; vertical-align: top;">:</td>
-                <td style="border: none !important; padding: 1px 0; color: #000000; font-weight: normal; background: transparent; vertical-align: top;">${studentName}</td>
-              </tr>
-              <tr style="background: transparent;">
-                <td style="border: none !important; padding: 1px 0; color: #000000; font-weight: normal; white-space: nowrap; background: transparent; vertical-align: top;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</td>
-                <td style="border: none !important; padding: 1px 4px; text-align: center; color: #000000; font-weight: normal; background: transparent; vertical-align: top;">:</td>
-                <td style="border: none !important; padding: 1px 0; color: #000000; font-weight: normal; background: transparent; vertical-align: top;">${kelasName}</td>
-              </tr>
-            </table>
+          <div style="margin-bottom: 4px; font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.4; color: #000000; text-align: left;">
+            <div style="display: block; text-align: left; line-height: 1.4; white-space: nowrap;">
+              <span style="display: inline-block; width: 68px; color: #000000; text-align: left; vertical-align: baseline;">${cardNum}. Nama</span>
+              <span style="display: inline-block; width: 14px; text-align: center; color: #000000; vertical-align: baseline;">:</span>
+              <span style="color: #000000; font-weight: normal; vertical-align: baseline;">${studentName}</span>
+            </div>
+            <div style="display: block; text-align: left; line-height: 1.4; white-space: nowrap;">
+              <span style="display: inline-block; width: 68px; color: #000000; text-align: left; vertical-align: baseline;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</span>
+              <span style="display: inline-block; width: 14px; text-align: center; color: #000000; vertical-align: baseline;">:</span>
+              <span style="color: #000000; font-weight: normal; vertical-align: baseline;">${kelasName}</span>
+            </div>
           </div>
 
           <!-- Single Unified Score & Description Table (100% Pure White Background, 1px solid black) -->
@@ -368,32 +366,66 @@ export default function HalaqohRaportView({
         hasKop: false,
         hasSig: true,
       });
-    } else {
-      // Page 1 always gets exactly 4 students (matching PDF 1)
+    } else if (totalStudents <= 8) {
+      // 5 to 8 students: 2 pages (4 on page 1, remaining on page 2 with signature)
+      pages.push({
+        students: memberStudents.slice(0, 4).map((s, idx) => ({ student: s, globalIdx: idx })),
+        hasKop: true,
+        hasSig: false,
+      });
+      pages.push({
+        students: memberStudents.slice(4).map((s, idx) => ({ student: s, globalIdx: idx + 4 })),
+        hasKop: false,
+        hasSig: true,
+      });
+    } else if (totalStudents <= 12) {
+      // 9 to 12 students: 3 pages (4 on page 1, rest split cleanly between page 2 and page 3)
       pages.push({
         students: memberStudents.slice(0, 4).map((s, idx) => ({ student: s, globalIdx: idx })),
         hasKop: true,
         hasSig: false,
       });
 
-      let currentOffset = 4;
-      let remaining = memberStudents.slice(4);
-
-      while (remaining.length > 4) {
-        // Take 6 students if remaining is large (like Page 2 in PDF 1), otherwise 5
-        const take = remaining.length > 8 ? 6 : (remaining.length >= 6 ? 5 : 4);
-        pages.push({
-          students: remaining.slice(0, take).map((s, idx) => ({ student: s, globalIdx: currentOffset + idx })),
-          hasKop: false,
-          hasSig: false,
-        });
-        currentOffset += take;
-        remaining = remaining.slice(take);
-      }
-
-      // Final page receives remaining students (1 to 4) + Signature & Keterangan
+      const rem = memberStudents.slice(4);
+      const p2Count = Math.ceil(rem.length / 2);
       pages.push({
-        students: remaining.map((s, idx) => ({ student: s, globalIdx: currentOffset + idx })),
+        students: rem.slice(0, p2Count).map((s, idx) => ({ student: s, globalIdx: idx + 4 })),
+        hasKop: false,
+        hasSig: false,
+      });
+      pages.push({
+        students: rem.slice(p2Count).map((s, idx) => ({ student: s, globalIdx: idx + 4 + p2Count })),
+        hasKop: false,
+        hasSig: true,
+      });
+    } else {
+      // 13+ students (e.g. 17 students like sample PDF 1): 4 pages
+      pages.push({
+        students: memberStudents.slice(0, 4).map((s, idx) => ({ student: s, globalIdx: idx })),
+        hasKop: true,
+        hasSig: false,
+      });
+
+      const rem = memberStudents.slice(4);
+      const p2 = rem.slice(0, 6);
+      pages.push({
+        students: p2.map((s, idx) => ({ student: s, globalIdx: idx + 4 })),
+        hasKop: false,
+        hasSig: false,
+      });
+
+      const rem2 = rem.slice(6);
+      const p3Count = rem2.length > 3 ? Math.ceil(rem2.length / 2) : Math.max(1, rem2.length - 1);
+      const p3 = rem2.slice(0, p3Count);
+      const p4 = rem2.slice(p3Count);
+
+      pages.push({
+        students: p3.map((s, idx) => ({ student: s, globalIdx: idx + 10 })),
+        hasKop: false,
+        hasSig: false,
+      });
+      pages.push({
+        students: p4.map((s, idx) => ({ student: s, globalIdx: idx + 10 + p3Count })),
         hasKop: false,
         hasSig: true,
       });
@@ -413,7 +445,7 @@ export default function HalaqohRaportView({
 
         return `
           ${pageBreakEl}
-          <div class="raport-single-page" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative;">
+          <div class="raport-single-page" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative; padding-top: ${p.hasKop ? "0px" : "28px"};">
             ${p.hasKop ? kopSuratHTML : ""}
             ${p.hasKop ? docTitleHTML : ""}
             <div>
