@@ -57,6 +57,12 @@
   ],
   "students": [
     {
+      "id": "s8_rayyan",
+      "nisn": "0130008099",
+      "name": "Aqil Rayyan Ramadhan",
+      "kelas": "8"
+    },
+    {
       "id": "s7_1",
       "nisn": "0130007001",
       "name": "Muhammad Al-Fatih",
@@ -809,6 +815,15 @@
       "deskripsi": "Peserta didik menunjukkan peningkatan kemampuan fisik dan keterampilan olahraga dengan semangat latihan yang tinggi.",
       "lastUpdatedBy": "Pak Ahmad, S.Pd",
       "lastUpdatedAt": "2026-06-17T05:35:00.000Z"
+    },
+    {
+      "studentId": "s8_rayyan",
+      "subject": "Do’a Harian dan Hadits",
+      "score": 88,
+      "usaha": "A",
+      "proses": "C",
+      "capaian": "B",
+      "deskripsi": "Alhamdulillah ananda sholih Rayyan saat ini capaian hafalan Do’a sudah sampai no. 5 dan Hadits sampai ke no. 5. Harapannya ananda sholih Rayyan bias hafal lancer sesuai target. Ada beberapa yang harus diperbaiki oleh ananda yaitu ...……………………………….…………\n………………………………………………………………………………………………………\n………………………………………………………………………………………………………"
     }
   ],
   "walikelas_notes": {
@@ -1557,5 +1572,73 @@
       "watermarkSize": 440,
       "watermarkOpacity": 0.05
     }
-  }
+  },
+  "halaqoh": [
+    {
+      "id": "hlq_1",
+      "name": "Halaqoh 1 (Ustadz Ahmad Fauzi)",
+      "mentorName": "Ustadz Ahmad Fauzi, S.Pd.I",
+      "mentorTeacherId": "t2",
+      "studentIds": [
+        "s8_rayyan",
+        "s8_1",
+        "s8_2",
+        "s8_3",
+        "s8_4",
+        "s8_5",
+        "s8_6",
+        "s8_7",
+        "s8_8",
+        "s8_9",
+        "s8_10",
+        "s8_11",
+        "s8_12",
+        "s8_13",
+        "s8_14",
+        "s8_15",
+        "s8_16"
+      ],
+      "createdAt": "2025-07-15T00:00:00.000Z"
+    },
+    {
+      "id": "hlq_2",
+      "name": "Halaqoh 2 (Ustadzah Fatimah Azzahra)",
+      "mentorName": "Ustadzah Fatimah Azzahra, S.Ag",
+      "mentorTeacherId": "t3",
+      "studentIds": [
+        "s7_1",
+        "s7_2",
+        "s7_3",
+        "s7_4",
+        "s7_5",
+        "s7_6",
+        "s7_7",
+        "s7_8",
+        "s7_9",
+        "s7_10",
+        "s7_11",
+        "s7_12"
+      ],
+      "createdAt": "2025-07-15T00:00:00.000Z"
+    },
+    {
+      "id": "hlq_3",
+      "name": "Halaqoh 3 (Ustadz Muhammad Al-Hafizh)",
+      "mentorName": "Ustadz Muhammad Al-Hafizh",
+      "mentorTeacherId": "t4",
+      "studentIds": [
+        "s9_1",
+        "s9_2",
+        "s9_3",
+        "s9_4",
+        "s9_5",
+        "s9_6",
+        "s9_7",
+        "s9_8",
+        "s9_9",
+        "s9_10"
+      ],
+      "createdAt": "2025-07-15T00:00:00.000Z"
+    }
+  ]
 }

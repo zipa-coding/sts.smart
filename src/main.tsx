@@ -61,6 +61,18 @@ function initializeLocalStorage() {
             }
           }
         }
+        // Ensure halaqoh list and student data are seeded if missing
+        if (!Array.isArray(clientDbCache.halaqoh) || clientDbCache.halaqoh.length === 0) {
+          clientDbCache.halaqoh = (dbData as any).halaqoh || [];
+          needsSave = true;
+        }
+        if (Array.isArray(clientDbCache.students) && !clientDbCache.students.some((s: any) => s.name.toLowerCase().includes('rayyan'))) {
+          const seedRayyan = (dbData as any).students?.find((s: any) => s.name.toLowerCase().includes('rayyan'));
+          if (seedRayyan) {
+            clientDbCache.students.unshift(seedRayyan);
+            needsSave = true;
+          }
+        }
         if (needsSave) {
           localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
         }
