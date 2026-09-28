@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Teacher, Student, SUBJECT_LIST } from "../types";
+import { Teacher, Student, SUBJECT_LIST, Halaqoh } from "../types";
 import {
   Users,
   GraduationCap,
@@ -39,12 +39,25 @@ interface AdminPanelProps {
 export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<
-    "teachers" | "students" | "tps" | "settings" | "ekskul"
+    "teachers" | "students" | "tps" | "settings" | "ekskul" | "halaqoh"
   >("teachers");
 
   // State arrays fetched from API
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [halaqohList, setHalaqohList] = useState<Halaqoh[]>([]);
+  const [isHalaqohModalOpen, setIsHalaqohModalOpen] = useState(false);
+  const [editingHalaqoh, setEditingHalaqoh] = useState<Halaqoh | null>(null);
+  const [halaqohModalError, setHalaqohModalError] = useState("");
+  const [isSubmittingHalaqoh, setIsSubmittingHalaqoh] = useState(false);
+  const [halaqohForm, setHalaqohForm] = useState({
+    name: "",
+    mentorName: "",
+    mentorTeacherId: "",
+    studentIds: [] as string[],
+  });
+  const [halaqohStudentSearch, setHalaqohStudentSearch] = useState("");
+  const [halaqohClassFilter, setHalaqohClassFilter] = useState("all");
   const [tpsTemplates, setTpsTemplates] = useState<{
     [subject: string]: { id: string; text: string }[];
   }>({});
@@ -424,12 +437,13 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [resT, resS, resTp, resSet, resEks] = await Promise.all([
+      const [resT, resS, resTp, resSet, resEks, resHlq] = await Promise.all([
         fetch("/api/teachers"),
         fetch("/api/students"),
         fetch("/api/tps"),
         fetch("/api/settings"),
         fetch("/api/ekskul"),
+        fetch("/api/halaqoh"),
       ]);
 
       const tData = await resT.json();
@@ -437,9 +451,11 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       const tpData = await resTp.json();
       const setData = await resSet.json();
       const eksData = await resEks.json();
+      const hlqData = await resHlq.json();
 
       if (Array.isArray(tData)) setTeachers(tData);
       if (Array.isArray(sData)) setStudents(sData);
+      if (Array.isArray(hlqData)) setHalaqohList(hlqData);
       if (tpData && typeof tpData === "object" && !Array.isArray(tpData)) setTpsTemplates(tpData);
       if (Array.isArray(eksData)) setEkskuls(eksData);
       if (setData && typeof setData === "object") {
@@ -522,6 +538,75 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(""), 3000);
+  };
+
+  const handleHalaqohSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setHalaqohModalError("");
+    setError("");
+
+    if (!halaqohForm.name.trim()) {
+      setHalaqohModalError("Nama halaqoh wajib diisi.");
+      return;
+    }
+    if (!halaqohForm.mentorName.trim()) {
+      setHalaqohModalError("Nama ustadz/ah pembimbing wajib diisi.");
+      return;
+    }
+
+    setIsSubmittingHalaqoh(true);
+    try {
+      const url = editingHalaqoh
+        ? `/api/halaqoh/${editingHalaqoh.id}`
+        : "/api/halaqoh";
+      const method = editingHalaqoh ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(halaqohForm),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan data halaqoh.");
+
+      await fetchAllData();
+      onRefreshTrigger();
+      setIsHalaqohModalOpen(false);
+      setEditingHalaqoh(null);
+      setHalaqohForm({ name: "", mentorName: "", mentorTeacherId: "", studentIds: [] });
+      showSuccess(editingHalaqoh ? "Data halaqoh berhasil diperbarui!" : "Kelompok halaqoh baru berhasil dibuat!");
+    } catch (err: any) {
+      setHalaqohModalError(err.message || "Terjadi kesalahan.");
+    } finally {
+      setIsSubmittingHalaqoh(false);
+    }
+  };
+
+  const startEditHalaqoh = (h: Halaqoh) => {
+    setEditingHalaqoh(h);
+    setHalaqohModalError("");
+    setHalaqohForm({
+      name: h.name,
+      mentorName: h.mentorName,
+      mentorTeacherId: h.mentorTeacherId || "",
+      studentIds: h.studentIds || [],
+    });
+    setIsHalaqohModalOpen(true);
+  };
+
+  const deleteHalaqoh = async (id: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus kelompok halaqoh ini?")) return;
+    try {
+      const res = await fetch(`/api/halaqoh/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menghapus halaqoh.");
+      await fetchAllData();
+      onRefreshTrigger();
+      showSuccess("Kelompok halaqoh berhasil dihapus.");
+    } catch (err: any) {
+      setError(err.message || "Gagal menghapus halaqoh.");
+    }
   };
 
   // TEACHER CRUD
@@ -995,6 +1080,12 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           className={`py-1.5 px-3.5 text-xs font-bold tracking-wider uppercase border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeTab === "ekskul" ? "border-emerald-850 text-emerald-850 bg-emerald-50/40" : "border-transparent text-slate-500 hover:text-slate-805"}`}
         >
           <Award className="w-3.5 h-3.5" /> Manajemen Ekskul
+        </button>
+        <button
+          onClick={() => setActiveTab("halaqoh")}
+          className={`py-1.5 px-3.5 text-xs font-bold tracking-wider uppercase border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeTab === "halaqoh" ? "border-emerald-850 text-emerald-850 bg-emerald-50/40" : "border-transparent text-slate-500 hover:text-slate-805"}`}
+        >
+          <Users className="w-3.5 h-3.5 text-teal-600" /> Manajemen Halaqoh & Keislaman
         </button>
       </div>
 
@@ -3258,6 +3349,268 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* HALAQOH & KEISLAMAN TAB */}
+      {activeTab === "halaqoh" && (
+        <div className="bg-white rounded-lg border border-slate-205 shadow-sm p-4 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">
+                Manajemen Kelompok Halaqoh & Ustadz/ah Pembimbing
+              </h2>
+              <p className="text-xs text-slate-500">
+                Atur kelompok halaqoh santri, tentukan ustadz/ah pembimbing, dan masukkan daftar siswa per halaqoh.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingHalaqoh(null);
+                setHalaqohModalError("");
+                setHalaqohForm({ name: "", mentorName: "", mentorTeacherId: "", studentIds: [] });
+                setIsHalaqohModalOpen(true);
+              }}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Kelompok Halaqoh</span>
+            </button>
+          </div>
+
+          {/* Halaqoh Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {halaqohList.length > 0 ? (
+              halaqohList.map((h) => {
+                const memberCount = h.studentIds?.length || 0;
+                const memberStudents = students.filter((s) => (h.studentIds || []).includes(s.id));
+
+                return (
+                  <div key={h.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition flex flex-col justify-between shadow-xs">
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div>
+                          <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold uppercase">
+                            Halaqoh Santri
+                          </span>
+                          <h3 className="text-sm font-bold text-slate-900 mt-1">{h.name}</h3>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startEditHalaqoh(h)}
+                            className="p-1.5 text-slate-600 hover:text-blue-600 bg-white hover:bg-blue-50 border border-slate-200 rounded-lg transition cursor-pointer"
+                            title="Edit Halaqoh"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => deleteHalaqoh(h.id)}
+                            className="p-1.5 text-slate-600 hover:text-red-600 bg-white hover:bg-red-50 border border-slate-200 rounded-lg transition cursor-pointer"
+                            title="Hapus Halaqoh"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-slate-700 font-medium mb-3 flex items-center gap-1.5 bg-blue-50/60 p-2 rounded-lg border border-blue-100">
+                        <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Pembimbing: <strong className="text-blue-900">{h.mentorName}</strong></span>
+                      </div>
+
+                      <div className="text-xs font-bold text-slate-800 mb-1.5 flex items-center justify-between">
+                        <span>Anggota Santri ({memberCount}):</span>
+                      </div>
+
+                      <div className="max-h-36 overflow-y-auto space-y-1 bg-white p-2 rounded-lg border border-slate-200">
+                        {memberStudents.length > 0 ? (
+                          memberStudents.map((s, idx) => (
+                            <div key={s.id} className="text-xs text-slate-700 flex items-center justify-between py-0.5 border-b border-slate-100 last:border-0">
+                              <span>{idx + 1}. {s.name}</span>
+                              <span className="text-[10px] font-mono text-slate-500">Kelas {s.kelas || "-"}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-xs text-slate-400 italic text-center py-2">Belum ada santri dalam halaqoh ini.</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full text-center p-10 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                <Users className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                <p className="text-sm font-bold text-slate-700">Belum Ada Kelompok Halaqoh</p>
+                <p className="text-xs text-slate-500 mt-1">Klik tombol "Tambah Kelompok Halaqoh" di atas untuk membuat kelompok baru.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* HALAQOH FORM MODAL */}
+      {isHalaqohModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden animate-fade-in my-8">
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-teal-400" />
+                <h3 className="text-sm font-bold uppercase tracking-wide">
+                  {editingHalaqoh ? "Edit Kelompok Halaqoh" : "Tambah Kelompok Halaqoh Baru"}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsHalaqohModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleHalaqohSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {halaqohModalError && (
+                <div className="p-3 bg-red-50 border-l-4 border-red-500 text-xs text-red-700 font-semibold rounded">
+                  {halaqohModalError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                    Nama Kelompok Halaqoh <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Halaqoh 1 (Ustadz Ahmad)"
+                    value={halaqohForm.name}
+                    onChange={(e) => setHalaqohForm({ ...halaqohForm, name: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 text-slate-900 font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                    Ustadz/ah Pembimbing (TnT) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      onChange={(e) => {
+                        const selectedTeacher = teachers.find((t) => t.id === e.target.value);
+                        if (selectedTeacher) {
+                          setHalaqohForm({
+                            ...halaqohForm,
+                            mentorTeacherId: selectedTeacher.id,
+                            mentorName: selectedTeacher.name,
+                          });
+                        }
+                      }}
+                      className="w-1/3 px-2 py-2 text-xs border border-slate-300 rounded-xl bg-slate-50 text-slate-700 cursor-pointer"
+                    >
+                      <option value="">Pilih Guru...</option>
+                      {teachers.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name} ({t.subject})</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Atau ketik nama pembimbing"
+                      value={halaqohForm.mentorName}
+                      onChange={(e) => setHalaqohForm({ ...halaqohForm, mentorName: e.target.value })}
+                      className="w-2/3 px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 text-slate-900 font-semibold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Student Assignment Section */}
+              <div className="space-y-2 pt-2 border-t border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                    Pilih Anggota Santri / Siswa ({halaqohForm.studentIds.length} dipilih)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={halaqohClassFilter}
+                      onChange={(e) => setHalaqohClassFilter(e.target.value)}
+                      className="px-2 py-1.5 text-xs border border-slate-300 rounded-lg bg-white text-slate-700"
+                    >
+                      <option value="all">Semua Kelas</option>
+                      <option value="7">Kelas 7</option>
+                      <option value="8">Kelas 8</option>
+                      <option value="9">Kelas 9</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Cari nama santri..."
+                      value={halaqohStudentSearch}
+                      onChange={(e) => setHalaqohStudentSearch(e.target.value)}
+                      className="px-3 py-1.5 text-xs border border-slate-300 rounded-lg w-40"
+                    />
+                  </div>
+                </div>
+
+                <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1 bg-slate-50">
+                  {students
+                    .filter((s) => {
+                      const matchClass = halaqohClassFilter === "all" || String(s.kelas).trim() === halaqohClassFilter;
+                      const matchSearch = s.name.toLowerCase().includes(halaqohStudentSearch.toLowerCase()) || s.nisn.includes(halaqohStudentSearch);
+                      return matchClass && matchSearch;
+                    })
+                    .map((s) => {
+                      const isSelected = halaqohForm.studentIds.includes(s.id);
+                      return (
+                        <div
+                          key={s.id}
+                          onClick={() => {
+                            const newIds = isSelected
+                              ? halaqohForm.studentIds.filter((id) => id !== s.id)
+                              : [...halaqohForm.studentIds, s.id];
+                            setHalaqohForm({ ...halaqohForm, studentIds: newIds });
+                          }}
+                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition ${
+                            isSelected ? "bg-blue-50 border border-blue-200 text-blue-900 font-bold" : "bg-white hover:bg-slate-100 border border-slate-200 text-slate-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+                            />
+                            <span className="text-xs">{s.name}</span>
+                          </div>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                            Kelas {s.kelas || "-"} ({s.nisn})
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setIsHalaqohModalOpen(false)}
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingHalaqoh}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2 shadow-sm disabled:opacity-50"
+                >
+                  {isSubmittingHalaqoh && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>}
+                  <span>Simpan Halaqoh</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
