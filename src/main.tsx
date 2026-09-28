@@ -784,6 +784,62 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       return new Response(JSON.stringify({ message: "Ekskul deleted" }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
+    // 8. HALAQOH & KEISLAMAN API
+    if (path === '/api/halaqoh' && method === 'GET') {
+      const db = getDB();
+      return new Response(JSON.stringify(db.halaqoh || []), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (path === '/api/halaqoh' && method === 'POST') {
+      const { name, mentorName, mentorTeacherId, studentIds } = body || {};
+      if (!name || !mentorName) {
+        return new Response(JSON.stringify({ error: "Nama halaqoh dan nama ustadz/ah pembimbing wajib diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+      const db = getDB();
+      if (!Array.isArray(db.halaqoh)) db.halaqoh = [];
+      const newHalaqoh = {
+        id: "hlq_" + Date.now(),
+        name: name.trim(),
+        mentorName: mentorName.trim(),
+        mentorTeacherId: mentorTeacherId || "",
+        studentIds: Array.isArray(studentIds) ? studentIds : [],
+        createdAt: new Date().toISOString()
+      };
+      db.halaqoh.push(newHalaqoh);
+      saveDB(db);
+      return new Response(JSON.stringify(newHalaqoh), { status: 201, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (path.startsWith('/api/halaqoh/') && method === 'PUT') {
+      const id = path.split('/').pop();
+      const { name, mentorName, mentorTeacherId, studentIds } = body || {};
+      const db = getDB();
+      if (!Array.isArray(db.halaqoh)) db.halaqoh = [];
+      const index = db.halaqoh.findIndex((h: any) => h.id === id);
+      if (index === -1) {
+        return new Response(JSON.stringify({ error: "Data Halaqoh tidak ditemukan." }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+      }
+      db.halaqoh[index] = {
+        ...db.halaqoh[index],
+        name: name ? name.trim() : db.halaqoh[index].name,
+        mentorName: mentorName ? mentorName.trim() : db.halaqoh[index].mentorName,
+        mentorTeacherId: mentorTeacherId !== undefined ? mentorTeacherId : db.halaqoh[index].mentorTeacherId,
+        studentIds: Array.isArray(studentIds) ? studentIds : db.halaqoh[index].studentIds,
+        updatedAt: new Date().toISOString()
+      };
+      saveDB(db);
+      return new Response(JSON.stringify(db.halaqoh[index]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (path.startsWith('/api/halaqoh/') && method === 'DELETE') {
+      const id = path.split('/').pop();
+      const db = getDB();
+      if (!Array.isArray(db.halaqoh)) db.halaqoh = [];
+      db.halaqoh = db.halaqoh.filter((h: any) => h.id !== id);
+      saveDB(db);
+      return new Response(JSON.stringify({ message: "Halaqoh berhasil dihapus." }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
     // 7. GET /api/summary
     if (path === '/api/summary' && method === 'GET') {
       const db = getDB();

@@ -58,6 +58,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   });
   const [halaqohStudentSearch, setHalaqohStudentSearch] = useState("");
   const [halaqohClassFilter, setHalaqohClassFilter] = useState("all");
+  const [halaqohGenderFilter, setHalaqohGenderFilter] = useState("all");
   const [tpsTemplates, setTpsTemplates] = useState<{
     [subject: string]: { id: string; text: string }[];
   }>({});
@@ -3527,41 +3528,116 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               </div>
 
               {/* Student Assignment Section */}
-              <div className="space-y-2 pt-2 border-t border-slate-200">
+              <div className="space-y-3 pt-3 border-t border-slate-200">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <label className="text-xs font-bold text-slate-900 uppercase tracking-wide">
                     Pilih Anggota Santri / Siswa ({halaqohForm.studentIds.length} dipilih)
                   </label>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={halaqohClassFilter}
-                      onChange={(e) => setHalaqohClassFilter(e.target.value)}
-                      className="px-2 py-1.5 text-xs border border-slate-300 rounded-lg bg-white text-slate-700"
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const visibleIds = students
+                          .filter((s) => {
+                            const matchClass = halaqohClassFilter === "all" || String(s.kelas).trim() === halaqohClassFilter;
+                            const isFemale = (() => {
+                              const n = s.name.toLowerCase();
+                              const femaleKeywords = ["siti", "nur", "aisyah", "fatimah", "zahra", "khadijah", "annisa", "putri", "salsabila", "salma", "nabila", "zahira", "kayla", "naura", "dinda", "fauziyah", "amalia", "zaskia", "aulia", "safira", "husna", "rahma", "syifa", "nadia", "fitri", "intan", "dewi", "sri", "lestari", "pertiwi", "wulan", "melati", "ananda", "mutiara"];
+                              return femaleKeywords.some(kw => n.includes(kw)) || n.endsWith("a") || n.endsWith("i") || n.endsWith("h");
+                            })();
+                            const matchGender = halaqohGenderFilter === "all" || (halaqohGenderFilter === "putri" ? isFemale : !isFemale);
+                            const matchSearch = s.name.toLowerCase().includes(halaqohStudentSearch.toLowerCase()) || s.nisn.includes(halaqohStudentSearch);
+                            return matchClass && matchGender && matchSearch;
+                          })
+                          .map(s => s.id);
+                        
+                        const merged = Array.from(new Set([...halaqohForm.studentIds, ...visibleIds]));
+                        setHalaqohForm({ ...halaqohForm, studentIds: merged });
+                      }}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
                     >
-                      <option value="all">Semua Kelas</option>
-                      <option value="7">Kelas 7</option>
-                      <option value="8">Kelas 8</option>
-                      <option value="9">Kelas 9</option>
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="Cari nama santri..."
-                      value={halaqohStudentSearch}
-                      onChange={(e) => setHalaqohStudentSearch(e.target.value)}
-                      className="px-3 py-1.5 text-xs border border-slate-300 rounded-lg w-40"
-                    />
+                      ✓ Pilih Semua (Filter Ini)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const visibleIdsSet = new Set(
+                          students
+                            .filter((s) => {
+                              const matchClass = halaqohClassFilter === "all" || String(s.kelas).trim() === halaqohClassFilter;
+                              const isFemale = (() => {
+                                const n = s.name.toLowerCase();
+                                const femaleKeywords = ["siti", "nur", "aisyah", "fatimah", "zahra", "khadijah", "annisa", "putri", "salsabila", "salma", "nabila", "zahira", "kayla", "naura", "dinda", "fauziyah", "amalia", "zaskia", "aulia", "safira", "husna", "rahma", "syifa", "nadia", "fitri", "intan", "dewi", "sri", "lestari", "pertiwi", "wulan", "melati", "ananda", "mutiara"];
+                                return femaleKeywords.some(kw => n.includes(kw)) || n.endsWith("a") || n.endsWith("i") || n.endsWith("h");
+                              })();
+                              const matchGender = halaqohGenderFilter === "all" || (halaqohGenderFilter === "putri" ? isFemale : !isFemale);
+                              const matchSearch = s.name.toLowerCase().includes(halaqohStudentSearch.toLowerCase()) || s.nisn.includes(halaqohStudentSearch);
+                              return matchClass && matchGender && matchSearch;
+                            })
+                            .map(s => s.id)
+                        );
+                        const filtered = halaqohForm.studentIds.filter(id => !visibleIdsSet.has(id));
+                        setHalaqohForm({ ...halaqohForm, studentIds: filtered });
+                      }}
+                      className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
+                    >
+                      ✕ Batalkan Filter Ini
+                    </button>
                   </div>
                 </div>
 
-                <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1 bg-slate-50">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <select
+                    value={halaqohClassFilter}
+                    onChange={(e) => setHalaqohClassFilter(e.target.value)}
+                    className="px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white text-slate-900 font-semibold"
+                  >
+                    <option value="all">Semua Kelas (7, 8, 9)</option>
+                    <option value="7">Kelas 7</option>
+                    <option value="8">Kelas 8</option>
+                    <option value="9">Kelas 9</option>
+                  </select>
+
+                  <select
+                    value={halaqohGenderFilter}
+                    onChange={(e) => setHalaqohGenderFilter(e.target.value)}
+                    className="px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white text-slate-900 font-semibold"
+                  >
+                    <option value="all">Semua Santri (Putra & Putri)</option>
+                    <option value="putra">👦 Santri Putra (Sholih)</option>
+                    <option value="putri">👧 Santri Putri (Sholihah)</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    placeholder="Cari nama / NISN..."
+                    value={halaqohStudentSearch}
+                    onChange={(e) => setHalaqohStudentSearch(e.target.value)}
+                    className="px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white text-slate-900 font-semibold"
+                  />
+                </div>
+
+                <div className="max-h-64 overflow-y-auto border border-slate-300 rounded-xl p-2.5 space-y-1.5 bg-slate-100 shadow-inner">
                   {students
                     .filter((s) => {
                       const matchClass = halaqohClassFilter === "all" || String(s.kelas).trim() === halaqohClassFilter;
+                      const isFemale = (() => {
+                        const n = s.name.toLowerCase();
+                        const femaleKeywords = ["siti", "nur", "aisyah", "fatimah", "zahra", "khadijah", "annisa", "putri", "salsabila", "salma", "nabila", "zahira", "kayla", "naura", "dinda", "fauziyah", "amalia", "zaskia", "aulia", "safira", "husna", "rahma", "syifa", "nadia", "fitri", "intan", "dewi", "sri", "lestari", "pertiwi", "wulan", "melati", "ananda", "mutiara"];
+                        return femaleKeywords.some(kw => n.includes(kw)) || n.endsWith("a") || n.endsWith("i") || n.endsWith("h");
+                      })();
+                      const matchGender = halaqohGenderFilter === "all" || (halaqohGenderFilter === "putri" ? isFemale : !isFemale);
                       const matchSearch = s.name.toLowerCase().includes(halaqohStudentSearch.toLowerCase()) || s.nisn.includes(halaqohStudentSearch);
-                      return matchClass && matchSearch;
+                      return matchClass && matchGender && matchSearch;
                     })
                     .map((s) => {
                       const isSelected = halaqohForm.studentIds.includes(s.id);
+                      const isFemale = (() => {
+                        const n = s.name.toLowerCase();
+                        const femaleKeywords = ["siti", "nur", "aisyah", "fatimah", "zahra", "khadijah", "annisa", "putri", "salsabila", "salma", "nabila", "zahira", "kayla", "naura", "dinda", "fauziyah", "amalia", "zaskia", "aulia", "safira", "husna", "rahma", "syifa", "nadia", "fitri", "intan", "dewi", "sri", "lestari", "pertiwi", "wulan", "melati", "ananda", "mutiara"];
+                        return femaleKeywords.some(kw => n.includes(kw)) || n.endsWith("a") || n.endsWith("i") || n.endsWith("h");
+                      })();
+
                       return (
                         <div
                           key={s.id}
@@ -3571,22 +3647,35 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                               : [...halaqohForm.studentIds, s.id];
                             setHalaqohForm({ ...halaqohForm, studentIds: newIds });
                           }}
-                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition ${
-                            isSelected ? "bg-blue-50 border border-blue-200 text-blue-900 font-bold" : "bg-white hover:bg-slate-100 border border-slate-200 text-slate-700"
+                          className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition border ${
+                            isSelected 
+                              ? "bg-blue-600 border-blue-700 text-white shadow-md font-bold" 
+                              : "bg-white hover:bg-slate-50 border-slate-300 text-slate-900 font-semibold"
                           }`}
                         >
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-3">
                             <input
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => {}}
-                              className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+                              className="w-4 h-4 text-blue-600 rounded cursor-pointer accent-blue-700"
                             />
                             <span className="text-xs">{s.name}</span>
                           </div>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 text-slate-700">
-                            Kelas {s.kelas || "-"} ({s.nisn})
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isFemale 
+                                ? (isSelected ? "bg-pink-700 text-white" : "bg-pink-100 text-pink-800 border border-pink-300")
+                                : (isSelected ? "bg-sky-700 text-white" : "bg-sky-100 text-sky-800 border border-sky-300")
+                            }`}>
+                              {isFemale ? "👧 Sholihah" : "👦 Sholih"}
+                            </span>
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${
+                              isSelected ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-800 font-bold"
+                            }`}>
+                              Kelas {s.kelas || "-"} ({s.nisn})
+                            </span>
+                          </div>
                         </div>
                       );
                     })}
