@@ -63,7 +63,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   const [semesterName, setSemesterName] = useState("Ganjil");
   const [tahunPelajaran, setTahunPelajaran] = useState("2026/2027");
   const [fontSize, setFontSize] = useState("11pt");
-  const [showLogo, setShowLogo] = useState(true);
+  const [showLogo, setShowLogo] = useState(false);
   const [showSpiritual, setShowSpiritual] = useState(true);
   const [showSosial, setShowSosial] = useState(true);
   const [showAttendance, setShowAttendance] = useState(true);
@@ -453,11 +453,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           setSemesterName(setData.format.semesterName || "Ganjil");
           setTahunPelajaran(setData.format.tahunPelajaran || "2026/2027");
           setFontSize(setData.format.fontSize || "11pt");
-          setShowLogo(
-            setData.format.showLogo !== undefined
-              ? !!setData.format.showLogo
-              : true,
-          );
+          setShowLogo(setData.format.showLogo || false);
           setShowSpiritual(
             setData.format.showSpiritual !== undefined
               ? setData.format.showSpiritual

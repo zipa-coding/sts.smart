@@ -44,7 +44,7 @@ export default function PrintRaportView({
     semesterName: "Ganjil",
     tahunPelajaran: "2026/2027",
     fontSize: "11pt",
-    showLogo: true,
+    showLogo: false,
     showSpiritual: true,
     showSosial: true,
     showAttendance: true,
@@ -84,10 +84,7 @@ export default function PrintRaportView({
             semesterName: data.format.semesterName || "Ganjil",
             tahunPelajaran: data.format.tahunPelajaran || "2026/2027",
             fontSize: data.format.fontSize || "11pt",
-            showLogo:
-              data.format.showLogo !== undefined
-                ? !!data.format.showLogo
-                : true,
+            showLogo: !!data.format.showLogo,
             showSpiritual:
               data.format.showSpiritual !== undefined
                 ? !!data.format.showSpiritual
@@ -381,13 +378,13 @@ export default function PrintRaportView({
               format.showLogo
                 ? `
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; width: 100%; border-bottom: 3px double #000000; padding-bottom: 12px;">
-                <!-- Left Side: JSIT and Yayasan Cahaya Amal logos -->
+                <!-- Left Side: Yayasan Cahaya Amal and JSIT logos -->
                 <div style="width: 165px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 10px;">
                   <div style="width: 75px; height: 75px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; box-sizing: border-box;">
-                    <img src="${logoJsitUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
+                    <img src="${logoCahayaAmalUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
                   </div>
                   <div style="width: 75px; height: 75px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; box-sizing: border-box;">
-                    <img src="${logoCahayaAmalUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
+                    <img src="${logoJsitUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
                   </div>
                 </div>
                 <!-- Center: School name and report metadata -->
@@ -1100,8 +1097,8 @@ export default function PrintRaportView({
           <tr>
             <!-- Left Side Logos -->
             <td style="width: 25%; text-align: left; vertical-align: middle; border: none; padding-bottom: 12px;">
-              <img src="${absLogoJsitUrl}" style="width: 55px; height: 55px; display: inline-block; margin-right: 5px;" />
-              <img src="${absLogoCahayaAmalUrl}" style="width: 55px; height: 55px; display: inline-block;" />
+              <img src="${absLogoCahayaAmalUrl}" style="width: 55px; height: 55px; display: inline-block; margin-right: 5px;" />
+              <img src="${absLogoJsitUrl}" style="width: 55px; height: 55px; display: inline-block;" />
             </td>
             <!-- Center Title and Info -->
             <td style="width: 50%; text-align: center; vertical-align: middle; border: none; padding-bottom: 12px; font-family: 'Times New Roman', Times, serif;">
@@ -1923,16 +1920,16 @@ export default function PrintRaportView({
               <div className="flex items-center gap-1.5 md:gap-2.5 w-32 md:w-44 shrink-0 justify-start">
                 <div className="w-14 h-14 md:w-18 md:h-18 select-none bg-white flex items-center justify-center p-0.5">
                   <img
-                    src={logoJsitUrl}
-                    alt="JSIT Logo"
+                    src={logoCahayaAmalUrl}
+                    alt="Yayasan Logo"
                     className="w-full h-full object-contain"
                     referrerPolicy="no-referrer"
                   />
                 </div>
                 <div className="w-14 h-14 md:w-18 md:h-18 select-none bg-white flex items-center justify-center p-0.5">
                   <img
-                    src={logoCahayaAmalUrl}
-                    alt="Yayasan Logo"
+                    src={logoJsitUrl}
+                    alt="JSIT Logo"
                     className="w-full h-full object-contain"
                     referrerPolicy="no-referrer"
                   />
