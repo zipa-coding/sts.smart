@@ -176,74 +176,250 @@ export default function HalaqohRaportView({
         ? mentorTeacher.name.trim()
         : "Ustadz Ahmad Fauzi, S.Pd.I";
 
-    // Helper to generate a single student card strictly matching PDF 1
-    const studentCardsHTML = memberStudents
-      .map((student, idx) => {
-        const cardNum = idx + 1;
-        const studentName = student.name ? student.name.trim() : "-";
-        const kelasName = formatKelasName(student.kelas);
+    // 3. Helper to generate a single student card strictly matching PDF 1
+    const renderStudentCard = (student: Student, globalIdx: number) => {
+      const cardNum = globalIdx + 1;
+      const studentName = student.name ? student.name.trim() : "-";
+      const kelasName = formatKelasName(student.kelas);
 
-        const gradeObj = grades.find(
-          (g) =>
-            String(g.studentId).trim() === String(student.id).trim() &&
-            g.subject === subjectMeta.key
-        );
+      const gradeObj = grades.find(
+        (g) =>
+          String(g.studentId).trim() === String(student.id).trim() &&
+          g.subject === subjectMeta.key
+      );
 
-        const usahaVal = gradeObj?.usaha || "A";
-        const prosesVal = gradeObj?.proses || "A";
-        const capaianVal = gradeObj?.capaian || "A";
+      const usahaVal = gradeObj?.usaha || "A";
+      const prosesVal = gradeObj?.proses || "A";
+      const capaianVal = gradeObj?.capaian || "A";
 
-        let descContent = "";
-        if (gradeObj?.deskripsi && gradeObj.deskripsi.trim()) {
-          descContent = gradeObj.deskripsi.trim();
-        } else {
-          const studentFirstName = student.name.split(" ")[0] || student.name;
-          descContent = `Alhamdulillah ananda sholih/ah ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;
-        }
+      let descContent = "";
+      if (gradeObj?.deskripsi && gradeObj.deskripsi.trim()) {
+        descContent = gradeObj.deskripsi.trim();
+      } else {
+        const studentFirstName = student.name.split(" ")[0] || student.name;
+        descContent = `Alhamdulillah ananda sholih/ah ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;
+      }
+
+      return `
+        <div class="student-card-item" style="margin-bottom: 14px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000;">
+          <!-- Perfectly Aligned Name & Class Header matching PDF 1 -->
+          <div style="margin-bottom: 3px; font-family: 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.35; color: #000000;">
+            <table style="border: none !important; border-collapse: collapse; background: transparent; color: #000000; font-size: 10.5pt; width: 100%;">
+              <tr style="background: transparent;">
+                <td style="border: none !important; padding: 1px 0; width: 60px; color: #000000; font-weight: normal; white-space: nowrap; background: transparent; vertical-align: top;">${cardNum}. Nama</td>
+                <td style="border: none !important; padding: 1px 4px; width: 12px; text-align: center; color: #000000; font-weight: normal; background: transparent; vertical-align: top;">:</td>
+                <td style="border: none !important; padding: 1px 0; color: #000000; font-weight: normal; background: transparent; vertical-align: top;">${studentName}</td>
+              </tr>
+              <tr style="background: transparent;">
+                <td style="border: none !important; padding: 1px 0; color: #000000; font-weight: normal; white-space: nowrap; background: transparent; vertical-align: top;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</td>
+                <td style="border: none !important; padding: 1px 4px; text-align: center; color: #000000; font-weight: normal; background: transparent; vertical-align: top;">:</td>
+                <td style="border: none !important; padding: 1px 0; color: #000000; font-weight: normal; background: transparent; vertical-align: top;">${kelasName}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Single Unified Score & Description Table (100% Pure White Background, 1px solid black) -->
+          <table style="width: 100%; border-collapse: collapse; border: 1.2px solid #000000; font-size: 10pt; text-align: center; background-color: #ffffff; table-layout: fixed; margin-bottom: 0;">
+            <tbody>
+              <!-- Row 1: Headers -->
+              <tr style="background-color: #ffffff;">
+                <td style="border: 1px solid #000000; padding: 4px 6px; width: 28%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${subjectMeta.tableHeader}</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; width: 24%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Usaha</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; width: 24%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Proses</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; width: 24%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Capaian</td>
+              </tr>
+              <!-- Row 2: Scores -->
+              <tr style="background-color: #ffffff;">
+                <td style="border: 1px solid #000000; padding: 4px 6px; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">&nbsp;</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${usahaVal}</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${prosesVal}</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${capaianVal}</td>
+              </tr>
+              <!-- Row 3: Description seamlessly attached with full colspan -->
+              <tr style="background-color: #ffffff;">
+                <td colspan="4" style="border: 1px solid #000000; padding: 6px 8px; font-size: 9.5pt; line-height: 1.4; min-height: 52px; height: 54px; vertical-align: top; background-color: #ffffff; color: #000000; text-align: justify;">
+                  <strong>Deskripsi :</strong> ${descContent}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    };
+
+    // 4. Kop Surat HTML
+    const kopSuratHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; width: 100%; border-bottom: 3px double #000000; padding-bottom: 8px; background-color: #ffffff; box-sizing: border-box;">
+        <!-- Left Side: JSIT and Yayasan Cahaya Amal logos -->
+        <div style="width: 145px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+          <div style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
+            <img src="${logoJsitUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
+          </div>
+          <div style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
+            <img src="${logoCahayaAmalUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
+          </div>
+        </div>
+
+        <!-- Center: School name and address -->
+        <div style="text-align: center; flex-grow: 1; padding: 0 6px;">
+          <h2 style="margin: 0 0 2px 0; font-size: 11pt; font-weight: bold; text-transform: uppercase; line-height: 1.25; color: #000000; font-family: 'Times New Roman', serif;">YAYASAN CAHAYA AMAL BABEL</h2>
+          <h1 style="margin: 2px 0 3px 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.25; color: #000000; font-family: 'Times New Roman', serif;">SMP ISLAM SMART PANGKALPINANG</h1>
+          <p style="margin: 0; font-size: 7.5pt; line-height: 1.35; color: #000000; font-family: 'Times New Roman', serif;">Jl. Padang Lama, Kelurahan Air Itam, Kecamatan Bukit Intan, Kota Pangkalpinang,</p>
+          <p style="margin: 0; font-size: 7.5pt; line-height: 1.35; color: #000000; font-family: 'Times New Roman', serif;">Prov. Kep. Bangka Belitung Kode Pos : 33149, No. HP : 0857-1844-0064,</p>
+          <p style="margin: 0; font-size: 7.5pt; line-height: 1.35; color: #000000; font-family: 'Times New Roman', serif;">NPSN : 70002556, No. Reg. JSIT : 2.19.71.03.001, E-Mail : smpsmartpkp@gmail.com</p>
+        </div>
+
+        <!-- Right Side: SMP logo safely centered within container -->
+        <div style="width: 145px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; border: 1.5px solid #cccccc; background-color: #ffffff;">
+            <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 5. Document Title HTML exactly matching PDF 1
+    const docTitleHTML = `
+      <div style="text-align: center; margin-bottom: 14px;">
+        <h2 style="margin: 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ</h2>
+        <h3 style="margin: 3px 0 0 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">${subjectMeta.shortTitle}</h3>
+        <p style="margin: 3px 0 0 0; font-size: 11pt; font-weight: bold; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Semester-1, Tahun Pelajaran 2026/2027</p>
+      </div>
+    `;
+
+    // 6. Signature & Keterangan Legend Block HTML matching PDF 1 Page 4
+    const signatureKeteranganHTML = `
+      <div style="margin-top: 20px; page-break-inside: avoid; break-inside: avoid; background-color: #ffffff;">
+        <!-- Signature right aligned with actual Mentor Name -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 22px;">
+          <div style="width: 280px; text-align: center; font-size: 11pt; line-height: 1.4; font-family: 'Times New Roman', serif; color: #000000;">
+            <p style="margin: 0 0 4px 0; color: #000000;">Pangkalpinang, 30 September 2025</p>
+            <p style="margin: 0 0 54px 0; color: #000000;">Ustadz/ah Pembimbing,</p>
+            <p style="margin: 0; color: #000000;">( <span style="font-weight: bold; text-decoration: underline;">${mentorName}</span> )</p>
+          </div>
+        </div>
+
+        <!-- Keterangan Legend Table matching PDF 1 exactly -->
+        <div style="border: 1px solid #000000; font-size: 9pt; background-color: #ffffff; color: #000000; line-height: 1.35; font-family: 'Times New Roman', serif; width: 100%;">
+          <div style="padding: 3px 6px; border-bottom: 1px solid #000000; font-size: 9.5pt; color: #000000; background-color: #ffffff;">
+            Keterangan :
+          </div>
+          <table style="width: 100%; border-collapse: collapse; border: none !important; font-size: 8.5pt; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', serif;">
+            <tr style="background-color: #ffffff;">
+              <td style="width: 100px; border-right: 1px solid #000000; border-top: none !important; border-bottom: none !important; border-left: none !important; padding: 4px 6px; vertical-align: top; background-color: #ffffff; color: #000000; line-height: 1.35;">
+                <div>A : 90 – 100</div>
+                <div>B : 75 – 89</div>
+                <div>C : 60 – 74</div>
+              </td>
+              <td style="border: none !important; padding: 4px 6px; vertical-align: top; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', serif;">
+                <table style="width: 100%; border: none !important; border-collapse: collapse; background: transparent; color: #000000; font-family: 'Times New Roman', serif; line-height: 1.35;">
+                  <tr style="background: transparent;">
+                    <td style="width: 60px; border: none !important; font-weight: normal; padding: 1px 0; color: #000000; vertical-align: top;">Usaha</td>
+                    <td style="width: 12px; border: none !important; padding: 1px 0; text-align: center; color: #000000; vertical-align: top;">:</td>
+                    <td style="border: none !important; padding: 1px 0; color: #000000; vertical-align: top;">Ikhtiar yang dilakukan siswa untuk menghafal dan setoran.</td>
+                  </tr>
+                  <tr style="background: transparent;">
+                    <td style="border: none !important; font-weight: normal; padding: 1px 0; color: #000000; vertical-align: top;">Proses</td>
+                    <td style="width: 12px; border: none !important; padding: 1px 0; text-align: center; color: #000000; vertical-align: top;">:</td>
+                    <td style="border: none !important; padding: 1px 0; color: #000000; vertical-align: top;">Teknis ketika siswa setoran ke pembimbing TnT dan penguji.</td>
+                  </tr>
+                  <tr style="background: transparent;">
+                    <td style="border: none !important; font-weight: normal; padding: 1px 0; color: #000000; vertical-align: top;">Capaian</td>
+                    <td style="width: 12px; border: none !important; padding: 1px 0; text-align: center; color: #000000; vertical-align: top;">:</td>
+                    <td style="border: none !important; padding: 1px 0; color: #000000; vertical-align: top;">Hasil dari ETTQ</td>
+                  </tr>
+                  <tr style="background: transparent;">
+                    <td style="border: none !important; font-weight: normal; padding: 1px 0; vertical-align: top; color: #000000; vertical-align: top;">Deskripsi</td>
+                    <td style="border: none !important; padding: 1px 0; vertical-align: top; text-align: center; color: #000000; vertical-align: top;">:</td>
+                    <td style="border: none !important; padding: 1px 0; color: #000000; vertical-align: top;">Keadaan reel siswa dalam pembelajaran ${subjectMeta.shortTitle} (apa saja yang harus diperbaiki dalam tahsinnya)</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    `;
+
+    // 7. Partition students into explicit pages matching PDF 1 structure
+    interface PageSpec {
+      students: { student: Student; globalIdx: number }[];
+      hasKop: boolean;
+      hasSig: boolean;
+    }
+
+    const pages: PageSpec[] = [];
+    const totalStudents = memberStudents.length;
+
+    if (totalStudents <= 3) {
+      pages.push({
+        students: memberStudents.map((s, idx) => ({ student: s, globalIdx: idx })),
+        hasKop: true,
+        hasSig: true,
+      });
+    } else if (totalStudents === 4) {
+      pages.push({
+        students: memberStudents.slice(0, 3).map((s, idx) => ({ student: s, globalIdx: idx })),
+        hasKop: true,
+        hasSig: false,
+      });
+      pages.push({
+        students: memberStudents.slice(3).map((s, idx) => ({ student: s, globalIdx: idx + 3 })),
+        hasKop: false,
+        hasSig: true,
+      });
+    } else {
+      // Page 1 always gets exactly 4 students (matching PDF 1)
+      pages.push({
+        students: memberStudents.slice(0, 4).map((s, idx) => ({ student: s, globalIdx: idx })),
+        hasKop: true,
+        hasSig: false,
+      });
+
+      let currentOffset = 4;
+      let remaining = memberStudents.slice(4);
+
+      while (remaining.length > 4) {
+        // Take 6 students if remaining is large (like Page 2 in PDF 1), otherwise 5
+        const take = remaining.length > 8 ? 6 : (remaining.length >= 6 ? 5 : 4);
+        pages.push({
+          students: remaining.slice(0, take).map((s, idx) => ({ student: s, globalIdx: currentOffset + idx })),
+          hasKop: false,
+          hasSig: false,
+        });
+        currentOffset += take;
+        remaining = remaining.slice(take);
+      }
+
+      // Final page receives remaining students (1 to 4) + Signature & Keterangan
+      pages.push({
+        students: remaining.map((s, idx) => ({ student: s, globalIdx: currentOffset + idx })),
+        hasKop: false,
+        hasSig: true,
+      });
+    }
+
+    // 8. Build full document with clean explicit page breaks
+    const renderedPagesHTML = pages
+      .map((p, pIdx) => {
+        const studentCards = p.students
+          .map((item) => renderStudentCard(item.student, item.globalIdx))
+          .join("");
+
+        const pageBreakEl =
+          pIdx > 0
+            ? `<div class="html2pdf__page-break" style="page-break-before: always; break-before: page; height: 0; line-height: 0; margin: 0; padding: 0;"></div>`
+            : "";
 
         return `
-          <div class="student-card-item" style="margin-bottom: 18px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff !important; color: #000000 !important;">
-            <!-- Perfectly Aligned Name & Class Header matching PDF 1 -->
-            <div style="margin-bottom: 4px; font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.45; color: #000000 !important;">
-              <table style="border: none !important; border-collapse: collapse; background: transparent !important; color: #000000 !important; font-size: 11pt; width: 100%;">
-                <tr style="background: transparent !important;">
-                  <td style="border: none !important; padding: 2px 0; width: 68px; color: #000000 !important; font-weight: normal; white-space: nowrap; background: transparent !important; vertical-align: top;">${cardNum}. Nama</td>
-                  <td style="border: none !important; padding: 2px 6px; width: 14px; text-align: center; color: #000000 !important; font-weight: normal; background: transparent !important; vertical-align: top;">:</td>
-                  <td style="border: none !important; padding: 2px 0; color: #000000 !important; font-weight: normal; background: transparent !important; vertical-align: top;">${studentName}</td>
-                </tr>
-                <tr style="background: transparent !important;">
-                  <td style="border: none !important; padding: 2px 0; color: #000000 !important; font-weight: normal; white-space: nowrap; background: transparent !important; vertical-align: top;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</td>
-                  <td style="border: none !important; padding: 2px 6px; text-align: center; color: #000000 !important; font-weight: normal; background: transparent !important; vertical-align: top;">:</td>
-                  <td style="border: none !important; padding: 2px 0; color: #000000 !important; font-weight: normal; background: transparent !important; vertical-align: top;">${kelasName}</td>
-                </tr>
-              </table>
+          ${pageBreakEl}
+          <div class="raport-single-page" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative;">
+            ${p.hasKop ? kopSuratHTML : ""}
+            ${p.hasKop ? docTitleHTML : ""}
+            <div>
+              ${studentCards}
             </div>
-
-            <!-- Single Unified Score & Description Table (100% Pure White Background, 1px solid black) -->
-            <table style="width: 100%; border-collapse: collapse; border: 1.2px solid #000000; font-size: 10.5pt; text-align: center; background-color: #ffffff !important; table-layout: fixed; margin-bottom: 0;">
-              <tbody>
-                <!-- Row 1: Headers -->
-                <tr style="background-color: #ffffff !important;">
-                  <td style="border: 1px solid #000000; padding: 5px 6px; width: 28%; font-weight: bold; text-align: center; color: #000000 !important; background-color: #ffffff !important; line-height: 1.4; vertical-align: middle;">${subjectMeta.tableHeader}</td>
-                  <td style="border: 1px solid #000000; padding: 5px 6px; width: 24%; font-weight: bold; text-align: center; color: #000000 !important; background-color: #ffffff !important; line-height: 1.4; vertical-align: middle;">Usaha</td>
-                  <td style="border: 1px solid #000000; padding: 5px 6px; width: 24%; font-weight: bold; text-align: center; color: #000000 !important; background-color: #ffffff !important; line-height: 1.4; vertical-align: middle;">Proses</td>
-                  <td style="border: 1px solid #000000; padding: 5px 6px; width: 24%; font-weight: bold; text-align: center; color: #000000 !important; background-color: #ffffff !important; line-height: 1.4; vertical-align: middle;">Capaian</td>
-                </tr>
-                <!-- Row 2: Scores -->
-                <tr style="background-color: #ffffff !important;">
-                  <td style="border: 1px solid #000000; padding: 5px 6px; color: #000000 !important; background-color: #ffffff !important; line-height: 1.4; vertical-align: middle;">&nbsp;</td>
-                  <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: bold; text-align: center; color: #000000 !important; background-color: #ffffff !important; line-height: 1.4; vertical-align: middle;">${usahaVal}</td>
-                  <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: bold; text-align: center; color: #000000 !important; background-color: #ffffff !important; line-height: 1.4; vertical-align: middle;">${prosesVal}</td>
-                  <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: bold; text-align: center; color: #000000 !important; background-color: #ffffff !important; line-height: 1.4; vertical-align: middle;">${capaianVal}</td>
-                </tr>
-                <!-- Row 3: Description seamlessly attached with full colspan -->
-                <tr style="background-color: #ffffff !important;">
-                  <td colspan="4" style="border: 1px solid #000000; padding: 8px 10px; font-size: 10pt; line-height: 1.5; min-height: 60px; vertical-align: top; background-color: #ffffff !important; color: #000000 !important; text-align: justify;">
-                    <strong>Deskripsi :</strong> ${descContent}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            ${p.hasSig ? signatureKeteranganHTML : ""}
           </div>
         `;
       })
@@ -264,7 +440,7 @@ export default function HalaqohRaportView({
         }
         .pdf-wrapper { 
           background-color: #ffffff !important;
-          width: 794px;
+          width: 720px;
           box-sizing: border-box;
           margin: 0 auto;
         }
@@ -280,100 +456,13 @@ export default function HalaqohRaportView({
         .pdf-wrapper strong {
           background: transparent !important;
         }
+        .html2pdf__page-break {
+          page-break-before: always !important;
+          break-before: page !important;
+        }
       </style>
       <div class="pdf-wrapper" style="background-color: #ffffff !important; color: #000000 !important; width: 100%; box-sizing: border-box;">
-        <!-- Kop Surat Resmi Identik Format Asli & Master Raport -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; width: 100%; border-bottom: 3px double #000000; padding-bottom: 10px; background-color: #ffffff !important; box-sizing: border-box;">
-          <!-- Left Side: JSIT and Yayasan Cahaya Amal logos -->
-          <div style="width: 145px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 6px;">
-            <div style="width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; background-color: #ffffff !important;">
-              <img src="${logoJsitUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
-            </div>
-            <div style="width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; background-color: #ffffff !important;">
-              <img src="${logoCahayaAmalUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
-            </div>
-          </div>
-
-          <!-- Center: School name and address -->
-          <div style="text-align: center; flex-grow: 1; padding: 0 8px;">
-            <h2 style="margin: 0 0 2px 0; font-size: 11.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.35; color: #000000 !important; font-family: 'Times New Roman', serif;">YAYASAN CAHAYA AMAL BABEL</h2>
-            <h1 style="margin: 2px 0 3px 0; font-size: 13.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.35; color: #000000 !important; font-family: 'Times New Roman', serif;">SMP ISLAM SMART PANGKALPINANG</h1>
-            <p style="margin: 0; font-size: 7.5pt; line-height: 1.45; color: #000000 !important; font-family: 'Times New Roman', serif;">Jl. Padang Lama, Kelurahan Air Itam, Kecamatan Bukit Intan, Kota Pangkalpinang,</p>
-            <p style="margin: 0; font-size: 7.5pt; line-height: 1.45; color: #000000 !important; font-family: 'Times New Roman', serif;">Prov. Kep. Bangka Belitung Kode Pos : 33149, No. HP : 0857-1844-0064,</p>
-            <p style="margin: 0; font-size: 7.5pt; line-height: 1.45; color: #000000 !important; font-family: 'Times New Roman', serif;">NPSN : 70002556, No. Reg. JSIT : 2.19.71.03.001, E-Mail : smpsmartpkp@gmail.com</p>
-          </div>
-
-          <!-- Right Side: SMP logo -->
-          <div style="width: 145px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end;">
-            <div style="width: 68px; height: 68px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; border: 1.5px solid #cccccc; background-color: #ffffff !important;">
-              <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Document Title exactly matching PDF 1 -->
-        <div style="text-align: center; margin-bottom: 16px;">
-          <h2 style="margin: 0; font-size: 13.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.35; color: #000000 !important; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ</h2>
-          <h3 style="margin: 3px 0 0 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.35; color: #000000 !important; font-family: 'Times New Roman', serif;">${subjectMeta.shortTitle}</h3>
-          <p style="margin: 3px 0 0 0; font-size: 11pt; font-weight: bold; line-height: 1.35; color: #000000 !important; font-family: 'Times New Roman', serif;">Semester-1, Tahun Pelajaran 2026/2027</p>
-        </div>
-
-        <!-- Student Cards List -->
-        <div>
-          ${studentCardsHTML}
-        </div>
-
-        <!-- Signature & Keterangan Legend Block matching PDF 1 Page 4 (Protected from Page Breaking) -->
-        <div style="page-break-inside: avoid; break-inside: avoid; margin-top: 18px; background-color: #ffffff !important;">
-          <!-- Signature right aligned with actual Mentor Name -->
-          <div style="display: flex; justify-content: flex-end; margin-bottom: 22px;">
-            <div style="width: 280px; text-align: center; font-size: 11pt; line-height: 1.4; font-family: 'Times New Roman', serif; color: #000000 !important;">
-              <p style="margin: 0 0 4px 0; color: #000000 !important;">Pangkalpinang, 30 September 2025</p>
-              <p style="margin: 0 0 54px 0; color: #000000 !important;">Ustadz/ah Pembimbing,</p>
-              <p style="margin: 0; color: #000000 !important;">( <span style="font-weight: bold; text-decoration: underline;">${mentorName}</span> )</p>
-            </div>
-          </div>
-
-          <!-- Keterangan Legend Table matching PDF 1 exactly -->
-          <div style="border: 1px solid #000000; font-size: 9pt; background-color: #ffffff !important; color: #000000 !important; line-height: 1.45; font-family: 'Times New Roman', serif; max-width: 680px;">
-            <div style="padding: 4px 8px; border-bottom: 1px solid #000000; font-size: 9.5pt; color: #000000 !important; background-color: #ffffff !important;">
-              Keterangan :
-            </div>
-            <table style="width: 100%; border-collapse: collapse; border: none !important; font-size: 9pt; background-color: #ffffff !important; color: #000000 !important; font-family: 'Times New Roman', serif;">
-              <tr style="background-color: #ffffff !important;">
-                <td style="width: 110px; border-right: 1px solid #000000; border-top: none !important; border-bottom: none !important; border-left: none !important; padding: 6px 8px; vertical-align: top; background-color: #ffffff !important; color: #000000 !important; line-height: 1.5;">
-                  <div style="margin-bottom: 2px;">A : 90 – 100</div>
-                  <div style="margin-bottom: 2px;">B : 75 – 89</div>
-                  <div>C : 60 – 74</div>
-                </td>
-                <td style="border: none !important; padding: 6px 8px; vertical-align: top; background-color: #ffffff !important; color: #000000 !important; font-family: 'Times New Roman', serif;">
-                  <table style="width: 100%; border: none !important; border-collapse: collapse; background: transparent !important; color: #000000 !important; font-family: 'Times New Roman', serif; line-height: 1.5;">
-                    <tr style="background: transparent !important;">
-                      <td style="width: 65px; border: none !important; font-weight: normal; padding: 2px 0; color: #000000 !important; background: transparent !important; vertical-align: top;">Usaha</td>
-                      <td style="width: 14px; border: none !important; padding: 2px 0; text-align: center; color: #000000 !important; background: transparent !important; vertical-align: top;">:</td>
-                      <td style="border: none !important; padding: 2px 0; color: #000000 !important; background: transparent !important; vertical-align: top;">Ikhtiar yang dilakukan siswa untuk menghafal dan setoran.</td>
-                    </tr>
-                    <tr style="background: transparent !important;">
-                      <td style="border: none !important; font-weight: normal; padding: 2px 0; color: #000000 !important; background: transparent !important; vertical-align: top;">Proses</td>
-                      <td style="width: 14px; border: none !important; padding: 2px 0; text-align: center; color: #000000 !important; background: transparent !important; vertical-align: top;">:</td>
-                      <td style="border: none !important; padding: 2px 0; color: #000000 !important; background: transparent !important; vertical-align: top;">Teknis ketika siswa setoran ke pembimbing TnT dan penguji.</td>
-                    </tr>
-                    <tr style="background: transparent !important;">
-                      <td style="border: none !important; font-weight: normal; padding: 2px 0; color: #000000 !important; background: transparent !important; vertical-align: top;">Capaian</td>
-                      <td style="width: 14px; border: none !important; padding: 2px 0; text-align: center; color: #000000 !important; background: transparent !important; vertical-align: top;">:</td>
-                      <td style="border: none !important; padding: 2px 0; color: #000000 !important; background: transparent !important; vertical-align: top;">Hasil dari ETTQ</td>
-                    </tr>
-                    <tr style="background: transparent !important;">
-                      <td style="border: none !important; font-weight: normal; padding: 2px 0; vertical-align: top; color: #000000 !important; background: transparent !important;">Deskripsi</td>
-                      <td style="border: none !important; padding: 2px 0; vertical-align: top; text-align: center; color: #000000 !important; background: transparent !important;">:</td>
-                      <td style="border: none !important; padding: 2px 0; color: #000000 !important; background: transparent !important; vertical-align: top;">Keadaan reel siswa dalam pembelajaran ${subjectMeta.shortTitle} (apa saja yang harus diperbaiki dalam tahsinnya)</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </div>
-        </div>
+        ${renderedPagesHTML}
       </div>
     `;
   };
@@ -393,17 +482,17 @@ export default function HalaqohRaportView({
       wrapper.style.position = "fixed";
       wrapper.style.left = "-9999px";
       wrapper.style.top = "-9999px";
-      wrapper.style.width = "794px";
+      wrapper.style.width = "720px";
       wrapper.style.backgroundColor = "#ffffff";
       wrapper.style.color = "#000000";
 
       const pdfContainer = document.createElement("div");
       pdfContainer.className = "pdf-wrapper light-mode-forced";
       pdfContainer.style.position = "relative";
-      pdfContainer.style.width = "794px";
+      pdfContainer.style.width = "720px";
       pdfContainer.style.backgroundColor = "#ffffff";
       pdfContainer.style.color = "#000000";
-      pdfContainer.style.padding = "24px 30px";
+      pdfContainer.style.padding = "4px 0px";
       pdfContainer.style.boxSizing = "border-box";
 
       // 2. Generate isolated HTML
@@ -417,16 +506,16 @@ export default function HalaqohRaportView({
       const fileName = `Raport_ETTQ_${safeSubName}_${safeHalaqohName}.pdf`;
 
       const opt = {
-        margin: 0, // Hilangkan margin PDF agar seluruh tampilan raport dan logo utuh tidak terpotong
+        margin: [8, 12, 12, 12],
         filename: fileName,
         image: { type: "jpeg", quality: 1.0 },
         html2canvas: {
-          scale: 2.5,
+          scale: 3.0,
           useCORS: true,
           logging: false,
           scrollY: 0,
           scrollX: 0,
-          windowWidth: 794,
+          windowWidth: 720,
           backgroundColor: "#ffffff",
           letterRendering: true,
         },
@@ -435,7 +524,7 @@ export default function HalaqohRaportView({
           format: "a4",
           orientation: "portrait",
         },
-        pagebreak: { mode: ["avoid-all", "css"] },
+        pagebreak: { mode: ["css", "legacy"], before: ".html2pdf__page-break" },
       };
 
       // 4. Run export via html2pdf (clean without artificial page number text, matching PDF 1)
@@ -533,10 +622,11 @@ export default function HalaqohRaportView({
         <head>
           <title>Raport Keislaman ${activeSubject.shortTitle} - ${activeHalaqoh.name}</title>
           <style>
-            @page { size: A4 portrait; margin: 0; }
-            html, body { margin: 0; padding: 24px 30px; background: #ffffff; color: #000000; font-family: 'Times New Roman', serif; box-sizing: border-box; }
+            @page { size: A4 portrait; margin: 8mm 12mm 12mm 12mm; }
+            html, body { margin: 0; padding: 0; background: #ffffff; color: #000000; font-family: 'Times New Roman', serif; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
             .student-card-item { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .html2pdf__page-break { page-break-before: always !important; break-before: page !important; }
           </style>
         </head>
         <body>
