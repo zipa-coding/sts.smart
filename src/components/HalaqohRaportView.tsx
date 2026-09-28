@@ -296,7 +296,7 @@ export default function HalaqohRaportView({
 
         <!-- Document Title -->
         <div style="text-align: center; margin-bottom: 12px;">
-          <h2 style="margin: 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ</h2>
+          <h2 style="margin: 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur'an (ETTQ)</h2>
           <h3 style="margin: 2px 0; font-size: 12pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">${subjectMeta.shortTitle}</h3>
           <p style="margin: 2px 0 0 0; font-size: 11pt; font-weight: bold; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Semester-1, Tahun Pelajaran 2026/2027</p>
         </div>
@@ -360,7 +360,7 @@ export default function HalaqohRaportView({
                     <tr style="background-color: #ffffff;">
                       <td style="border: none; font-weight: normal; padding: 1px 0; vertical-align: top; color: #000000;">Deskripsi</td>
                       <td style="border: none; padding: 1px 0; vertical-align: top; color: #000000;">:</td>
-                      <td style="border: none; padding: 1px 0; color: #000000;">Keadaan reel siswa dalam pembelajarn ${subjectMeta.shortTitle} (apa saja yang harus diperbaiki)</td>
+                      <td style="border: none; padding: 1px 0; color: #000000;">Keadaan reel siswa dalam pembelajaran ${subjectMeta.shortTitle} (apa saja yang harus diperbaiki)</td>
                     </tr>
                   </table>
                 </td>
