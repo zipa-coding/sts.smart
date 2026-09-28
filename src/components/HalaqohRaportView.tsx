@@ -38,7 +38,7 @@ export const KEISLAMAN_SUBJECTS = [
   {
     key: "Tahsin ABaTaTsa",
     shortTitle: "TAHSIN AL-QUR'AN",
-    tableHeader: "Tahsin ABaTaTsa",
+    tableHeader: "Tahsin Al-Qur'an",
     descNote: "Keadaan reel siswa dalam pembelajaran Tahsin (apa saja yang harus diperbaiki dalam tahsinnya)",
   },
   {
@@ -216,19 +216,18 @@ export default function HalaqohRaportView({
             </div>
           </div>
 
-          <!-- Single Unified Score & Description Table (100% Pure White Background, 1px solid black) -->
+          <!-- Score & Description Table with rowspan=2 matching original reference -->
           <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; font-size: 10pt; text-align: center; background-color: #ffffff; table-layout: fixed; margin-bottom: 0; box-sizing: border-box;">
             <tbody>
               <!-- Row 1: Headers -->
               <tr style="background-color: #ffffff;">
-                <td style="border: 1px solid #000000; padding: 4px 6px; width: 28%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${subjectMeta.tableHeader}</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; width: 24%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Usaha</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; width: 24%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Proses</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; width: 24%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Capaian</td>
+                <td rowspan="2" style="border: 1px solid #000000; padding: 4px 6px; width: 49%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${subjectMeta.tableHeader}</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Usaha</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Proses</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Capaian</td>
               </tr>
-              <!-- Row 2: Scores -->
+              <!-- Row 2: Scores (First column covered by rowspan=2 above) -->
               <tr style="background-color: #ffffff;">
-                <td style="border: 1px solid #000000; padding: 4px 6px; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">&nbsp;</td>
                 <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${usahaVal}</td>
                 <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${prosesVal}</td>
                 <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${capaianVal}</td>
@@ -445,7 +444,7 @@ export default function HalaqohRaportView({
 
         return `
           ${pageBreakEl}
-          <div class="raport-single-page" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative; padding-top: ${p.hasKop ? "0px" : "8px"};">
+          <div class="raport-single-page" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative; padding-top: 0px;">
             ${p.hasKop ? kopSuratHTML : ""}
             ${p.hasKop ? docTitleHTML : ""}
             <div>
@@ -538,7 +537,7 @@ export default function HalaqohRaportView({
       const fileName = `Raport_ETTQ_${safeSubName}_${safeHalaqohName}.pdf`;
 
       const opt = {
-        margin: [8, 8, 10, 8],
+        margin: [4, 8, 8, 8],
         filename: fileName,
         image: { type: "jpeg", quality: 1.0 },
         html2canvas: {
@@ -654,7 +653,7 @@ export default function HalaqohRaportView({
         <head>
           <title>Raport Keislaman ${activeSubject.shortTitle} - ${activeHalaqoh.name}</title>
           <style>
-            @page { size: A4 portrait; margin: 8mm 8mm 10mm 8mm; }
+            @page { size: A4 portrait; margin: 4mm 8mm 8mm 8mm; }
             html, body { margin: 0; padding: 0; background: #ffffff; color: #000000; font-family: 'Times New Roman', serif; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
             .student-card-item { page-break-inside: avoid !important; break-inside: avoid !important; }
