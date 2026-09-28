@@ -257,12 +257,9 @@ export default function HalaqohRaportView({
 
         <!-- Document Main Header Title -->
         <div style="text-align: center; margin-bottom: 22px;">
-          <h2 style="margin: 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)</h2>
+          <h2 style="margin: 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ</h2>
           <h3 style="margin: 3px 0; font-size: 12pt; font-weight: bold; text-transform: uppercase; line-height: 1.3;">${subjectMeta.shortTitle}</h3>
           <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; line-height: 1.3;">Semester-1, Tahun Pelajaran 2026/2027</p>
-          <div style="margin-top: 4px; display: inline-block; padding: 2px 10px; border: 1px dashed #444; font-size: 9pt; font-weight: bold;">
-            Kelompok Halaqoh: ${halaqoh.name} • Pembimbing: ${halaqoh.mentorName}
-          </div>
         </div>
 
         <!-- List of Student Cards -->
@@ -279,7 +276,7 @@ export default function HalaqohRaportView({
           <!-- Signature right aligned -->
           <div style="display: flex; justify-content: flex-end; margin-bottom: 25px;">
             <div style="width: 250px; text-align: center; font-size: 10.5pt;">
-              <p style="margin: 0 0 4px 0;">Pangkalpinang, 30 September 2026</p>
+              <p style="margin: 0 0 4px 0;">Pangkalpinang, 30 September 2025</p>
               <p style="margin: 0 0 55px 0;">Ustadz/ah Pembimbing,</p>
               <p style="margin: 0; font-weight: bold; text-decoration: underline;">( ${halaqoh.mentorName || "........................................"} )</p>
             </div>
@@ -292,32 +289,32 @@ export default function HalaqohRaportView({
             </div>
             <table style="width: 100%; border-collapse: collapse; border: none; font-size: 8.5pt;">
               <tr>
-                <td style="width: 120px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; padding: 4px 8px; vertical-align: top;">
+                <td style="width: 120px; border-right: 1px solid #000000; border-bottom: none; padding: 6px 8px; vertical-align: top;">
                   <div>A : 90 – 100</div>
                   <div>B : 75 – 89</div>
                   <div>C : 60 – 74</div>
                 </td>
-                <td style="border-bottom: 1px solid #000000; padding: 4px 8px; vertical-align: top;">
+                <td style="border-bottom: none; padding: 6px 8px; vertical-align: top;">
                   <table style="width: 100%; border: none; border-collapse: collapse;">
                     <tr>
-                      <td style="width: 75px; border: none; font-weight: bold; padding: 1px 0;">Usaha</td>
+                      <td style="width: 80px; border: none; font-weight: normal; padding: 1px 0;">Usaha</td>
                       <td style="width: 10px; border: none; padding: 1px 0;">:</td>
                       <td style="border: none; padding: 1px 0;">Ikhtiar yang dilakukan siswa untuk menghafal dan setoran.</td>
                     </tr>
                     <tr>
-                      <td style="border: none; font-weight: bold; padding: 1px 0;">Proses</td>
+                      <td style="border: none; font-weight: normal; padding: 1px 0;">Proses</td>
                       <td style="border: none; padding: 1px 0;">:</td>
                       <td style="border: none; padding: 1px 0;">Teknis ketika siswa setoran ke pembimbing TnT dan penguji.</td>
                     </tr>
                     <tr>
-                      <td style="border: none; font-weight: bold; padding: 1px 0;">Capaian</td>
+                      <td style="border: none; font-weight: normal; padding: 1px 0;">Capaian</td>
                       <td style="border: none; padding: 1px 0;">:</td>
                       <td style="border: none; padding: 1px 0;">Hasil dari ETTQ</td>
                     </tr>
                     <tr>
-                      <td style="border: none; font-weight: bold; padding: 1px 0; vertical-align: top;">Deskripsi</td>
+                      <td style="border: none; font-weight: normal; padding: 1px 0; vertical-align: top;">Deskripsi</td>
                       <td style="border: none; padding: 1px 0; vertical-align: top;">:</td>
-                      <td style="border: none; padding: 1px 0;">${subjectMeta.descNote}</td>
+                      <td style="border: none; padding: 1px 0;">Keadaan reel siswa dalam pembelajarn Tahsin (apa saja yang harus diperbaiki dalam tahsinnya)</td>
                     </tr>
                   </table>
                 </td>
