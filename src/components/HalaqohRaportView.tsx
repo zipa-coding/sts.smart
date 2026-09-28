@@ -346,7 +346,7 @@ export default function HalaqohRaportView({
     return fullHTML;
   };
 
-  // Handle PDF download of a specific Keislaman subject for the selected halaqoh
+  // Handle PDF download of a specific Keislaman subject by targeting the visible preview element
   const handleDownloadSinglePDF = async (
     subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0]
   ) => {
@@ -354,34 +354,26 @@ export default function HalaqohRaportView({
     setDownloadingSubject(subjectMeta.key);
 
     try {
-      // Create a temporary visible container in DOM to ensure html2canvas captures all content
-      const container = document.createElement("div");
-      container.className = "raport-pdf-wrapper";
-      container.style.position = "fixed";
-      container.style.top = "0";
-      container.style.left = "0";
-      container.style.width = "794px"; // Standard A4 pixel width at 96 DPI
-      container.style.minHeight = "1000px";
-      container.style.backgroundColor = "#ffffff";
-      container.style.color = "#000000";
-      container.style.padding = "20px 25px";
-      container.style.margin = "0";
-      container.style.zIndex = "999999";
-      container.style.boxSizing = "border-box";
-      container.style.overflow = "visible";
-      container.innerHTML = generateHalaqohHTML(activeHalaqoh, subjectMeta);
-      document.body.appendChild(container);
+      // 1. Ensure the active tab displays the requested subject so it's fully rendered on screen
+      if (selectedSubjectKey !== subjectMeta.key) {
+        setSelectedSubjectKey(subjectMeta.key);
+        // Wait for React to render the report sheet
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
 
-      // Scroll to top to align viewport capture
-      window.scrollTo(0, 0);
-
-      // Brief delay to ensure html, fonts, and images are fully rendered
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // 2. Get the rendered report sheet element directly from screen
+      const element = document.getElementById("raport-sheet-print");
+      if (!element) {
+        alert("Gagal menemukan lembar pratinjau raport.");
+        return;
+      }
 
       const fileName = `Raport_${subjectMeta.shortTitle.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
 
       const opt = {
-        margin: [10, 8, 10, 8] as [number, number, number, number],
+        margin: [8, 8, 8, 8] as [number, number, number, number],
         filename: fileName,
         image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: {
@@ -390,20 +382,17 @@ export default function HalaqohRaportView({
           allowTaint: true,
           logging: false,
           backgroundColor: "#ffffff",
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: 794,
-          width: 794,
+          scrollY: -window.scrollY,
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       };
 
-      await html2pdf().set(opt).from(container).save();
-      document.body.removeChild(container);
+      await html2pdf().set(opt).from(element).save();
     } catch (e) {
       console.error("Gagal mendownload PDF halaqoh", e);
-      alert("Gagal mengunduh berkas PDF. Silakan gunakan tombol 'Cetak Dokumen' untuk mencetak langsung.");
+      alert("Terjadi kendala saat mengunduh PDF. Mengalihkan ke mode cetak/simpan PDF langsung...");
+      handlePrint();
     } finally {
       setDownloadingSubject(null);
     }
