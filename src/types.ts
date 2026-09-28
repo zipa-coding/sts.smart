@@ -101,6 +101,15 @@ export interface SchoolSummary {
   lastUpdate: string;
 }
 
+export interface Halaqoh {
+  id: string;
+  name: string;
+  mentorName: string;
+  mentorTeacherId?: string;
+  studentIds: string[];
+  createdAt?: string;
+}
+
 export const SUBJECT_LIST = [
   // B. Umum
   "PAI",

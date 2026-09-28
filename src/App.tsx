@@ -5,9 +5,10 @@ import DashboardProgress from "./components/DashboardProgress";
 import AdminPanel from "./components/AdminPanel";
 import TeacherPanel from "./components/TeacherPanel";
 import WaliKelasPanel from "./components/WaliKelasPanel";
+import HalaqohRaportView from "./components/HalaqohRaportView";
 import SmpIslamSmartLogo from "./components/SmpIslamSmartLogo";
 import { PWAInstallButton } from "./components/PWAInstallButton";
-import { BookOpen, LogOut, Key, BarChart3, Settings, ShieldAlert, GraduationCap, PenTool, Sun, Moon, Menu, X, LayoutDashboard, Sliders } from "lucide-react";
+import { BookOpen, LogOut, Key, BarChart3, Settings, ShieldAlert, GraduationCap, PenTool, Sun, Moon, Menu, X, LayoutDashboard, Sliders, Users } from "lucide-react";
 import { isFirebaseConfigured } from "./lib/firebase";
 
 export default function App() {
@@ -370,6 +371,22 @@ export default function App() {
             </button>
           )}
 
+          {/* Halaqoh & Keislaman Raport Download Panel */}
+          <button
+            onClick={() => {
+              setActiveTab("halaqoh_panel");
+              setSidebarOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-left transition-all duration-200 cursor-pointer ${
+              activeTab === "halaqoh_panel"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-900/50 font-bold border border-blue-400/40"
+                : "text-slate-300 hover:bg-[#131f38] hover:text-white"
+            }`}
+          >
+            <Users className={`w-4 h-4 ${activeTab === "halaqoh_panel" ? "text-white" : "text-teal-400"}`} />
+            <span>Raport Halaqoh & Keislaman</span>
+          </button>
+
           {/* If SysAdmin */}
           {isSysAdmin && (
             <>
@@ -535,6 +552,12 @@ export default function App() {
               <div className={activeTab === "walikelas_panel" ? "block animate-fade-in" : "hidden"}>
                 {/* Wali Kelas dashboard integration */}
                 <WaliKelasPanel user={currentUser} onRefreshTrigger={triggerProgressRefresh} />
+              </div>
+            )}
+
+            {visitedTabs["halaqoh_panel"] && (
+              <div className={activeTab === "halaqoh_panel" ? "block animate-fade-in" : "hidden"}>
+                <HalaqohRaportView currentUser={currentUser} />
               </div>
             )}
 

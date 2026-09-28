@@ -562,7 +562,7 @@ app.get("/api/settings", async (req, res) => {
     semesterName: "Ganjil",
     tahunPelajaran: "2026/2027",
     fontSize: "11pt",
-    showLogo: true,
+    showLogo: false,
     showSpiritual: true,
     showSosial: true,
     showAttendance: true,
@@ -592,7 +592,7 @@ app.post("/api/settings", async (req, res) => {
       semesterName: format.semesterName || "Ganjil",
       tahunPelajaran: format.tahunPelajaran || "2026/2027",
       fontSize: format.fontSize || "11pt",
-      showLogo: format.showLogo !== undefined ? format.showLogo : true,
+      showLogo: format.showLogo !== undefined ? format.showLogo : false,
       showSpiritual:
         format.showSpiritual !== undefined ? format.showSpiritual : true,
       showSosial: format.showSosial !== undefined ? format.showSosial : true,
@@ -827,6 +827,77 @@ app.get("/api/summary", async (req, res) => {
     studentRankings,
     lastUpdate: new Date().toISOString(),
   });
+});
+
+// ==================== HALAQOH & KEISLAMAN API ====================
+app.get("/api/halaqoh", async (req, res) => {
+  const db = await readDB();
+  const halaqohList = Array.isArray(db.halaqoh) ? db.halaqoh : [];
+  res.json(halaqohList);
+});
+
+app.post("/api/halaqoh", async (req, res) => {
+  const { name, mentorName, mentorTeacherId, studentIds } = req.body;
+  if (!name || !mentorName) {
+    return res.status(400).json({ error: "Nama halaqoh dan nama ustadz/ah pembimbing wajib diisi." });
+  }
+
+  const db = await readDB();
+  if (!Array.isArray(db.halaqoh)) {
+    db.halaqoh = [];
+  }
+
+  const newHalaqoh = {
+    id: "hlq_" + Date.now(),
+    name: name.trim(),
+    mentorName: mentorName.trim(),
+    mentorTeacherId: mentorTeacherId || "",
+    studentIds: Array.isArray(studentIds) ? studentIds : [],
+    createdAt: new Date().toISOString(),
+  };
+
+  db.halaqoh.push(newHalaqoh);
+  await writeDB(db);
+  res.status(201).json(newHalaqoh);
+});
+
+app.put("/api/halaqoh/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, mentorName, mentorTeacherId, studentIds } = req.body;
+
+  const db = await readDB();
+  if (!Array.isArray(db.halaqoh)) {
+    db.halaqoh = [];
+  }
+
+  const index = db.halaqoh.findIndex((h: any) => h.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: "Data Halaqoh tidak ditemukan." });
+  }
+
+  db.halaqoh[index] = {
+    ...db.halaqoh[index],
+    name: name ? name.trim() : db.halaqoh[index].name,
+    mentorName: mentorName ? mentorName.trim() : db.halaqoh[index].mentorName,
+    mentorTeacherId: mentorTeacherId !== undefined ? mentorTeacherId : db.halaqoh[index].mentorTeacherId,
+    studentIds: Array.isArray(studentIds) ? studentIds : db.halaqoh[index].studentIds,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await writeDB(db);
+  res.json(db.halaqoh[index]);
+});
+
+app.delete("/api/halaqoh/:id", async (req, res) => {
+  const { id } = req.params;
+  const db = await readDB();
+  if (!Array.isArray(db.halaqoh)) {
+    db.halaqoh = [];
+  }
+
+  db.halaqoh = db.halaqoh.filter((h: any) => h.id !== id);
+  await writeDB(db);
+  res.json({ message: "Halaqoh berhasil dihapus." });
 });
 
 // ==================== FRONTEND INTEGRATION ====================
