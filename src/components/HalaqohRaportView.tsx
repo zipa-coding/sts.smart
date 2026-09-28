@@ -201,23 +201,23 @@ export default function HalaqohRaportView({
       }
 
       return `
-        <div class="student-card-item" style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000;">
+        <div class="student-card-item" style="margin-bottom: 11px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000; width: 100%; box-sizing: border-box;">
           <!-- Perfectly Aligned Name & Class Header matching PDF 1 -->
-          <div style="margin-bottom: 4px; font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.4; color: #000000; text-align: left;">
-            <div style="display: block; text-align: left; line-height: 1.4; white-space: nowrap;">
-              <span style="display: inline-block; width: 68px; color: #000000; text-align: left; vertical-align: baseline;">${cardNum}. Nama</span>
+          <div style="margin-bottom: 3px; font-family: 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.35; color: #000000; text-align: left;">
+            <div style="display: block; text-align: left; line-height: 1.35; white-space: nowrap;">
+              <span style="display: inline-block; width: 62px; color: #000000; text-align: left; vertical-align: baseline;">${cardNum}. Nama</span>
               <span style="display: inline-block; width: 14px; text-align: center; color: #000000; vertical-align: baseline;">:</span>
               <span style="color: #000000; font-weight: normal; vertical-align: baseline;">${studentName}</span>
             </div>
-            <div style="display: block; text-align: left; line-height: 1.4; white-space: nowrap;">
-              <span style="display: inline-block; width: 68px; color: #000000; text-align: left; vertical-align: baseline;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</span>
+            <div style="display: block; text-align: left; line-height: 1.35; white-space: nowrap;">
+              <span style="display: inline-block; width: 62px; color: #000000; text-align: left; vertical-align: baseline;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</span>
               <span style="display: inline-block; width: 14px; text-align: center; color: #000000; vertical-align: baseline;">:</span>
               <span style="color: #000000; font-weight: normal; vertical-align: baseline;">${kelasName}</span>
             </div>
           </div>
 
           <!-- Single Unified Score & Description Table (100% Pure White Background, 1px solid black) -->
-          <table style="width: 100%; border-collapse: collapse; border: 1.2px solid #000000; font-size: 10pt; text-align: center; background-color: #ffffff; table-layout: fixed; margin-bottom: 0;">
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; font-size: 10pt; text-align: center; background-color: #ffffff; table-layout: fixed; margin-bottom: 0; box-sizing: border-box;">
             <tbody>
               <!-- Row 1: Headers -->
               <tr style="background-color: #ffffff;">
@@ -235,7 +235,7 @@ export default function HalaqohRaportView({
               </tr>
               <!-- Row 3: Description seamlessly attached with full colspan -->
               <tr style="background-color: #ffffff;">
-                <td colspan="4" style="border: 1px solid #000000; padding: 6px 8px; font-size: 9.5pt; line-height: 1.4; min-height: 52px; height: 54px; vertical-align: top; background-color: #ffffff; color: #000000; text-align: justify;">
+                <td colspan="4" style="border: 1px solid #000000; padding: 5px 8px; font-size: 9.5pt; line-height: 1.38; min-height: 48px; vertical-align: top; background-color: #ffffff; color: #000000; text-align: justify; word-break: break-word; overflow-wrap: break-word;">
                   <strong>Deskripsi :</strong> ${descContent}
                 </td>
               </tr>
@@ -247,19 +247,19 @@ export default function HalaqohRaportView({
 
     // 4. Kop Surat HTML
     const kopSuratHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; width: 100%; border-bottom: 3px double #000000; padding-bottom: 8px; background-color: #ffffff; box-sizing: border-box;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; width: 100%; border-bottom: 3px double #000000; padding-bottom: 8px; background-color: #ffffff; box-sizing: border-box;">
         <!-- Left Side: JSIT and Yayasan Cahaya Amal logos -->
-        <div style="width: 145px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
-          <div style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
+        <div style="width: 140px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+          <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
             <img src="${logoJsitUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
           </div>
-          <div style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
+          <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: #ffffff;">
             <img src="${logoCahayaAmalUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
           </div>
         </div>
 
         <!-- Center: School name and address -->
-        <div style="text-align: center; flex-grow: 1; padding: 0 6px;">
+        <div style="text-align: center; flex-grow: 1; padding: 0 4px;">
           <h2 style="margin: 0 0 2px 0; font-size: 11pt; font-weight: bold; text-transform: uppercase; line-height: 1.25; color: #000000; font-family: 'Times New Roman', serif;">YAYASAN CAHAYA AMAL BABEL</h2>
           <h1 style="margin: 2px 0 3px 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.25; color: #000000; font-family: 'Times New Roman', serif;">SMP ISLAM SMART PANGKALPINANG</h1>
           <p style="margin: 0; font-size: 7.5pt; line-height: 1.35; color: #000000; font-family: 'Times New Roman', serif;">Jl. Padang Lama, Kelurahan Air Itam, Kecamatan Bukit Intan, Kota Pangkalpinang,</p>
@@ -268,7 +268,7 @@ export default function HalaqohRaportView({
         </div>
 
         <!-- Right Side: SMP logo safely centered within container -->
-        <div style="width: 145px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 140px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
           <div style="width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; border: 1.5px solid #cccccc; background-color: #ffffff;">
             <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
           </div>
@@ -278,41 +278,41 @@ export default function HalaqohRaportView({
 
     // 5. Document Title HTML exactly matching PDF 1
     const docTitleHTML = `
-      <div style="text-align: center; margin-bottom: 14px;">
+      <div style="text-align: center; margin-bottom: 12px;">
         <h2 style="margin: 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ</h2>
-        <h3 style="margin: 3px 0 0 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">${subjectMeta.shortTitle}</h3>
-        <p style="margin: 3px 0 0 0; font-size: 11pt; font-weight: bold; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Semester-1, Tahun Pelajaran 2026/2027</p>
+        <h3 style="margin: 2px 0 0 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">${subjectMeta.shortTitle}</h3>
+        <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Semester-1, Tahun Pelajaran 2026/2027</p>
       </div>
     `;
 
     // 6. Signature & Keterangan Legend Block HTML matching PDF 1 Page 4
     const signatureKeteranganHTML = `
-      <div style="margin-top: 20px; page-break-inside: avoid; break-inside: avoid; background-color: #ffffff;">
+      <div style="margin-top: 14px; page-break-inside: avoid; break-inside: avoid; background-color: #ffffff; width: 100%; box-sizing: border-box;">
         <!-- Signature right aligned with actual Mentor Name -->
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 22px;">
-          <div style="width: 280px; text-align: center; font-size: 11pt; line-height: 1.4; font-family: 'Times New Roman', serif; color: #000000;">
-            <p style="margin: 0 0 4px 0; color: #000000;">Pangkalpinang, 30 September 2025</p>
-            <p style="margin: 0 0 54px 0; color: #000000;">Ustadz/ah Pembimbing,</p>
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+          <div style="width: 280px; text-align: center; font-size: 10.5pt; line-height: 1.35; font-family: 'Times New Roman', serif; color: #000000;">
+            <p style="margin: 0 0 3px 0; color: #000000;">Pangkalpinang, 30 September 2025</p>
+            <p style="margin: 0 0 36px 0; color: #000000;">Ustadz/ah Pembimbing,</p>
             <p style="margin: 0; color: #000000;">( <span style="font-weight: bold; text-decoration: underline;">${mentorName}</span> )</p>
           </div>
         </div>
 
         <!-- Keterangan Legend Table matching PDF 1 exactly -->
-        <div style="border: 1px solid #000000; font-size: 9pt; background-color: #ffffff; color: #000000; line-height: 1.35; font-family: 'Times New Roman', serif; width: 100%;">
-          <div style="padding: 3px 6px; border-bottom: 1px solid #000000; font-size: 9.5pt; color: #000000; background-color: #ffffff;">
+        <div style="border: 1px solid #000000; font-size: 8.5pt; background-color: #ffffff; color: #000000; line-height: 1.3; font-family: 'Times New Roman', serif; width: 100%; box-sizing: border-box;">
+          <div style="padding: 2px 6px; border-bottom: 1px solid #000000; font-size: 9pt; color: #000000; background-color: #ffffff;">
             Keterangan :
           </div>
-          <table style="width: 100%; border-collapse: collapse; border: none !important; font-size: 8.5pt; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', serif;">
+          <table style="width: 100%; border-collapse: collapse; border: none !important; font-size: 8.5pt; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', serif; box-sizing: border-box;">
             <tr style="background-color: #ffffff;">
-              <td style="width: 100px; border-right: 1px solid #000000; border-top: none !important; border-bottom: none !important; border-left: none !important; padding: 4px 6px; vertical-align: top; background-color: #ffffff; color: #000000; line-height: 1.35;">
+              <td style="width: 95px; border-right: 1px solid #000000; border-top: none !important; border-bottom: none !important; border-left: none !important; padding: 3px 6px; vertical-align: top; background-color: #ffffff; color: #000000; line-height: 1.3;">
                 <div>A : 90 – 100</div>
                 <div>B : 75 – 89</div>
                 <div>C : 60 – 74</div>
               </td>
-              <td style="border: none !important; padding: 4px 6px; vertical-align: top; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', serif;">
-                <table style="width: 100%; border: none !important; border-collapse: collapse; background: transparent; color: #000000; font-family: 'Times New Roman', serif; line-height: 1.35;">
+              <td style="border: none !important; padding: 3px 6px; vertical-align: top; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', serif;">
+                <table style="width: 100%; border: none !important; border-collapse: collapse; background: transparent; color: #000000; font-family: 'Times New Roman', serif; line-height: 1.3; box-sizing: border-box;">
                   <tr style="background: transparent;">
-                    <td style="width: 60px; border: none !important; font-weight: normal; padding: 1px 0; color: #000000; vertical-align: top;">Usaha</td>
+                    <td style="width: 58px; border: none !important; font-weight: normal; padding: 1px 0; color: #000000; vertical-align: top;">Usaha</td>
                     <td style="width: 12px; border: none !important; padding: 1px 0; text-align: center; color: #000000; vertical-align: top;">:</td>
                     <td style="border: none !important; padding: 1px 0; color: #000000; vertical-align: top;">Ikhtiar yang dilakukan siswa untuk menghafal dan setoran.</td>
                   </tr>
@@ -445,7 +445,7 @@ export default function HalaqohRaportView({
 
         return `
           ${pageBreakEl}
-          <div class="raport-single-page" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative; padding-top: ${p.hasKop ? "0px" : "28px"};">
+          <div class="raport-single-page" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative; padding-top: ${p.hasKop ? "0px" : "8px"};">
             ${p.hasKop ? kopSuratHTML : ""}
             ${p.hasKop ? docTitleHTML : ""}
             <div>
@@ -524,7 +524,7 @@ export default function HalaqohRaportView({
       pdfContainer.style.width = "720px";
       pdfContainer.style.backgroundColor = "#ffffff";
       pdfContainer.style.color = "#000000";
-      pdfContainer.style.padding = "4px 0px";
+      pdfContainer.style.padding = "4px 10px";
       pdfContainer.style.boxSizing = "border-box";
 
       // 2. Generate isolated HTML
@@ -538,7 +538,7 @@ export default function HalaqohRaportView({
       const fileName = `Raport_ETTQ_${safeSubName}_${safeHalaqohName}.pdf`;
 
       const opt = {
-        margin: [8, 12, 12, 12],
+        margin: [8, 8, 10, 8],
         filename: fileName,
         image: { type: "jpeg", quality: 1.0 },
         html2canvas: {
@@ -654,7 +654,7 @@ export default function HalaqohRaportView({
         <head>
           <title>Raport Keislaman ${activeSubject.shortTitle} - ${activeHalaqoh.name}</title>
           <style>
-            @page { size: A4 portrait; margin: 8mm 12mm 12mm 12mm; }
+            @page { size: A4 portrait; margin: 8mm 8mm 10mm 8mm; }
             html, body { margin: 0; padding: 0; background: #ffffff; color: #000000; font-family: 'Times New Roman', serif; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
             .student-card-item { page-break-inside: avoid !important; break-inside: avoid !important; }
