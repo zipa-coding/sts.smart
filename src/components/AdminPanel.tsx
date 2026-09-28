@@ -25,6 +25,11 @@ import {
   MapPin,
   Sparkles,
   Check,
+  AlertTriangle,
+  CheckSquare,
+  Square,
+  MinusSquare,
+  ShieldAlert,
 } from "lucide-react";
 
 interface AdminPanelProps {
@@ -122,6 +127,25 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   // Student filtering & search
   const [studentClassFilter, setStudentClassFilter] = useState<string>("all");
   const [studentSearch, setStudentSearch] = useState<string>("");
+
+  // Multi-Selection State for Bulk Deletions
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
+
+  // Confirmation Delete Modal State
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState<{
+    isOpen: boolean;
+    type: "single_student" | "bulk_students" | "single_teacher" | "bulk_teachers";
+    targetId?: string;
+    targetName?: string;
+    targetIds?: string[];
+    count?: number;
+    details?: string;
+  }>({
+    isOpen: false,
+    type: "single_student",
+  });
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   // Memoized live parsing of batch input
   const parsedBatchStudents = React.useMemo(() => {
@@ -591,20 +615,53 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   };
 
   const deleteTeacher = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus akun guru ini?")) return;
-    setError("");
-
-    try {
-      const response = await fetch(`/api/teachers/${id}`, { method: "DELETE" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Gagal menghapus guru.");
-
-      await fetchAllData();
-      onRefreshTrigger();
-      showSuccess("Guru berhasil dihapus.");
-    } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan.");
+    const teacherToDelete = teachers.find((t) => t.id === id);
+    if (id === "t1" || teacherToDelete?.username === "admin") {
+      setError("Akun Super Admin utama tidak boleh dihapus.");
+      return;
     }
+    setConfirmDeleteModal({
+      isOpen: true,
+      type: "single_teacher",
+      targetId: id,
+      targetName: teacherToDelete ? teacherToDelete.name : "Guru",
+      details: teacherToDelete ? `Mata Pelajaran: ${teacherToDelete.subject}${teacherToDelete.isWaliKelas ? ` (Wali Kelas ${teacherToDelete.kelas})` : ""}` : "",
+    });
+  };
+
+  const promptDeleteBulkTeachers = () => {
+    const validIds = selectedTeacherIds.filter((id) => id !== "t1");
+    if (validIds.length === 0) return;
+    setConfirmDeleteModal({
+      isOpen: true,
+      type: "bulk_teachers",
+      targetIds: validIds,
+      count: validIds.length,
+      details: `${validIds.length} akun guru terpilih akan dihapus dari sistem.`,
+    });
+  };
+
+  const toggleSelectTeacher = (id: string) => {
+    if (id === "t1") return; // Protect Super Admin
+    setSelectedTeacherIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllTeachers = () => {
+    const deletableTeachers = teachers.filter((t) => t.id !== "t1");
+    const allSelected = deletableTeachers.every((t) =>
+      selectedTeacherIds.includes(t.id)
+    );
+    if (allSelected) {
+      setSelectedTeacherIds([]);
+    } else {
+      setSelectedTeacherIds(deletableTeachers.map((t) => t.id));
+    }
+  };
+
+  const clearTeacherSelection = () => {
+    setSelectedTeacherIds([]);
   };
 
   // STUDENT CRUD
@@ -686,24 +743,107 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   };
 
   const deleteStudent = async (id: string) => {
-    if (
-      !confirm(
-        "Menghapus siswa ini juga akan menghapus seluruh data nilai dan catatan wali kelasnya. Lanjutkan?",
-      )
-    )
-      return;
+    const studentToDelete = students.find((s) => s.id === id);
+    setConfirmDeleteModal({
+      isOpen: true,
+      type: "single_student",
+      targetId: id,
+      targetName: studentToDelete ? studentToDelete.name : "Siswa",
+      details: studentToDelete ? `NISN: ${studentToDelete.nisn} • Kelas: ${studentToDelete.kelas}` : "",
+    });
+  };
+
+  const promptDeleteBulkStudents = () => {
+    if (selectedStudentIds.length === 0) return;
+    setConfirmDeleteModal({
+      isOpen: true,
+      type: "bulk_students",
+      targetIds: [...selectedStudentIds],
+      count: selectedStudentIds.length,
+      details: `${selectedStudentIds.length} siswa terpilih beserta seluruh data nilai dan catatan wali kelasnya akan dihapus.`,
+    });
+  };
+
+  const toggleSelectStudent = (id: string) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllStudents = () => {
+    const currentFilteredIds = filteredStudents.map((s) => s.id);
+    const allSelected = currentFilteredIds.length > 0 && currentFilteredIds.every((id) =>
+      selectedStudentIds.includes(id)
+    );
+    if (allSelected) {
+      // Deselect currently filtered
+      setSelectedStudentIds((prev) =>
+        prev.filter((id) => !currentFilteredIds.includes(id))
+      );
+    } else {
+      // Add all currently filtered
+      setSelectedStudentIds((prev) => [
+        ...prev,
+        ...currentFilteredIds.filter((id) => !prev.includes(id)),
+      ]);
+    }
+  };
+
+  const clearStudentSelection = () => {
+    setSelectedStudentIds([]);
+  };
+
+  // Centralized Execution Handler for Deletions
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
     setError("");
 
     try {
-      const response = await fetch(`/api/students/${id}`, { method: "DELETE" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Gagal menghapus siswa.");
+      if (confirmDeleteModal.type === "single_student" && confirmDeleteModal.targetId) {
+        const id = confirmDeleteModal.targetId;
+        const res = await fetch(`/api/students/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal menghapus siswa.");
+        setSelectedStudentIds((prev) => prev.filter((item) => item !== id));
+        showSuccess(`Siswa "${confirmDeleteModal.targetName}" berhasil dihapus.`);
+      } else if (confirmDeleteModal.type === "bulk_students" && confirmDeleteModal.targetIds) {
+        const ids = confirmDeleteModal.targetIds;
+        const res = await fetch("/api/students/bulk-delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal menghapus data siswa massal.");
+        setSelectedStudentIds((prev) => prev.filter((item) => !ids.includes(item)));
+        showSuccess(`Alhamdulillah! Berhasil menghapus ${ids.length} siswa secara massal.`);
+      } else if (confirmDeleteModal.type === "single_teacher" && confirmDeleteModal.targetId) {
+        const id = confirmDeleteModal.targetId;
+        const res = await fetch(`/api/teachers/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal menghapus guru.");
+        setSelectedTeacherIds((prev) => prev.filter((item) => item !== id));
+        showSuccess(`Guru "${confirmDeleteModal.targetName}" berhasil dihapus.`);
+      } else if (confirmDeleteModal.type === "bulk_teachers" && confirmDeleteModal.targetIds) {
+        const ids = confirmDeleteModal.targetIds;
+        const res = await fetch("/api/teachers/bulk-delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal menghapus guru massal.");
+        setSelectedTeacherIds((prev) => prev.filter((item) => !ids.includes(item)));
+        showSuccess(`Alhamdulillah! Berhasil menghapus ${ids.length} guru secara massal.`);
+      }
 
       await fetchAllData();
       onRefreshTrigger();
-      showSuccess("Siswa dihapus bersama relasi nilainya.");
+      setConfirmDeleteModal({ isOpen: false, type: "single_student" });
     } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan.");
+      setError(err.message || "Terjadi kesalahan saat menghapus data.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -857,43 +997,95 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       {/* TEACHERS TAB */}
       {activeTab === "teachers" && (
         <div
-          className="bg-white rounded-lg border border-slate-205 shadow-sm p-4"
+          className="bg-white rounded-lg border border-slate-205 shadow-sm p-4 space-y-4"
           id="teacher-management-panel"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">
-                Daftar Guru & Hak Akses
-              </h2>
-              <p className="text-[10px] text-slate-400">
-                Kelola akun guru mata pelajaran, hak wali kelas, dan sandi
-                sistem keamanan masuk
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-slate-900">
+                  Daftar Guru & Hak Akses
+                </h2>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold font-mono">
+                  {teachers.length} Guru
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                Kelola akun guru mata pelajaran, hak wali kelas, dan sandi sistem keamanan masuk
               </p>
             </div>
-            <button
-              onClick={() => {
-                setEditingTeacher(null);
-                setTeacherModalError("");
-                setTeacherForm({
-                  name: "",
-                  username: "",
-                  password: "123",
-                  subject: SUBJECT_LIST[0] || "PAI",
-                  isWaliKelas: false,
-                  kelas: "",
-                });
-                setIsTeacherModalOpen(true);
-              }}
-              className="px-3 py-1 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded flex items-center gap-1 shadow-xs cursor-pointer transition"
-            >
-              <Plus className="w-3.5 h-3.5" /> Tambah Guru
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setEditingTeacher(null);
+                  setTeacherModalError("");
+                  setTeacherForm({
+                    name: "",
+                    username: "",
+                    password: "123",
+                    subject: SUBJECT_LIST[0] || "PAI",
+                    isWaliKelas: false,
+                    kelas: "",
+                  });
+                  setIsTeacherModalOpen(true);
+                }}
+                className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer transition"
+              >
+                <Plus className="w-3.5 h-3.5" /> Tambah Guru Baru
+              </button>
+            </div>
           </div>
+
+          {/* Bulk Action Bar for Teachers */}
+          {selectedTeacherIds.length > 0 && (
+            <div className="p-3 bg-red-950/30 border border-red-500/40 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shadow-sm">
+              <div className="flex items-center gap-2 text-xs text-white">
+                <span className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-bold text-[11px] border border-red-500/40">
+                  {selectedTeacherIds.length}
+                </span>
+                <span className="font-bold">
+                  {selectedTeacherIds.length} Akun Guru Terpilih
+                </span>
+                <span className="text-slate-400 text-[11px] hidden sm:inline">
+                  (dari {teachers.filter(t => t.id !== "t1").length} guru yang dapat dihapus)
+                </span>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  onClick={clearTeacherSelection}
+                  className="px-3 py-1.5 text-xs text-slate-300 hover:text-white bg-[#0b1222] hover:bg-[#141f36] border border-[#1e2e4a] rounded-lg font-semibold transition cursor-pointer"
+                >
+                  Batal Pilih
+                </button>
+                <button
+                  onClick={promptDeleteBulkTeachers}
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-md hover:shadow-lg transition cursor-pointer border border-red-400/40"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus {selectedTeacherIds.length} Guru Terpilih</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs md:text-sm border-collapse text-gray-700">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="p-3 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={
+                        teachers.filter((t) => t.id !== "t1").length > 0 &&
+                        teachers
+                          .filter((t) => t.id !== "t1")
+                          .every((t) => selectedTeacherIds.includes(t.id))
+                      }
+                      onChange={toggleSelectAllTeachers}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                      title="Pilih Semua Guru"
+                    />
+                  </th>
                   <th className="p-3 font-semibold text-gray-500 uppercase tracking-wider">
                     Nama Guru
                   </th>
@@ -915,57 +1107,93 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {teachers.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50/30">
-                    <td className="p-3 font-bold text-gray-850">{t.name}</td>
-                    <td className="p-3 font-mono text-emerald-800">
-                      {t.username}
-                    </td>
-                    <td className="p-3 font-mono text-gray-400 font-bold">
-                      &#8226;&#8226;&#8226;&#8226;&#8226;&#8226;
-                    </td>
-                    <td className="p-3">
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${t.subject === "Admin" ? "bg-red-150 text-red-800" : "bg-emerald-100 text-emerald-900"}`}
-                      >
-                        {t.subject}
-                      </span>
-                    </td>
-                    <td className="p-3 text-xs">
-                      {t.isWaliKelas ? (
-                        <span className="text-green-700 bg-green-50 border border-green-200 py-0.5 px-2.5 rounded-full font-semibold">
-                          Wali Kelas {t.kelas}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 italic">Bukan Wali</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-right">
-                      {t.id === "t1" ? (
-                        <span className="text-2xs text-gray-400 italic bg-gray-50 p-1 rounded">
-                          Utama
-                        </span>
-                      ) : (
-                        <div className="inline-flex gap-2">
-                          <button
-                            onClick={() => startEditTeacher(t)}
-                            className="p-1 text-sky-650 hover:bg-sky-50 rounded transition cursor-pointer"
-                            title="Edit Guru"
+                {teachers.map((t) => {
+                  const isSelected = selectedTeacherIds.includes(t.id);
+                  const isSuperAdmin = t.id === "t1" || t.username === "admin";
+
+                  return (
+                    <tr
+                      key={t.id}
+                      className={`transition ${
+                        isSelected
+                          ? "bg-[#132742] border-l-4 border-l-emerald-500"
+                          : "hover:bg-gray-50/30"
+                      }`}
+                    >
+                      <td className="p-3 text-center">
+                        {isSuperAdmin ? (
+                          <span
+                            className="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded border border-slate-700"
+                            title="Akun Super Admin utama terlindungi"
                           >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteTeacher(t.id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded transition cursor-pointer"
-                            title="Hapus"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                            🔒
+                          </span>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectTeacher(t.id)}
+                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                          />
+                        )}
+                      </td>
+                      <td className="p-3 font-bold text-gray-850 flex items-center gap-2">
+                        <span>{t.name}</span>
+                        {isSuperAdmin && (
+                          <span className="text-[9px] bg-red-500/20 text-red-300 border border-red-500/40 px-1.5 py-0.2 rounded font-bold uppercase">
+                            Admin Utama
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 font-mono text-emerald-800">
+                        {t.username}
+                      </td>
+                      <td className="p-3 font-mono text-gray-400 font-bold">
+                        &#8226;&#8226;&#8226;&#8226;&#8226;&#8226;
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${t.subject === "Admin" ? "bg-red-150 text-red-800" : "bg-emerald-100 text-emerald-900"}`}
+                        >
+                          {t.subject}
+                        </span>
+                      </td>
+                      <td className="p-3 text-xs">
+                        {t.isWaliKelas ? (
+                          <span className="text-green-700 bg-green-50 border border-green-200 py-0.5 px-2.5 rounded-full font-semibold">
+                            Wali Kelas {t.kelas}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic">Bukan Wali</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-right">
+                        {isSuperAdmin ? (
+                          <span className="text-2xs text-gray-400 italic bg-gray-50 p-1 rounded">
+                            Utama
+                          </span>
+                        ) : (
+                          <div className="inline-flex gap-2">
+                            <button
+                              onClick={() => startEditTeacher(t)}
+                              className="p-1 text-sky-650 hover:bg-sky-50 rounded transition cursor-pointer"
+                              title="Edit Guru"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteTeacher(t.id)}
+                              className="p-1 text-red-600 hover:bg-red-50 rounded transition cursor-pointer"
+                              title="Hapus Guru"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1121,10 +1349,63 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
             </div>
           </div>
 
+          {/* Bulk Action Toolbar for Students */}
+          {selectedStudentIds.length > 0 && (
+            <div className="p-3 bg-red-950/30 border border-red-500/40 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 mb-3 animate-fade-in shadow-sm">
+              <div className="flex items-center gap-2 text-xs text-white">
+                <span className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-bold text-[11px] border border-red-500/40">
+                  {selectedStudentIds.length}
+                </span>
+                <span className="font-bold">
+                  {selectedStudentIds.length} Siswa Terpilih
+                </span>
+                <span className="text-slate-400 text-[11px] hidden sm:inline">
+                  (dari {filteredStudents.length} siswa tampil • Total {students.length})
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  onClick={toggleSelectAllStudents}
+                  className="px-2.5 py-1.5 text-xs text-slate-300 hover:text-white bg-[#0b1222] hover:bg-[#141f36] border border-[#1e2e4a] rounded-lg font-semibold transition cursor-pointer"
+                >
+                  {filteredStudents.every((s) => selectedStudentIds.includes(s.id))
+                    ? "Batal Pilih Tampil"
+                    : `Pilih Semua Tampil (${filteredStudents.length})`}
+                </button>
+                <button
+                  onClick={clearStudentSelection}
+                  className="px-2.5 py-1.5 text-xs text-slate-300 hover:text-white bg-[#0b1222] hover:bg-[#141f36] border border-[#1e2e4a] rounded-lg font-semibold transition cursor-pointer"
+                >
+                  Bersihkan
+                </button>
+                <button
+                  onClick={promptDeleteBulkStudents}
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-md hover:shadow-lg transition cursor-pointer border border-red-400/40"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus {selectedStudentIds.length} Siswa Terpilih</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs md:text-sm border-collapse text-gray-700">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="p-3 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filteredStudents.length > 0 &&
+                        filteredStudents.every((s) => selectedStudentIds.includes(s.id))
+                      }
+                      onChange={toggleSelectAllStudents}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                      title="Pilih Semua Siswa yang Tampil"
+                    />
+                  </th>
                   <th className="p-3 font-semibold text-gray-500 uppercase tracking-wider w-12 text-center">
                     No
                   </th>
@@ -1145,43 +1426,61 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               <tbody className="divide-y divide-gray-100">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-6 text-center text-gray-400 text-xs">
+                    <td colSpan={6} className="p-6 text-center text-gray-400 text-xs">
                       Tidak ada data siswa yang cocok dengan filter atau pencarian.
                     </td>
                   </tr>
                 ) : (
-                  filteredStudents.map((s, idx) => (
-                    <tr key={s.id} className="hover:bg-gray-50/50">
-                      <td className="p-3 text-center text-gray-400 font-mono text-xs">
-                        {idx + 1}
-                      </td>
-                      <td className="p-3 font-bold text-gray-800">{s.name}</td>
-                      <td className="p-3 font-mono text-gray-500">{s.nisn}</td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-850 border border-emerald-200 rounded text-xs font-bold font-mono">
-                          Kelas {s.kelas}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="inline-flex gap-2">
-                          <button
-                            onClick={() => startEditStudent(s)}
-                            className="p-1 text-sky-650 hover:bg-sky-50 rounded transition cursor-pointer"
-                            title="Edit Siswa"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteStudent(s.id)}
-                            className="p-1 text-red-650 hover:bg-red-50 rounded transition cursor-pointer"
-                            title="Hapus Siswa"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  filteredStudents.map((s, idx) => {
+                    const isSelected = selectedStudentIds.includes(s.id);
+                    return (
+                      <tr
+                        key={s.id}
+                        className={`transition ${
+                          isSelected
+                            ? "bg-[#132742] border-l-4 border-l-emerald-500"
+                            : "hover:bg-gray-50/50"
+                        }`}
+                      >
+                        <td className="p-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectStudent(s.id)}
+                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="p-3 text-center text-gray-400 font-mono text-xs">
+                          {idx + 1}
+                        </td>
+                        <td className="p-3 font-bold text-gray-800">{s.name}</td>
+                        <td className="p-3 font-mono text-gray-500">{s.nisn}</td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-850 border border-emerald-200 rounded text-xs font-bold font-mono">
+                            Kelas {s.kelas}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="inline-flex gap-2">
+                            <button
+                              onClick={() => startEditStudent(s)}
+                              className="p-1 text-sky-650 hover:bg-sky-50 rounded transition cursor-pointer"
+                              title="Edit Siswa"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteStudent(s.id)}
+                              className="p-1 text-red-650 hover:bg-red-50 rounded transition cursor-pointer"
+                              title="Hapus Siswa"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -2792,6 +3091,164 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                         Simpan Semua Siswa Valid (
                         {parsedBatchStudents.filter((p) => p.status === "valid").length} Siswa)
                       </span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PROFESSIONAL CONFIRMATION DELETE MODAL */}
+      {confirmDeleteModal.isOpen && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-[#0f172a] w-full max-w-lg rounded-2xl border border-red-500/30 shadow-2xl overflow-hidden animate-scale-up">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-red-950 via-rose-950 to-red-900 px-6 py-4 border-b border-red-500/30 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-red-600/30 border border-red-500/50 flex items-center justify-center text-red-300 shadow-inner">
+                  <ShieldAlert className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm uppercase tracking-wide text-white">
+                    Konfirmasi Hapus {confirmDeleteModal.type.includes("student") ? "Siswa" : "Guru"}
+                  </h3>
+                  <p className="text-[11px] text-red-200/80">
+                    Tindakan ini permanen dan tidak dapat dibatalkan
+                  </p>
+                </div>
+              </div>
+              <button
+                disabled={isDeleting}
+                onClick={() => setConfirmDeleteModal({ isOpen: false, type: "single_student" })}
+                className="text-slate-400 hover:text-white cursor-pointer p-1.5 rounded-lg hover:bg-white/10 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              {/* Target Details Card */}
+              <div className="p-4 bg-[#141f36] border border-[#203254] rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                    Data yang Akan Dihapus:
+                  </span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40">
+                    {confirmDeleteModal.type.startsWith("bulk") ? `${confirmDeleteModal.count} Item Terpilih` : "1 Item"}
+                  </span>
+                </div>
+
+                {confirmDeleteModal.type === "single_student" && (
+                  <div className="space-y-1">
+                    <p className="text-base font-bold text-white">
+                      {confirmDeleteModal.targetName}
+                    </p>
+                    <p className="text-xs text-slate-300 font-mono">
+                      {confirmDeleteModal.details}
+                    </p>
+                  </div>
+                )}
+
+                {confirmDeleteModal.type === "single_teacher" && (
+                  <div className="space-y-1">
+                    <p className="text-base font-bold text-white">
+                      {confirmDeleteModal.targetName}
+                    </p>
+                    <p className="text-xs text-slate-300">
+                      {confirmDeleteModal.details}
+                    </p>
+                  </div>
+                )}
+
+                {confirmDeleteModal.type === "bulk_students" && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-slate-200">
+                      Anda akan menghapus <strong className="text-red-400 font-black">{confirmDeleteModal.count} siswa</strong> sekaligus:
+                    </p>
+                    <div className="max-h-36 overflow-y-auto divide-y divide-[#1e2e4a] bg-[#0b1222] p-2.5 rounded-lg border border-[#1e2e4a] text-xs text-slate-300">
+                      {confirmDeleteModal.targetIds?.map((id, i) => {
+                        const s = students.find((item) => item.id === id);
+                        return (
+                          <div key={id} className="py-1 flex items-center justify-between gap-2">
+                            <span className="truncate font-medium text-white">
+                              {i + 1}. {s ? s.name : id}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                              Kelas {s ? s.kelas : "-"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {confirmDeleteModal.type === "bulk_teachers" && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-slate-200">
+                      Anda akan menghapus <strong className="text-red-400 font-black">{confirmDeleteModal.count} guru</strong> sekaligus:
+                    </p>
+                    <div className="max-h-36 overflow-y-auto divide-y divide-[#1e2e4a] bg-[#0b1222] p-2.5 rounded-lg border border-[#1e2e4a] text-xs text-slate-300">
+                      {confirmDeleteModal.targetIds?.map((id, i) => {
+                        const t = teachers.find((item) => item.id === id);
+                        return (
+                          <div key={id} className="py-1 flex items-center justify-between gap-2">
+                            <span className="truncate font-medium text-white">
+                              {i + 1}. {t ? t.name : id}
+                            </span>
+                            <span className="text-[10px] font-mono text-emerald-400 shrink-0">
+                              {t ? t.subject : "-"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Warning Notice */}
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold text-amber-200">Peringatan Keamanan Database:</p>
+                  <p className="text-[11px] text-amber-300/90 leading-relaxed">
+                    {confirmDeleteModal.type.includes("student")
+                      ? "Menghapus data siswa akan secara otomatis membersihkan seluruh rekam nilai mata pelajaran, catatan sikap wali kelas, serta presensi kehadiran siswa terkait dari database."
+                      : "Akun guru yang dihapus tidak akan dapat lagi masuk atau mengisi nilai rapor di dalam sistem."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setConfirmDeleteModal({ isOpen: false, type: "single_student" })}
+                  className="px-4 py-2.5 bg-[#141f36] hover:bg-[#1b2b4a] border border-[#203254] text-slate-300 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={handleExecuteDelete}
+                  className="px-5 py-2.5 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-700 hover:via-rose-700 hover:to-red-800 active:from-red-800 active:to-rose-900 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2 shadow-lg shadow-red-950/50 disabled:opacity-60 border border-red-400/40"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Sedang Menghapus...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Ya, Hapus Sekarang</span>
                     </>
                   )}
                 </button>
