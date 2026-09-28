@@ -176,12 +176,8 @@ export default function HalaqohRaportView({
         ? mentorTeacher.name.trim()
         : "Ustadz Ahmad Fauzi, S.Pd.I";
 
-    // 3. Helper to generate a single student card strictly matching PDF 1
-    const renderStudentCard = (
-      student: Student,
-      globalIdx: number,
-      isFirstOnPage: boolean = false
-    ) => {
+    // 3. Helper to generate a single student card strictly matching reference PDF 2
+    const renderStudentCard = (student: Student, globalIdx: number) => {
       const cardNum = globalIdx + 1;
       const studentName = student.name ? student.name.trim() : "-";
       const kelasName = formatKelasName(student.kelas);
@@ -205,9 +201,9 @@ export default function HalaqohRaportView({
       }
 
       return `
-        <div class="student-card-item ${isFirstOnPage ? 'first-card-top' : ''}" style="margin-top: ${isFirstOnPage ? '0px' : '0px'}; margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000; width: 100%; box-sizing: border-box; padding-top: 0px;">
-          <!-- Perfectly Aligned Name & Class Header matching PDF 1 -->
-          <div style="margin-top: 0px; margin-bottom: 3px; padding-top: 0px; font-family: 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.35; color: #000000; text-align: left;">
+        <div class="student-card-item" style="margin-top: 0px; margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000; width: 100%; box-sizing: border-box; padding: 0;">
+          <!-- Perfectly Aligned Name & Class Header matching reference PDF 2 -->
+          <div style="margin-top: 0px; margin-bottom: 2.5px; padding: 0; font-family: 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.35; color: #000000; text-align: left;">
             <div style="display: block; text-align: left; line-height: 1.35; white-space: nowrap;">
               <span style="display: inline-block; width: 62px; color: #000000; text-align: left; vertical-align: baseline;">${cardNum}. Nama</span>
               <span style="display: inline-block; width: 14px; text-align: center; color: #000000; vertical-align: baseline;">:</span>
@@ -220,26 +216,25 @@ export default function HalaqohRaportView({
             </div>
           </div>
 
-          <!-- Score & Description Table with clear Table Column Titles (Judul Tabel) matching official Raport format -->
-          <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; font-size: 10pt; text-align: center; background-color: #ffffff; table-layout: fixed; margin-top: 0px; margin-bottom: 0px; box-sizing: border-box;">
+          <!-- Score & Description Table with rowspan=2 matching reference PDF 2 format exactly -->
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; font-size: 10pt; text-align: center; background-color: #ffffff; table-layout: fixed; margin: 0; box-sizing: border-box;">
             <tbody>
-              <!-- Row 1: Column Headers (Judul Kolom di Tabel) -->
-              <tr style="background-color: #f4f4f4;">
-                <td style="border: 1px solid #000000; padding: 4px 6px; width: 49%; font-weight: bold; text-align: center; color: #000000; line-height: 1.3; vertical-align: middle;">Mata Pelajaran</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; line-height: 1.3; vertical-align: middle;">Usaha</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; line-height: 1.3; vertical-align: middle;">Proses</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; line-height: 1.3; vertical-align: middle;">Capaian</td>
-              </tr>
-              <!-- Row 2: Values (Data Nilai & Nama Pelajaran) -->
+              <!-- Row 1: Headers & Subject Name (rowspan=2) -->
               <tr style="background-color: #ffffff;">
-                <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; line-height: 1.3; vertical-align: middle;">${subjectMeta.tableHeader}</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; line-height: 1.3; vertical-align: middle;">${usahaVal}</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; line-height: 1.3; vertical-align: middle;">${prosesVal}</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; text-align: center; color: #000000; line-height: 1.3; vertical-align: middle;">${capaianVal}</td>
+                <td rowspan="2" style="border: 1px solid #000000; padding: 3.5px 6px; width: 49%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${subjectMeta.tableHeader}</td>
+                <td style="border: 1px solid #000000; padding: 3.5px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Usaha</td>
+                <td style="border: 1px solid #000000; padding: 3.5px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Proses</td>
+                <td style="border: 1px solid #000000; padding: 3.5px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Capaian</td>
               </tr>
-              <!-- Row 3: Description seamlessly attached with full colspan -->
+              <!-- Row 2: Scores -->
               <tr style="background-color: #ffffff;">
-                <td colspan="4" style="border: 1px solid #000000; padding: 5px 8px; font-size: 9.5pt; line-height: 1.38; min-height: 48px; vertical-align: top; background-color: #ffffff; color: #000000; text-align: justify; word-break: break-word; overflow-wrap: break-word;">
+                <td style="border: 1px solid #000000; padding: 3.5px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${usahaVal}</td>
+                <td style="border: 1px solid #000000; padding: 3.5px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${prosesVal}</td>
+                <td style="border: 1px solid #000000; padding: 3.5px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${capaianVal}</td>
+              </tr>
+              <!-- Row 3: Description -->
+              <tr style="background-color: #ffffff;">
+                <td colspan="4" style="border: 1px solid #000000; padding: 4.5px 8px; font-size: 9.5pt; line-height: 1.38; min-height: 48px; vertical-align: top; background-color: #ffffff; color: #000000; text-align: justify; word-break: break-word; overflow-wrap: break-word;">
                   <strong>Deskripsi :</strong> ${descContent}
                 </td>
               </tr>
@@ -280,12 +275,12 @@ export default function HalaqohRaportView({
       </div>
     `;
 
-    // 5. Document Title HTML exactly matching PDF 1
+    // 5. Document Title HTML exactly matching reference PDF 2
     const docTitleHTML = `
       <div style="text-align: center; margin-bottom: 12px;">
-        <h2 style="margin: 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur'an (ETTQ)</h2>
+        <h2 style="margin: 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ</h2>
         <h3 style="margin: 2px 0 0 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">${subjectMeta.shortTitle}</h3>
-        <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Semester-1, Tahun Pelajaran 2026/2027</p>
+        <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Semester-1, Tahun Pelajaran 2025/2026</p>
       </div>
     `;
 
@@ -435,30 +430,20 @@ export default function HalaqohRaportView({
       });
     }
 
-    // 8. Build full document with clean explicit page breaks
+    // 8. Build full document with clean explicit page breaks matching PDF 2
     const renderedPagesHTML = pages
       .map((p, pIdx) => {
         const studentCards = p.students
-          .map((item, localIdx) =>
-            renderStudentCard(
-              item.student,
-              item.globalIdx,
-              localIdx === 0 && !p.hasKop
-            )
-          )
+          .map((item) => renderStudentCard(item.student, item.globalIdx))
           .join("");
 
-        const pageBreakEl =
-          pIdx > 0
-            ? `<div class="html2pdf__page-break" style="page-break-before: always; break-before: page; height: 0; line-height: 0; margin: 0; padding: 0; font-size: 0; border: none;"></div>`
-            : "";
+        const isLastPage = pIdx === pages.length - 1;
 
         return `
-          ${pageBreakEl}
-          <div class="raport-single-page ${!p.hasKop ? 'page-without-kop' : ''}" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative; padding-top: ${p.hasKop ? '2px' : '0px'}; margin-top: 0px;">
+          <div class="raport-single-page" style="box-sizing: border-box; background-color: #ffffff; color: #000000; width: 100%; position: relative; margin: 0; padding: 0; ${!isLastPage ? 'page-break-after: always; break-after: page;' : ''}">
             ${p.hasKop ? kopSuratHTML : ""}
             ${p.hasKop ? docTitleHTML : ""}
-            <div style="margin-top: 0px; padding-top: 0px;">
+            <div style="margin: 0; padding: 0;">
               ${studentCards}
             </div>
             ${p.hasSig ? signatureKeteranganHTML : ""}
@@ -498,21 +483,18 @@ export default function HalaqohRaportView({
         .pdf-wrapper strong {
           background: transparent !important;
         }
-        .html2pdf__page-break {
-          page-break-before: always !important;
-          break-before: page !important;
-          height: 0 !important;
-          line-height: 0 !important;
+        .raport-single-page {
+          box-sizing: border-box;
+          background-color: #ffffff !important;
+          color: #000000 !important;
+          width: 100%;
+          position: relative;
           margin: 0 !important;
           padding: 0 !important;
         }
-        .page-without-kop {
-          padding-top: 0px !important;
-          margin-top: 0px !important;
-        }
-        .first-card-top {
-          margin-top: 0px !important;
-          padding-top: 0px !important;
+        .student-card-item {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
         }
       </style>
       <div class="pdf-wrapper" style="background-color: #ffffff !important; color: #000000 !important; width: 100%; box-sizing: border-box;">
@@ -529,13 +511,16 @@ export default function HalaqohRaportView({
     setDownloadingSubject(subjectMeta.key);
 
     return new Promise<void>((resolve) => {
-      // 1. Create clean off-screen wrapper & pdfContainer with explicit light-mode enforcement
+      // 1. Create clean off-screen wrapper & pdfContainer with explicit light-mode enforcement and top: 0 to prevent html2pdf negative coordinate bug
       const wrapper = document.createElement("div");
       wrapper.id = "raport-pdf-export-wrapper";
       wrapper.className = "pdf-wrapper light-mode-forced";
       wrapper.style.position = "fixed";
-      wrapper.style.left = "-9999px";
-      wrapper.style.top = "-9999px";
+      wrapper.style.left = "0px";
+      wrapper.style.top = "0px";
+      wrapper.style.zIndex = "-9999";
+      wrapper.style.opacity = "0";
+      wrapper.style.pointerEvents = "none";
       wrapper.style.width = "720px";
       wrapper.style.backgroundColor = "#ffffff";
       wrapper.style.color = "#000000";
@@ -546,7 +531,7 @@ export default function HalaqohRaportView({
       pdfContainer.style.width = "720px";
       pdfContainer.style.backgroundColor = "#ffffff";
       pdfContainer.style.color = "#000000";
-      pdfContainer.style.padding = "0px 8px";
+      pdfContainer.style.padding = "0px";
       pdfContainer.style.boxSizing = "border-box";
 
       // 2. Generate isolated HTML
@@ -560,7 +545,7 @@ export default function HalaqohRaportView({
       const fileName = `Raport_ETTQ_${safeSubName}_${safeHalaqohName}.pdf`;
 
       const opt = {
-        margin: [1.5, 7, 6, 7],
+        margin: [6, 8, 8, 8],
         filename: fileName,
         image: { type: "jpeg", quality: 1.0 },
         html2canvas: {
@@ -578,7 +563,7 @@ export default function HalaqohRaportView({
           format: "a4",
           orientation: "portrait",
         },
-        pagebreak: { mode: ["css", "legacy"], before: ".html2pdf__page-break" },
+        pagebreak: { mode: ["css"], avoid: ".student-card-item" },
       };
 
       // 4. Run export via html2pdf (clean without artificial page number text, matching PDF 1)
@@ -676,11 +661,12 @@ export default function HalaqohRaportView({
         <head>
           <title>Raport Keislaman ${activeSubject.shortTitle} - ${activeHalaqoh.name}</title>
           <style>
-            @page { size: A4 portrait; margin: 1.5mm 7mm 6mm 7mm; }
+            @page { size: A4 portrait; margin: 6mm 8mm 8mm 8mm; }
             html, body { margin: 0; padding: 0; background: #ffffff; color: #000000; font-family: 'Times New Roman', serif; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
             .student-card-item { page-break-inside: avoid !important; break-inside: avoid !important; }
-            .html2pdf__page-break { page-break-before: always !important; break-before: page !important; }
+            .raport-single-page { page-break-after: always !important; break-after: page !important; }
+            .raport-single-page:last-child { page-break-after: auto !important; break-after: auto !important; }
           </style>
         </head>
         <body>
