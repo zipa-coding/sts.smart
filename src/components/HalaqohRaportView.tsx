@@ -359,7 +359,7 @@ export default function HalaqohRaportView({
       container.style.position = "fixed";
       container.style.left = "-9999px";
       container.style.top = "0";
-      container.style.width = "800px";
+      container.style.width = "794px"; // Standard A4 pixel width at 96 DPI
       container.style.backgroundColor = "#ffffff";
       container.style.color = "#000000";
       container.style.padding = "0";
@@ -368,16 +368,24 @@ export default function HalaqohRaportView({
       container.innerHTML = generateHalaqohHTML(activeHalaqoh, subjectMeta);
       document.body.appendChild(container);
 
-      // Brief delay to ensure html/styles are calculated
-      await new Promise((resolve) => setTimeout(resolve, 350));
+      // Brief delay to ensure html/styles and images are calculated
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
       const fileName = `Raport_${subjectMeta.shortTitle.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
 
       const opt = {
-        margin: [8, 8, 8, 8] as [number, number, number, number],
+        margin: [10, 8, 10, 8] as [number, number, number, number],
         filename: fileName,
         image: { type: "jpeg" as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff" },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          windowWidth: 794,
+          width: 794,
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       };
@@ -386,7 +394,7 @@ export default function HalaqohRaportView({
       document.body.removeChild(container);
     } catch (e) {
       console.error("Gagal mendownload PDF halaqoh", e);
-      alert("Gagal mengunduh berkas PDF. Silakan coba cetak langsung.");
+      alert("Gagal mengunduh berkas PDF. Silakan gunakan tombol 'Cetak Dokumen' untuk mencetak langsung.");
     } finally {
       setDownloadingSubject(null);
     }
