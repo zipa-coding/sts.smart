@@ -21,7 +21,9 @@ import logoUrl from "../assets/images/smp_logo_exact_match_revised_1783840969621
 import logoJsitUrl from "../assets/images/logo_jsit_indonesia_1783956323407.jpg";
 import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.jpg";
 // @ts-ignore
-import html2pdf from "html2pdf.js";
+import { jsPDF } from "jspdf";
+// @ts-ignore
+import html2canvas from "html2canvas";
 
 interface HalaqohRaportViewProps {
   currentUser: Teacher;
@@ -259,22 +261,17 @@ export default function HalaqohRaportView({
             font-family: 'Times New Roman', Times, serif !important;
           }
           .raport-page {
-            width: 100%;
-            max-width: 794px;
-            margin: 0 auto;
+            width: 794px;
+            height: 1123px;
+            max-height: 1123px;
+            margin: 0 auto 24px auto;
             background-color: #ffffff !important;
             color: #000000 !important;
             box-sizing: border-box;
-            padding: 30px 40px;
-          }
-          .raport-page-break {
-            page-break-after: always !important;
-            break-after: page !important;
-            height: 1px;
-            margin: 0;
-            padding: 0;
-            border: none;
-            background: transparent;
+            padding: 30px 42px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
           }
           @media print {
             body {
@@ -283,11 +280,19 @@ export default function HalaqohRaportView({
               background: #ffffff !important;
             }
             .raport-page {
-              padding: 25px 35px !important;
-            }
-            .raport-page-break {
+              width: 210mm !important;
+              height: 297mm !important;
+              max-height: 297mm !important;
+              padding: 20mm 20mm !important;
+              box-shadow: none !important;
               page-break-after: always !important;
               break-after: page !important;
+              margin: 0 !important;
+              overflow: hidden !important;
+            }
+            .raport-page:last-child {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
             }
           }
         </style>
@@ -432,55 +437,80 @@ export default function HalaqohRaportView({
     if (!activeHalaqoh) return;
     setDownloadingSubject(subjectMeta.key);
 
+    let wrapper: HTMLDivElement | null = null;
     try {
-      // Create dedicated rendering container
-      const container = document.createElement("div");
-      container.className = "raport-pdf-wrapper";
-      container.style.position = "fixed";
-      container.style.top = "0";
-      container.style.left = "0";
-      container.style.width = "794px";
-      container.style.backgroundColor = "#ffffff";
-      container.style.color = "#000000";
-      container.style.zIndex = "999999";
-      container.style.overflow = "visible";
-      container.innerHTML = generateHalaqohHTML(activeHalaqoh, subjectMeta);
-      document.body.appendChild(container);
+      // 1. Create a mounted, styled container in DOM at fixed (0, 0) coordinates
+      wrapper = document.createElement("div");
+      wrapper.id = "raport-pdf-export-mount";
+      wrapper.style.position = "fixed";
+      wrapper.style.top = "0";
+      wrapper.style.left = "0";
+      wrapper.style.width = "794px";
+      wrapper.style.backgroundColor = "#ffffff";
+      wrapper.style.color = "#000000";
+      wrapper.style.zIndex = "99999";
+      wrapper.style.boxSizing = "border-box";
+      wrapper.style.overflow = "visible";
+      wrapper.innerHTML = generateHalaqohHTML(activeHalaqoh, subjectMeta);
+      document.body.appendChild(wrapper);
 
-      // Brief delay to ensure images & fonts are fully calculated
+      // Brief delay to ensure all images, logos, and fonts are calculated
       await new Promise((resolve) => setTimeout(resolve, 400));
 
-      const fileName = `Raport_${subjectMeta.shortTitle.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+      // 2. Query all discrete A4 pages inside the container
+      const pageElements = wrapper.querySelectorAll<HTMLElement>(".raport-page");
+      if (!pageElements || pageElements.length === 0) {
+        throw new Error("Halaman raport tidak ditemukan");
+      }
 
-      const opt = {
-        margin: [0, 0, 0, 0] as [number, number, number, number],
-        filename: fileName,
-        image: { type: "jpeg" as const, quality: 0.98 },
-        html2canvas: {
-          scale: 2,
+      // 3. Initialize jsPDF instance (A4 portrait: 210 x 297 mm)
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true,
+      });
+
+      // 4. Capture each page individually with html2canvas and draw into PDF
+      for (let i = 0; i < pageElements.length; i++) {
+        const pageEl = pageElements[i];
+        const canvas = await html2canvas(pageEl, {
+          scale: 2.5,
           useCORS: true,
           allowTaint: true,
-          logging: false,
           backgroundColor: "#ffffff",
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: 794,
+          logging: false,
           width: 794,
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
-        pagebreak: {
-          mode: ["css", "legacy"],
-          after: ".raport-page-break",
-        },
-      };
+          height: 1123,
+          windowWidth: 794,
+        });
 
-      await html2pdf().set(opt).from(container).save();
-      document.body.removeChild(container);
+        const imgData = canvas.toDataURL("image/jpeg", 0.98);
+        if (i > 0) {
+          pdf.addPage("a4", "portrait");
+        }
+        pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, "FAST");
+      }
+
+      // 5. Trigger download via standard Blob URL
+      const fileName = `Raport_${subjectMeta.shortTitle.replace(/[^a-zA-Z0-9]/g, "_")}_${activeHalaqoh.name.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+      const pdfBlob = pdf.output("blob");
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = blobUrl;
+      downloadLink.download = fileName;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(blobUrl);
     } catch (e) {
       console.error("Gagal mendownload PDF halaqoh", e);
-      alert("Gagal mengunduh berkas PDF otomatis. Mengalihkan ke mode cetak...");
+      alert("Gagal mengunduh berkas PDF otomatis. Mengalihkan ke jendela cetak dokumen...");
       handlePrint();
     } finally {
+      if (wrapper && document.body.contains(wrapper)) {
+        document.body.removeChild(wrapper);
+      }
       setDownloadingSubject(null);
     }
   };
@@ -517,17 +547,33 @@ export default function HalaqohRaportView({
           <title>Raport Keislaman ${activeSubject.shortTitle} - ${activeHalaqoh.name}</title>
           <style>
             @page { size: A4 portrait; margin: 0; }
-            body { margin: 0; padding: 0; background: #ffffff; color: #000000; font-family: 'Times New Roman', serif; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .raport-page-break { page-break-after: always !important; break-after: page !important; }
+            html, body { margin: 0; padding: 0; background: #ffffff; color: #000000; font-family: 'Times New Roman', serif; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+            .raport-page {
+              width: 210mm !important;
+              height: 297mm !important;
+              max-height: 297mm !important;
+              padding: 20mm 20mm !important;
+              box-shadow: none !important;
+              page-break-after: always !important;
+              break-after: page !important;
+              margin: 0 auto !important;
+              overflow: hidden !important;
+            }
+            .raport-page:last-child {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+            }
           </style>
         </head>
         <body>
           ${htmlContent}
           <script>
             window.onload = function() {
-              window.focus();
-              window.print();
+              setTimeout(function() {
+                window.focus();
+                window.print();
+              }, 400);
             };
           </script>
         </body>
