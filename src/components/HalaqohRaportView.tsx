@@ -240,9 +240,9 @@ export default function HalaqohRaportView({
       }
 
       return `
-        <div class="student-card-item" style="margin-top: 0px; margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000; width: 100%; box-sizing: border-box; padding: 0;">
+        <div class="student-card-item" style="margin-top: 0px; margin-bottom: 5px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000; width: 100%; box-sizing: border-box; padding: 0;">
           <!-- Perfectly Aligned Name & Class Header matching reference PDF 2 -->
-          <div style="margin-top: 0px; margin-bottom: 2.5px; padding: 0; font-family: 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.35; color: #000000; text-align: left;">
+          <div style="margin-top: 0px; margin-bottom: 1.5px; padding: 0; font-family: 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.25; color: #000000; text-align: left;">
             <div style="display: block; text-align: left; line-height: 1.35; white-space: nowrap;">
               <span style="display: inline-block; width: 62px; color: #000000; text-align: left; vertical-align: baseline;">${cardNum}. Nama</span>
               <span style="display: inline-block; width: 14px; text-align: center; color: #000000; vertical-align: baseline;">:</span>

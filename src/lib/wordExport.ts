@@ -35,10 +35,10 @@ const tableBorders = {
 };
 
 const cellMargins = {
-  top: 70, // dxa (~3.5pt)
-  bottom: 70,
-  left: 100,
-  right: 100,
+  top: 35, // dxa (~1.75pt)
+  bottom: 35,
+  left: 70,
+  right: 70,
 };
 
 export async function exportHalaqohToWord(
@@ -96,10 +96,11 @@ export async function exportHalaqohToWord(
     return clean ? `Kelas ${clean}` : "-";
   };
 
-  // Helper to build a student card block
+  // Helper to build a student card block with tight spacing
   const buildStudentCardDocx = (
     student: Student,
-    cardNum: number
+    cardNum: number,
+    isFirstOnPage: boolean = false
   ): (Paragraph | Table)[] => {
     const studentName = student.name ? student.name.trim() : "-";
     const kelasName = formatKelasName(student.kelas);
@@ -122,7 +123,7 @@ export async function exportHalaqohToWord(
       descContent = `Alhamdulillah ananda sholih/ah ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;
     }
 
-    // Name paragraph with TabStop for perfect colon alignment
+    // Name paragraph with TabStop for perfect colon alignment, compact line height
     const pName = new Paragraph({
       children: [
         new TextRun({
@@ -137,10 +138,10 @@ export async function exportHalaqohToWord(
         }),
       ],
       tabStops: [{ type: TabStopType.LEFT, position: 1100 }],
-      spacing: { before: 80, after: 20 },
+      spacing: { before: isFirstOnPage ? 0 : 35, after: 0, line: 220 },
     });
 
-    // Class paragraph with TabStop for perfect colon alignment
+    // Class paragraph with TabStop for perfect colon alignment, very tight spacing before table
     const pClass = new Paragraph({
       children: [
         new TextRun({
@@ -155,10 +156,10 @@ export async function exportHalaqohToWord(
         }),
       ],
       tabStops: [{ type: TabStopType.LEFT, position: 1100 }],
-      spacing: { before: 0, after: 60 },
+      spacing: { before: 0, after: 15, line: 220 },
     });
 
-    // Score & Description Table
+    // Score & Description Table with compact cell spacing
     const table = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: tableBorders,
@@ -178,6 +179,7 @@ export async function exportHalaqohToWord(
                     }),
                   ],
                   alignment: AlignmentType.CENTER,
+                  spacing: { before: 0, after: 0, line: 220 },
                 }),
               ],
               verticalMerge: VerticalMergeType.RESTART,
@@ -198,6 +200,7 @@ export async function exportHalaqohToWord(
                     }),
                   ],
                   alignment: AlignmentType.CENTER,
+                  spacing: { before: 0, after: 0, line: 220 },
                 }),
               ],
               verticalAlign: VerticalAlign.CENTER,
@@ -217,6 +220,7 @@ export async function exportHalaqohToWord(
                     }),
                   ],
                   alignment: AlignmentType.CENTER,
+                  spacing: { before: 0, after: 0, line: 220 },
                 }),
               ],
               verticalAlign: VerticalAlign.CENTER,
@@ -236,6 +240,7 @@ export async function exportHalaqohToWord(
                     }),
                   ],
                   alignment: AlignmentType.CENTER,
+                  spacing: { before: 0, after: 0, line: 220 },
                 }),
               ],
               verticalAlign: VerticalAlign.CENTER,
@@ -249,7 +254,7 @@ export async function exportHalaqohToWord(
         new TableRow({
           children: [
             new TableCell({
-              children: [new Paragraph({})],
+              children: [new Paragraph({ spacing: { before: 0, after: 0, line: 220 } })],
               verticalMerge: VerticalMergeType.CONTINUE,
               width: { size: 48, type: WidthType.PERCENTAGE },
               borders: tableBorders,
@@ -267,6 +272,7 @@ export async function exportHalaqohToWord(
                     }),
                   ],
                   alignment: AlignmentType.CENTER,
+                  spacing: { before: 0, after: 0, line: 220 },
                 }),
               ],
               verticalAlign: VerticalAlign.CENTER,
@@ -286,6 +292,7 @@ export async function exportHalaqohToWord(
                     }),
                   ],
                   alignment: AlignmentType.CENTER,
+                  spacing: { before: 0, after: 0, line: 220 },
                 }),
               ],
               verticalAlign: VerticalAlign.CENTER,
@@ -305,6 +312,7 @@ export async function exportHalaqohToWord(
                     }),
                   ],
                   alignment: AlignmentType.CENTER,
+                  spacing: { before: 0, after: 0, line: 220 },
                 }),
               ],
               verticalAlign: VerticalAlign.CENTER,
@@ -314,7 +322,7 @@ export async function exportHalaqohToWord(
             }),
           ],
         }),
-        // Row 3: Description
+        // Row 3: Description with compact margins
         new TableRow({
           children: [
             new TableCell({
@@ -335,15 +343,15 @@ export async function exportHalaqohToWord(
                     }),
                   ],
                   alignment: AlignmentType.BOTH,
-                  spacing: { line: 260 }, // ~1.3 line spacing
+                  spacing: { before: 0, after: 0, line: 240 },
                 }),
               ],
               borders: tableBorders,
               margins: {
-                top: 90,
-                bottom: 90,
-                left: 120,
-                right: 120,
+                top: 40,
+                bottom: 40,
+                left: 90,
+                right: 90,
               },
             }),
           ],
@@ -364,7 +372,7 @@ export async function exportHalaqohToWord(
   const documentChildren: (Paragraph | Table)[] = [];
 
   // ================= PAGE 1 =================
-  // Banner Image
+  // Banner Image - Large, full-width matching the page margins
   if (bannerBuffer) {
     documentChildren.push(
       new Paragraph({
@@ -373,18 +381,18 @@ export async function exportHalaqohToWord(
             type: "png",
             data: new Uint8Array(bannerBuffer),
             transformation: {
-              width: 590,
-              height: 78.6,
+              width: 690,
+              height: 92,
             },
           }),
         ],
         alignment: AlignmentType.CENTER,
-        spacing: { before: 0, after: 120 },
+        spacing: { before: 0, after: 60 },
       })
     );
   }
 
-  // Document Title exactly matching reference
+  // Document Title exactly matching reference with compact spacing
   documentChildren.push(
     new Paragraph({
       children: [
@@ -396,7 +404,7 @@ export async function exportHalaqohToWord(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 0, after: 20 },
+      spacing: { before: 0, after: 15 },
     }),
     new Paragraph({
       children: [
@@ -408,7 +416,7 @@ export async function exportHalaqohToWord(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 0, after: 20 },
+      spacing: { before: 0, after: 15 },
     }),
     new Paragraph({
       children: [
@@ -420,13 +428,13 @@ export async function exportHalaqohToWord(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 0, after: 140 },
+      spacing: { before: 0, after: 60 },
     })
   );
 
   // Render Page 1 Students
   page1Students.forEach((student, idx) => {
-    const cardElements = buildStudentCardDocx(student, idx + 1);
+    const cardElements = buildStudentCardDocx(student, idx + 1, idx === 0);
     documentChildren.push(...cardElements);
   });
 
@@ -454,7 +462,7 @@ export async function exportHalaqohToWord(
       const chunk = remainingStudents.slice(i, i + chunkSize);
       chunk.forEach((student, idx) => {
         const globalIdx = 4 + i + idx;
-        const cardElements = buildStudentCardDocx(student, globalIdx + 1);
+        const cardElements = buildStudentCardDocx(student, globalIdx + 1, idx === 0);
         documentChildren.push(...cardElements);
       });
     }
@@ -656,10 +664,10 @@ export async function exportHalaqohToWord(
         properties: {
           page: {
             margin: {
-              top: 650, // ~1.15 cm
-              bottom: 650,
-              left: 850, // ~1.5 cm
-              right: 850,
+              top: 570, // ~1 cm
+              bottom: 570, // ~1 cm
+              left: 720, // ~0.5 inch / 1.27 cm
+              right: 720,
             },
           },
         },
