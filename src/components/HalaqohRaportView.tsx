@@ -227,14 +227,14 @@ export default function HalaqohRaportView({
       memberStudents = k8.length > 0 ? k8.slice(0, 10) : students.slice(0, 8);
     }
 
-    // 2. Resolve Ustadz/ah Pembimbing name
+    // 2. Resolve Ustadz/ah Pembimbing name - only from actual halaqoh or registered teacher
     const mentorTeacher = teachers.find((t) => t.id === halaqoh.mentorTeacherId);
     const mentorName =
       halaqoh.mentorName && halaqoh.mentorName.trim() !== ""
         ? halaqoh.mentorName.trim()
         : mentorTeacher?.name && mentorTeacher.name.trim() !== ""
         ? mentorTeacher.name.trim()
-        : "Ustadz Ahmad Fauzi, S.Pd.I";
+        : "";
 
     // 3. Helper to generate a single student card strictly matching reference PDF 2
     const renderStudentCard = (student: Student, globalIdx: number) => {
@@ -328,7 +328,7 @@ export default function HalaqohRaportView({
           <div style="width: 280px; text-align: center; font-size: 10.5pt; line-height: 1.35; font-family: 'Times New Roman', serif; color: #000000;">
             <p style="margin: 0 0 3px 0; color: #000000;">Pangkalpinang, 30 September 2025</p>
             <p style="margin: 0 0 36px 0; color: #000000;">Ustadz/ah Pembimbing,</p>
-            <p style="margin: 0; color: #000000;">( <span style="font-weight: bold; text-decoration: underline;">${mentorName}</span> )</p>
+            <p style="margin: 0; color: #000000;">( <span style="font-weight: bold; text-decoration: ${mentorName ? 'underline' : 'none'};">${mentorName || "....................................................."}</span> )</p>
           </div>
         </div>
 
@@ -798,7 +798,7 @@ export default function HalaqohRaportView({
             >
               {halaqohList.map((h) => (
                 <option key={h.id} value={h.id} className="bg-[#0e172a] text-white">
-                  {h.name} — Pembimbing: {h.mentorName} ({h.studentIds?.length || 0} Santri)
+                  {h.name}{h.mentorName ? ` — Pembimbing: ${h.mentorName}` : " — (Pembimbing Belum Ditentukan)"} ({h.studentIds?.length || 0} Santri)
                 </option>
               ))}
             </select>

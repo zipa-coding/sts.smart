@@ -838,8 +838,8 @@ app.get("/api/halaqoh", async (req, res) => {
 
 app.post("/api/halaqoh", async (req, res) => {
   const { name, mentorName, mentorTeacherId, studentIds } = req.body;
-  if (!name || !mentorName) {
-    return res.status(400).json({ error: "Nama halaqoh dan nama ustadz/ah pembimbing wajib diisi." });
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: "Nama halaqoh wajib diisi." });
   }
 
   const db = await readDB();

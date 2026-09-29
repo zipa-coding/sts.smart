@@ -107,14 +107,14 @@ export async function generateHalaqohWordBlob(
     memberStudents = k8.length > 0 ? k8.slice(0, 9) : allStudents.slice(0, 9);
   }
 
-  // 3. Resolve mentor teacher
+  // 3. Resolve mentor teacher strictly from halaqoh data or registered teachers (never invent fake names)
   const mentorTeacher = teachers.find((t) => t.id === halaqoh.mentorTeacherId);
   const mentorName =
     halaqoh.mentorName && halaqoh.mentorName.trim() !== ""
       ? halaqoh.mentorName.trim()
       : mentorTeacher?.name && mentorTeacher.name.trim() !== ""
       ? mentorTeacher.name.trim()
-      : "Ustadz Ahmad Fauzi, S.Pd.I";
+      : "";
 
   const formatKelasName = (k: string) => {
     const clean = String(k || "").trim().toUpperCase();
@@ -532,10 +532,10 @@ export async function generateHalaqohWordBlob(
     new Paragraph({
       children: [
         new TextRun({
-          text: `( ${mentorName} )`,
+          text: mentorName ? `( ${mentorName} )` : "( ..................................................... )",
           font: "Times New Roman",
           size: 21,
-          bold: true,
+          bold: Boolean(mentorName),
         }),
       ],
       alignment: AlignmentType.RIGHT,

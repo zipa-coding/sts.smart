@@ -550,10 +550,6 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       setHalaqohModalError("Nama halaqoh wajib diisi.");
       return;
     }
-    if (!halaqohForm.mentorName.trim()) {
-      setHalaqohModalError("Nama ustadz/ah pembimbing wajib diisi.");
-      return;
-    }
 
     setIsSubmittingHalaqoh(true);
     try {
@@ -3485,7 +3481,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: Halaqoh 1 (Ustadz Ahmad)"
+                    placeholder="Contoh: Halaqoh 1 / Kelompok A"
                     value={halaqohForm.name}
                     onChange={(e) => setHalaqohForm({ ...halaqohForm, name: e.target.value })}
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 text-slate-900 font-semibold"
@@ -3494,36 +3490,43 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Ustadz/ah Pembimbing (TnT) <span className="text-red-500">*</span>
+                    Ustadz/ah Pembimbing (Pilih dari Manajemen Guru)
                   </label>
-                  <div className="flex gap-2">
-                    <select
-                      onChange={(e) => {
-                        const selectedTeacher = teachers.find((t) => t.id === e.target.value);
-                        if (selectedTeacher) {
-                          setHalaqohForm({
-                            ...halaqohForm,
-                            mentorTeacherId: selectedTeacher.id,
-                            mentorName: selectedTeacher.name,
-                          });
-                        }
-                      }}
-                      className="w-1/3 px-2 py-2 text-xs border border-slate-300 rounded-xl bg-slate-50 text-slate-700 cursor-pointer"
-                    >
-                      <option value="">Pilih Guru...</option>
-                      {teachers.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name} ({t.subject})</option>
+                  <select
+                    value={halaqohForm.mentorTeacherId || ""}
+                    onChange={(e) => {
+                      const teacherId = e.target.value;
+                      if (!teacherId) {
+                        setHalaqohForm({
+                          ...halaqohForm,
+                          mentorTeacherId: "",
+                          mentorName: "",
+                        });
+                        return;
+                      }
+                      const selectedTeacher = teachers.find((t) => t.id === teacherId);
+                      if (selectedTeacher) {
+                        setHalaqohForm({
+                          ...halaqohForm,
+                          mentorTeacherId: selectedTeacher.id,
+                          mentorName: selectedTeacher.name,
+                        });
+                      }
+                    }}
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white text-slate-900 font-semibold cursor-pointer focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">-- Pilih Guru Terdaftar di Manajemen Guru --</option>
+                    {teachers
+                      .filter((t) => t.username !== "admin" && t.subject !== "Admin")
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.subject || "Guru"})
+                        </option>
                       ))}
-                    </select>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Atau ketik nama pembimbing"
-                      value={halaqohForm.mentorName}
-                      onChange={(e) => setHalaqohForm({ ...halaqohForm, mentorName: e.target.value })}
-                      className="w-2/3 px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 text-slate-900 font-semibold"
-                    />
-                  </div>
+                  </select>
+                  <p className="text-[10px] text-slate-500 italic">
+                    Hanya guru yang terdaftar di Manajemen Guru yang dapat dipilih.
+                  </p>
                 </div>
               </div>
 

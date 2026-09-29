@@ -804,8 +804,8 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
 
     if (path === '/api/halaqoh' && method === 'POST') {
       const { name, mentorName, mentorTeacherId, studentIds } = body || {};
-      if (!name || !mentorName) {
-        return new Response(JSON.stringify({ error: "Nama halaqoh dan nama ustadz/ah pembimbing wajib diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      if (!name || !name.trim()) {
+        return new Response(JSON.stringify({ error: "Nama halaqoh wajib diisi." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
       const db = getDB();
       if (!Array.isArray(db.halaqoh)) db.halaqoh = [];

@@ -1576,9 +1576,9 @@
   "halaqoh": [
     {
       "id": "hlq_1",
-      "name": "Halaqoh 1 (Ustadz Ahmad Fauzi)",
-      "mentorName": "Ustadz Ahmad Fauzi, S.Pd.I",
-      "mentorTeacherId": "t2",
+      "name": "Halaqoh 1",
+      "mentorName": "",
+      "mentorTeacherId": "",
       "studentIds": [
         "s8_rayyan",
         "s8_1",
@@ -1602,9 +1602,9 @@
     },
     {
       "id": "hlq_2",
-      "name": "Halaqoh 2 (Ustadzah Fatimah Azzahra)",
-      "mentorName": "Ustadzah Fatimah Azzahra, S.Ag",
-      "mentorTeacherId": "t3",
+      "name": "Halaqoh 2",
+      "mentorName": "",
+      "mentorTeacherId": "",
       "studentIds": [
         "s7_1",
         "s7_2",
@@ -1623,9 +1623,9 @@
     },
     {
       "id": "hlq_3",
-      "name": "Halaqoh 3 (Ustadz Muhammad Al-Hafizh)",
-      "mentorName": "Ustadz Muhammad Al-Hafizh",
-      "mentorTeacherId": "t4",
+      "name": "Halaqoh 3",
+      "mentorName": "",
+      "mentorTeacherId": "",
       "studentIds": [
         "s9_1",
         "s9_2",
