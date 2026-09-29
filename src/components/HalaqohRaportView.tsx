@@ -71,6 +71,15 @@ export default function HalaqohRaportView({
   const [selectedSubjectKey, setSelectedSubjectKey] = useState<string>(
     "Do’a Harian dan Hadits"
   );
+  const [descFontSize, setDescFontSize] = useState<string>(() => {
+    return localStorage.getItem("halaqoh_desc_font_size") || "9.5pt";
+  });
+
+  const handleDescFontSizeChange = (newSize: string) => {
+    setDescFontSize(newSize);
+    localStorage.setItem("halaqoh_desc_font_size", newSize);
+  };
+
   const [downloadingSubject, setDownloadingSubject] = useState<string | null>(
     null
   );
@@ -98,7 +107,8 @@ export default function HalaqohRaportView({
         subjectMeta,
         students,
         grades,
-        teachers
+        teachers,
+        descFontSize
       );
     } catch (err) {
       console.error("Gagal mengekspor file Word:", err);
@@ -108,7 +118,7 @@ export default function HalaqohRaportView({
     }
   };
 
-  // Handle batch download of all 4 Word files bundled in 1 ZIP (100% no permission popups)
+  // Handle batch download of all 4 Word files bundled in 1 ZIP
   const handleDownloadZipWord = async () => {
     if (!activeHalaqoh) return;
     setIsDownloadingZip(true);
@@ -117,7 +127,8 @@ export default function HalaqohRaportView({
         activeHalaqoh,
         students,
         grades,
-        teachers
+        teachers,
+        descFontSize
       );
     } catch (err) {
       console.error("Gagal mengunduh arsip zip Word:", err);
@@ -250,15 +261,59 @@ export default function HalaqohRaportView({
       const studentName = student.name ? student.name.trim() : "-";
       const kelasName = formatKelasName(student.kelas);
 
+      const normalizeSubject = (s: string | undefined | null) => {
+        if (!s) return "";
+        return s
+          .toLowerCase()
+          .replace(/[’'"`]/g, "'")
+          .replace(/[-_]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      };
+
+      const isSameSub = (a: string | undefined | null, b: string | undefined | null) => {
+        if (!a || !b) return false;
+        const normA = normalizeSubject(a);
+        const normB = normalizeSubject(b);
+        if (normA === normB) return true;
+        const aliasA = normA.replace("tahfizh", "tahfidz").replace("doa", "do'a");
+        const aliasB = normB.replace("tahfizh", "tahfidz").replace("doa", "do'a");
+        return aliasA === aliasB;
+      };
+
       const gradeObj = grades.find(
         (g) =>
           String(g.studentId).trim() === String(student.id).trim() &&
-          g.subject === subjectMeta.key
+          isSameSub(g.subject, subjectMeta.key)
       );
 
-      const usahaVal = gradeObj?.usaha || "A";
-      const prosesVal = gradeObj?.proses || "A";
-      const capaianVal = gradeObj?.capaian || "A";
+      const scoreToPredicate = (score: number | string | undefined | null): string => {
+        if (score === undefined || score === null || score === "") return "";
+        const num = typeof score === "number" ? score : parseFloat(String(score));
+        if (isNaN(num)) return String(score).trim();
+        if (num >= 90) return "A";
+        if (num >= 80) return "B";
+        if (num >= 70) return "C";
+        return "D";
+      };
+
+      const usahaVal = (gradeObj?.usaha && gradeObj.usaha.trim() !== "")
+        ? gradeObj.usaha.trim()
+        : (gradeObj?.score !== undefined && gradeObj?.score !== null && gradeObj?.score !== "")
+        ? scoreToPredicate(gradeObj.score)
+        : "A";
+
+      const prosesVal = (gradeObj?.proses && gradeObj.proses.trim() !== "")
+        ? gradeObj.proses.trim()
+        : (gradeObj?.score !== undefined && gradeObj?.score !== null && gradeObj?.score !== "")
+        ? scoreToPredicate(gradeObj.score)
+        : "A";
+
+      const capaianVal = (gradeObj?.capaian && gradeObj.capaian.trim() !== "")
+        ? gradeObj.capaian.trim()
+        : (gradeObj?.score !== undefined && gradeObj?.score !== null && gradeObj?.score !== "")
+        ? scoreToPredicate(gradeObj.score)
+        : "A";
 
       let descContent = "";
       if (gradeObj?.deskripsi && gradeObj.deskripsi.trim()) {
@@ -270,17 +325,17 @@ export default function HalaqohRaportView({
 
       return `
         <div class="student-card-item" style="margin-top: 0px; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; font-family: 'Times New Roman', Times, serif; background-color: #ffffff; color: #000000; width: 100%; box-sizing: border-box; padding: 0;">
-          <!-- Perfectly Aligned Name & Class Header matching reference format -->
-          <div style="margin-top: 0px; margin-bottom: 2.5px; padding: 0; font-family: 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.35; color: #000000; text-align: left;">
-            <div style="display: block; text-align: left; line-height: 1.35; white-space: nowrap;">
-              <span style="display: inline-block; width: 62px; color: #000000; text-align: left; vertical-align: baseline;">${cardNum}. Nama</span>
-              <span style="display: inline-block; width: 14px; text-align: center; color: #000000; vertical-align: baseline;">:</span>
-              <span style="color: #000000; font-weight: normal; vertical-align: baseline;">${studentName}</span>
+          <!-- Perfectly Aligned Name & Class Header with Flex layout to avoid text truncation -->
+          <div style="margin-top: 0px; margin-bottom: 3px; padding: 0; font-family: 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.35; color: #000000; text-align: left;">
+            <div style="display: flex; align-items: flex-start; text-align: left; line-height: 1.35;">
+              <span style="display: inline-block; width: 62px; flex-shrink: 0; color: #000000; text-align: left;">${cardNum}. Nama</span>
+              <span style="display: inline-block; width: 14px; flex-shrink: 0; text-align: center; color: #000000;">:</span>
+              <span style="color: #000000; font-weight: normal; flex-grow: 1; word-break: break-word;">${studentName}</span>
             </div>
-            <div style="display: block; text-align: left; line-height: 1.35; white-space: nowrap;">
-              <span style="display: inline-block; width: 62px; color: #000000; text-align: left; vertical-align: baseline;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</span>
-              <span style="display: inline-block; width: 14px; text-align: center; color: #000000; vertical-align: baseline;">:</span>
-              <span style="color: #000000; font-weight: normal; vertical-align: baseline;">${kelasName}</span>
+            <div style="display: flex; align-items: flex-start; text-align: left; line-height: 1.35;">
+              <span style="display: inline-block; width: 62px; flex-shrink: 0; color: #000000; text-align: left;">&nbsp;&nbsp;&nbsp;&nbsp;Kelas</span>
+              <span style="display: inline-block; width: 14px; flex-shrink: 0; text-align: center; color: #000000;">:</span>
+              <span style="color: #000000; font-weight: normal; flex-grow: 1; word-break: break-word;">${kelasName}</span>
             </div>
           </div>
 
@@ -302,7 +357,7 @@ export default function HalaqohRaportView({
               </tr>
               <!-- Row 3: Description -->
               <tr style="background-color: #ffffff;">
-                <td colspan="4" style="border: 1px solid #000000; padding: 4.5px 8px; font-size: 9.5pt; line-height: 1.38; min-height: 48px; vertical-align: top; background-color: #ffffff; color: #000000; text-align: justify; word-break: break-word; overflow-wrap: break-word;">
+                <td colspan="4" style="border: 1px solid #000000; padding: 4.5px 8px; font-size: ${descFontSize}; line-height: 1.38; min-height: 48px; vertical-align: top; background-color: #ffffff; color: #000000; text-align: justify; word-break: break-word; overflow-wrap: break-word;">
                   <strong>Deskripsi :</strong> ${descContent}
                 </td>
               </tr>
@@ -793,7 +848,7 @@ export default function HalaqohRaportView({
       {/* Selector Toolbar */}
       <div className="p-4 bg-[#0a101f] border-b border-[#1e3256] grid grid-cols-1 md:grid-cols-12 gap-3 shrink-0">
         {/* Halaqoh Group Selector */}
-        <div className="md:col-span-6 flex flex-col gap-1.5">
+        <div className="md:col-span-4 flex flex-col gap-1.5">
           <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-blue-400" />
             <span>Pilih Kelompok Halaqoh</span>
@@ -806,28 +861,27 @@ export default function HalaqohRaportView({
             >
               {halaqohList.map((h) => (
                 <option key={h.id} value={h.id} className="bg-[#0e172a] text-white">
-                  {h.name}{h.mentorName ? ` — Pembimbing: ${h.mentorName}` : " — (Pembimbing Belum Ditentukan)"} ({h.studentIds?.length || 0} Santri)
+                  {h.name}{h.mentorName ? ` — ${h.mentorName}` : ""} ({h.studentIds?.length || 0} Santri)
                 </option>
               ))}
             </select>
           ) : (
             <div className="p-2.5 bg-amber-950/30 border border-amber-500/40 rounded-xl text-xs text-amber-300 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Belum ada data halaqoh. Silakan buat kelompok halaqoh di Panel Admin.</span>
+              <span>Belum ada data halaqoh.</span>
             </div>
           )}
         </div>
 
-        {/* Keislaman Subject Selector & Quick Download Buttons */}
-        <div className="md:col-span-6 flex flex-col gap-1.5">
+        {/* Keislaman Subject Selector */}
+        <div className="md:col-span-5 flex flex-col gap-1.5">
           <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Pilih Berkas Raport Keislaman (ETTQ)</span>
+            <span>Pilih Berkas Raport ETTQ</span>
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             {KEISLAMAN_SUBJECTS.map((sub) => {
               const isActive = selectedSubjectKey === sub.key;
-              const isDownloadingPdf = downloadingSubject === sub.key;
               const isDownloadingWord = downloadingWordSubject === sub.key;
 
               return (
@@ -864,13 +918,9 @@ export default function HalaqohRaportView({
                         handleDownloadSinglePDF(sub);
                       }}
                       className="px-1.5 py-0.5 rounded bg-black/40 hover:bg-black/70 text-slate-200 text-[9px] font-mono flex items-center gap-1 transition"
-                      title={`Download PDF ${sub.tableHeader}`}
+                      title={`Download File PDF ${sub.tableHeader}`}
                     >
-                      {isDownloadingPdf ? (
-                        <div className="w-2.5 h-2.5 border border-white/30 border-t-white rounded-full animate-spin"></div>
-                      ) : (
-                        <Download className="w-2.5 h-2.5" />
-                      )}
+                      <Download className="w-2.5 h-2.5 text-emerald-400" />
                       <span>PDF</span>
                     </span>
                   </div>
@@ -878,6 +928,32 @@ export default function HalaqohRaportView({
               );
             })}
           </div>
+        </div>
+
+        {/* Font Size Selector for Uniform Description */}
+        <div className="md:col-span-3 flex flex-col gap-1.5">
+          <label className="text-[11px] font-bold text-amber-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Ukuran Font Deskripsi</span>
+          </label>
+          <div className="relative">
+            <select
+              value={descFontSize}
+              onChange={(e) => handleDescFontSizeChange(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-[#0e172a] border border-amber-500/40 rounded-xl text-xs font-bold text-amber-200 focus:outline-none focus:border-amber-400 cursor-pointer appearance-none pr-8"
+            >
+              <option value="8.5pt" className="bg-[#0e172a] text-white">8.5 pt — Sangat Ringkas</option>
+              <option value="9.0pt" className="bg-[#0e172a] text-white">9.0 pt — Ringkas</option>
+              <option value="9.5pt" className="bg-[#0e172a] text-white">9.5 pt — Standar (Rekomendasi)</option>
+              <option value="10.0pt" className="bg-[#0e172a] text-white">10.0 pt — Sedang</option>
+              <option value="10.5pt" className="bg-[#0e172a] text-white">10.5 pt — Besar</option>
+              <option value="11.0pt" className="bg-[#0e172a] text-white">11.0 pt — Sangat Besar</option>
+            </select>
+            <ChevronDown className="w-4 h-4 text-amber-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          <span className="text-[10px] text-slate-400">
+            Penyesuaian otomatis seragam untuk Layar, PDF, Cetak & Word (.docx)
+          </span>
         </div>
       </div>
 

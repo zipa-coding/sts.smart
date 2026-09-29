@@ -293,7 +293,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
 
   // Helper getters
   const currentClassStudents = students.filter((s) => s.kelas === selectedClass);
-  const studentGrades = selectedStudent ? grades.filter((g) => g.studentId === selectedStudent.id) : [];
+  const studentGrades = selectedStudent ? grades.filter((g) => String(g.studentId).trim() === String(selectedStudent.id).trim()) : [];
   const gradesCount = studentGrades.length;
 
   if (raportPrintTarget && selectedStudent) {

@@ -70,7 +70,8 @@ export async function generateHalaqohWordBlob(
   subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0],
   allStudents: Student[],
   grades: Grade[],
-  teachers: Teacher[]
+  teachers: Teacher[],
+  descFontSize: string = "9.5pt"
 ): Promise<{ blob: Blob; fileName: string }> {
   // 1. Fetch Kop Surat Banner image buffer reliably (with caching for speed)
   let bannerBuffer: ArrayBuffer | null = cachedBannerBuffer;
@@ -128,15 +129,59 @@ export async function generateHalaqohWordBlob(
     const studentName = student.name ? student.name.trim() : "-";
     const kelasName = formatKelasName(student.kelas);
 
+    const normalizeSub = (s: string | undefined | null) => {
+      if (!s) return "";
+      return s
+        .toLowerCase()
+        .replace(/[’'"`]/g, "'")
+        .replace(/[-_]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    };
+
+    const isSameSub = (a: string | undefined | null, b: string | undefined | null) => {
+      if (!a || !b) return false;
+      const normA = normalizeSub(a);
+      const normB = normalizeSub(b);
+      if (normA === normB) return true;
+      const aliasA = normA.replace("tahfizh", "tahfidz").replace("doa", "do'a");
+      const aliasB = normB.replace("tahfizh", "tahfidz").replace("doa", "do'a");
+      return aliasA === aliasB;
+    };
+
     const gradeObj = grades.find(
       (g) =>
         String(g.studentId).trim() === String(student.id).trim() &&
-        g.subject === subjectMeta.key
+        isSameSub(g.subject, subjectMeta.key)
     );
 
-    const usahaVal = gradeObj?.usaha || "A";
-    const prosesVal = gradeObj?.proses || "A";
-    const capaianVal = gradeObj?.capaian || "A";
+    const scoreToPred = (score: number | string | undefined | null): string => {
+      if (score === undefined || score === null || score === "") return "";
+      const num = typeof score === "number" ? score : parseFloat(String(score));
+      if (isNaN(num)) return String(score).trim();
+      if (num >= 90) return "A";
+      if (num >= 80) return "B";
+      if (num >= 70) return "C";
+      return "D";
+    };
+
+    const usahaVal = (gradeObj?.usaha && gradeObj.usaha.trim() !== "")
+      ? gradeObj.usaha.trim()
+      : (gradeObj?.score !== undefined && gradeObj?.score !== null)
+      ? scoreToPred(gradeObj.score)
+      : "A";
+
+    const prosesVal = (gradeObj?.proses && gradeObj.proses.trim() !== "")
+      ? gradeObj.proses.trim()
+      : (gradeObj?.score !== undefined && gradeObj?.score !== null)
+      ? scoreToPred(gradeObj.score)
+      : "A";
+
+    const capaianVal = (gradeObj?.capaian && gradeObj.capaian.trim() !== "")
+      ? gradeObj.capaian.trim()
+      : (gradeObj?.score !== undefined && gradeObj?.score !== null)
+      ? scoreToPred(gradeObj.score)
+      : "A";
 
     let descContent = "";
     if (gradeObj?.deskripsi && gradeObj.deskripsi.trim()) {
@@ -181,6 +226,10 @@ export async function generateHalaqohWordBlob(
       tabStops: [{ type: TabStopType.LEFT, position: 1100 }],
       spacing: { before: 0, after: 35, line: 240 },
     });
+
+    // Calculate dynamic docx font size for description (e.g. 9.5pt -> 19)
+    const parsedPt = parseFloat(descFontSize) || 9.5;
+    const docxDescSize = Math.round(parsedPt * 2);
 
     // Score & Description Table with balanced cell spacing
     const table = new Table({
@@ -357,12 +406,12 @@ export async function generateHalaqohWordBlob(
                       text: "Deskripsi : ",
                       bold: true,
                       font: "Times New Roman",
-                      size: 19, // 9.5pt
+                      size: docxDescSize,
                     }),
                     new TextRun({
                       text: descContent,
                       font: "Times New Roman",
-                      size: 19,
+                      size: docxDescSize,
                     }),
                   ],
                   alignment: AlignmentType.BOTH,
@@ -716,14 +765,16 @@ export async function exportHalaqohToWord(
   subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0],
   allStudents: Student[],
   grades: Grade[],
-  teachers: Teacher[]
+  teachers: Teacher[],
+  descFontSize: string = "9.5pt"
 ): Promise<void> {
   const { blob, fileName } = await generateHalaqohWordBlob(
     halaqoh,
     subjectMeta,
     allStudents,
     grades,
-    teachers
+    teachers,
+    descFontSize
   );
   triggerBrowserDownload(blob, fileName);
 }
@@ -737,6 +788,7 @@ export async function exportAllHalaqohToZip(
   allStudents: Student[],
   grades: Grade[],
   teachers: Teacher[],
+  descFontSize: string = "9.5pt",
   onProgress?: (current: number, total: number) => void
 ): Promise<void> {
   const zip = new JSZip();
@@ -753,7 +805,8 @@ export async function exportAllHalaqohToZip(
       subjectMeta,
       allStudents,
       grades,
-      teachers
+      teachers,
+      descFontSize
     );
     zipFolder.file(fileName, blob);
   }

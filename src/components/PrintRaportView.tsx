@@ -242,37 +242,93 @@ export default function PrintRaportView({
     return desc.trim();
   };
 
+  const normalizeSubject = (s: string | undefined | null) => {
+    if (!s) return "";
+    return s
+      .toLowerCase()
+      .replace(/[’'"`]/g, "'")
+      .replace(/[-_]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const isSameSubject = (a: string | undefined | null, b: string | undefined | null) => {
+    if (!a || !b) return false;
+    const normA = normalizeSubject(a);
+    const normB = normalizeSubject(b);
+    if (normA === normB) return true;
+    const aliasA = normA
+      .replace("tahfizh", "tahfidz")
+      .replace("doa", "do'a")
+      .replace("pendidikan agama islam", "pai")
+      .replace("pendidikan pancasila dan kewarganegaraan", "ppkn")
+      .replace("ilmu pengetahuan alam", "ipa")
+      .replace("ilmu pengetahuan sosial", "ips")
+      .replace("pendidikan jasmani olahraga dan kesehatan", "pjok");
+    const aliasB = normB
+      .replace("tahfizh", "tahfidz")
+      .replace("doa", "do'a")
+      .replace("pendidikan agama islam", "pai")
+      .replace("pendidikan pancasila dan kewarganegaraan", "ppkn")
+      .replace("ilmu pengetahuan alam", "ipa")
+      .replace("ilmu pengetahuan sosial", "ips")
+      .replace("pendidikan jasmani olahraga dan kesehatan", "pjok");
+    return aliasA === aliasB;
+  };
+
+  const getSubjectGradeObj = (sub: string) => {
+    return grades.find((x) => isSameSubject(x.subject, sub));
+  };
+
+  const scoreToPredicate = (score: number | string | undefined | null): string => {
+    if (score === undefined || score === null || score === "") return "";
+    const num = typeof score === "number" ? score : parseFloat(String(score));
+    if (isNaN(num)) return String(score).trim();
+    if (num >= 90) return "A";
+    if (num >= 80) return "B";
+    if (num >= 70) return "C";
+    return "D";
+  };
+
   const getSubjectScore = (sub: string) => {
-    const g = grades.find((x) => x.subject === sub);
+    const g = getSubjectGradeObj(sub);
     if (g && g.score !== undefined && g.score !== null) return g.score;
     return "";
   };
 
   const getSubjectUsaha = (sub: string) => {
-    const g = grades.find((x) => x.subject === sub);
-    if (g && g.usaha) return g.usaha;
-    return "-";
+    const g = getSubjectGradeObj(sub);
+    if (g && g.usaha && g.usaha.trim() !== "") return g.usaha.trim();
+    if (g && g.score !== undefined && g.score !== null) return scoreToPredicate(g.score);
+    if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
+    return "B";
   };
 
   const getSubjectProses = (sub: string) => {
-    const g = grades.find((x) => x.subject === sub);
-    if (g && g.proses) return g.proses;
-    return "-";
+    const g = getSubjectGradeObj(sub);
+    if (g && g.proses && g.proses.trim() !== "") return g.proses.trim();
+    if (g && g.score !== undefined && g.score !== null) return scoreToPredicate(g.score);
+    if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
+    return "B";
   };
 
   const getSubjectCapaian = (sub: string) => {
-    const g = grades.find((x) => x.subject === sub);
-    if (g && g.capaian) return g.capaian;
-    return "-";
+    const g = getSubjectGradeObj(sub);
+    if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
+    if (g && g.score !== undefined && g.score !== null) return scoreToPredicate(g.score);
+    if (g && g.usaha && g.usaha.trim() !== "") return g.usaha.trim();
+    return "B";
   };
 
   const getSubjectDescription = (sub: string) => {
-    const g = grades.find((x) => x.subject === sub);
+    const g = getSubjectGradeObj(sub);
     if (g) {
       if (g.deskripsi && g.deskripsi.trim() !== "") return g.deskripsi.trim();
-      return generateDescription(g);
+      const generated = generateDescription(g);
+      if (generated) return generated;
     }
-    return "";
+    const name = student?.name ? student.name.trim() : "Siswa";
+    return `Alhamdulillah, ananda ${name} menunjukkan pemahaman dan penguasaan yang baik dalam capaian pembelajaran ${sub}. Harapannya ananda dapat terus mempertahankan semangat dan prestasi belajarnya.`;
   };
 
   const handlePrint = () => {
@@ -353,8 +409,8 @@ export default function PrintRaportView({
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          .pdf-meta-table { width: 100%; border: none; margin-bottom: 5px; font-size: 10pt; border-collapse: collapse; margin-left: auto !important; margin-right: auto !important; }
-          .pdf-meta-table td { padding: 1px 3px; vertical-align: middle; color: #000000 !important; }
+          .pdf-meta-table { width: 100%; border: none; margin-bottom: 10px; font-size: 10.5pt; border-collapse: collapse; margin-left: auto !important; margin-right: auto !important; line-height: 1.65 !important; }
+          .pdf-meta-table td { padding: 4px 5px 8px 5px !important; vertical-align: top !important; color: #000000 !important; line-height: 1.65 !important; overflow: visible !important; box-sizing: content-box !important; }
           .pdf-box-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; border: 1.2px solid black; background-color: #ffffff; margin-left: auto !important; margin-right: auto !important; }
           .pdf-box-table td { border: 1px solid black; padding: 2px 4.5px; vertical-align: middle; font-size: 9.5pt; color: #000000 !important; }
           .pdf-box-table td[style*="font-size: 8.5pt"] {
@@ -412,22 +468,22 @@ export default function PrintRaportView({
               `
             }
 
-          <table class="pdf-meta-table">
+          <table class="pdf-meta-table" style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 10.5pt; line-height: 1.65;">
             <tr>
-              <td style="width: 15%; font-weight: normal;">Nama</td>
-              <td style="width: 2%;">:</td>
-              <td style="width: 35%; font-weight: bold;">${student.name}</td>
-              <td style="width: 18%; font-weight: normal;">Fase/Kelas</td>
-              <td style="width: 2%;">:</td>
-              <td style="width: 28%; font-weight: bold;">${formatFaseKelas(student.kelas)}</td>
+              <td style="width: 14%; font-weight: normal; white-space: nowrap; padding: 4px 2px 8px 0; vertical-align: top; line-height: 1.65; overflow: visible;">Nama</td>
+              <td style="width: 2%; text-align: center; padding: 4px 2px 8px 2px; vertical-align: top; line-height: 1.65; overflow: visible;">:</td>
+              <td style="width: 38%; font-weight: bold; padding: 4px 8px 8px 2px; vertical-align: top; line-height: 1.65; word-break: break-word; overflow: visible;">${student.name}</td>
+              <td style="width: 15%; font-weight: normal; white-space: nowrap; padding: 4px 2px 8px 0; vertical-align: top; line-height: 1.65; overflow: visible;">Fase/Kelas</td>
+              <td style="width: 2%; text-align: center; padding: 4px 2px 8px 2px; vertical-align: top; line-height: 1.65; overflow: visible;">:</td>
+              <td style="width: 29%; font-weight: bold; padding: 4px 0 8px 2px; vertical-align: top; line-height: 1.65; white-space: nowrap; overflow: visible;">${formatFaseKelas(student.kelas)}</td>
             </tr>
             <tr>
-              <td style="font-weight: normal;">NISN/ NIS</td>
-              <td>:</td>
-              <td style="font-weight: bold;">${student.nisn}</td>
-              <td style="font-weight: normal;">Semester</td>
-              <td>:</td>
-              <td style="font-weight: bold;">${format.semesterName || "Ganjil"}</td>
+              <td style="font-weight: normal; white-space: nowrap; padding: 4px 2px 8px 0; vertical-align: top; line-height: 1.65; overflow: visible;">NISN/ NIS</td>
+              <td style="text-align: center; padding: 4px 2px 8px 2px; vertical-align: top; line-height: 1.65; overflow: visible;">:</td>
+              <td style="font-weight: bold; padding: 4px 8px 8px 2px; vertical-align: top; line-height: 1.65; word-break: break-word; overflow: visible;">${student.nisn}</td>
+              <td style="font-weight: normal; white-space: nowrap; padding: 4px 2px 8px 0; vertical-align: top; line-height: 1.65; overflow: visible;">Semester</td>
+              <td style="text-align: center; padding: 4px 2px 8px 2px; vertical-align: top; line-height: 1.65; overflow: visible;">:</td>
+              <td style="font-weight: bold; padding: 4px 0 8px 2px; vertical-align: top; line-height: 1.65; white-space: nowrap; overflow: visible;">${format.semesterName || "Ganjil"}</td>
             </tr>
           </table>
 
@@ -1967,48 +2023,25 @@ export default function PrintRaportView({
             ) : null}
           </div>
 
-          {/* Student metadata tables */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-xs mb-3 font-serif">
-            <table className="w-full border-none mx-auto">
+          {/* Student metadata table */}
+          <div className="w-full mb-4 font-serif text-xs md:text-sm">
+            <table className="w-full border-none border-collapse text-left" style={{ lineHeight: "1.65" }}>
               <tbody>
                 <tr>
-                  <td className="w-1/3 py-0.5 font-normal text-gray-650">
-                    Nama
-                  </td>
-                  <td className="w-4 py-0.5 text-gray-450">:</td>
-                  <td className="py-0.5 font-bold text-black">
-                    {student.name}
-                  </td>
+                  <td className="w-[14%] pt-1.5 pb-2.5 font-normal text-gray-800 whitespace-nowrap align-top">Nama</td>
+                  <td className="w-[2%] pt-1.5 pb-2.5 text-center text-gray-400 align-top">:</td>
+                  <td className="w-[38%] pt-1.5 pb-2.5 font-bold text-black pr-2 break-words align-top">{student.name}</td>
+                  <td className="w-[15%] pt-1.5 pb-2.5 font-normal text-gray-800 whitespace-nowrap align-top">Fase/Kelas</td>
+                  <td className="w-[2%] pt-1.5 pb-2.5 text-center text-gray-400 align-top">:</td>
+                  <td className="w-[29%] pt-1.5 pb-2.5 font-bold text-black whitespace-nowrap align-top">{formatFaseKelas(student.kelas)}</td>
                 </tr>
                 <tr>
-                  <td className="py-0.5 font-normal text-gray-650">
-                    NISN/ NIS
-                  </td>
-                  <td className="py-0.5 text-gray-450">:</td>
-                  <td className="py-0.5 font-bold text-black">
-                    {student.nisn}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <table className="w-full border-none mx-auto">
-              <tbody>
-                <tr>
-                  <td className="w-1/3 py-0.5 font-normal text-gray-650">
-                    Fase/Kelas
-                  </td>
-                  <td className="w-4 py-0.5 text-gray-450">:</td>
-                  <td className="py-0.5 font-bold text-black">
-                    {formatFaseKelas(student.kelas)}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-0.5 font-normal text-gray-650">Semester</td>
-                  <td className="py-0.5 text-gray-450">:</td>
-                  <td className="py-0.5 font-bold text-black">
-                    {format.semesterName || "Ganjil"}
-                  </td>
+                  <td className="pt-1.5 pb-2.5 font-normal text-gray-800 whitespace-nowrap align-top">NISN/ NIS</td>
+                  <td className="pt-1.5 pb-2.5 text-center text-gray-400 align-top">:</td>
+                  <td className="pt-1.5 pb-2.5 font-bold text-black pr-2 break-words align-top">{student.nisn}</td>
+                  <td className="pt-1.5 pb-2.5 font-normal text-gray-800 whitespace-nowrap align-top">Semester</td>
+                  <td className="pt-1.5 pb-2.5 text-center text-gray-400 align-top">:</td>
+                  <td className="pt-1.5 pb-2.5 font-bold text-black whitespace-nowrap align-top">{format.semesterName || "Ganjil"}</td>
                 </tr>
               </tbody>
             </table>
