@@ -1577,8 +1577,8 @@
     {
       "id": "hlq_1",
       "name": "Halaqoh 1",
-      "mentorName": "",
-      "mentorTeacherId": "",
+      "mentorName": "Ustadz Ahmad, S.Pd",
+      "mentorTeacherId": "t_1788168050450",
       "studentIds": [
         "s8_rayyan",
         "s8_1",
@@ -1603,8 +1603,8 @@
     {
       "id": "hlq_2",
       "name": "Halaqoh 2",
-      "mentorName": "",
-      "mentorTeacherId": "",
+      "mentorName": "Bu Fatimah, S.Pd",
+      "mentorTeacherId": "t3",
       "studentIds": [
         "s7_1",
         "s7_2",
@@ -1624,8 +1624,8 @@
     {
       "id": "hlq_3",
       "name": "Halaqoh 3",
-      "mentorName": "",
-      "mentorTeacherId": "",
+      "mentorName": "Pak Lukman, S.Ag",
+      "mentorTeacherId": "t4",
       "studentIds": [
         "s9_1",
         "s9_2",
