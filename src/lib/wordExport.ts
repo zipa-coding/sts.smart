@@ -97,15 +97,10 @@ export async function generateHalaqohWordBlob(
     }
   }
 
-  // 2. Resolve member students
-  let memberStudents = (halaqoh.studentIds || [])
+  // 2. Resolve member students strictly as assigned in Admin Panel
+  const memberStudents = (halaqoh.studentIds || [])
     .map((id) => allStudents.find((s) => String(s.id).trim() === String(id).trim()))
     .filter((s): s is Student => Boolean(s));
-
-  if (memberStudents.length === 0) {
-    const k8 = allStudents.filter((s) => String(s.kelas) === "8");
-    memberStudents = k8.length > 0 ? k8.slice(0, 9) : allStudents.slice(0, 9);
-  }
 
   // 3. Resolve mentor teacher strictly from halaqoh data or registered teachers (never invent fake names)
   const mentorTeacher = teachers.find((t) => t.id === halaqoh.mentorTeacherId);
@@ -148,7 +143,7 @@ export async function generateHalaqohWordBlob(
       descContent = gradeObj.deskripsi.trim();
     } else {
       const studentFirstName = student.name.split(" ")[0] || student.name;
-      descContent = `Alhamdulillah ananda sholih/ah ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;
+      descContent = `Alhamdulillah ananda ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;
     }
 
     // Name paragraph with TabStop for perfect colon alignment, moderate balanced spacing

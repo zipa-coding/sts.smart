@@ -3606,9 +3606,9 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                     onChange={(e) => setHalaqohGenderFilter(e.target.value)}
                     className="px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white text-slate-900 font-semibold"
                   >
-                    <option value="all">Semua Santri (Putra & Putri)</option>
-                    <option value="putra">👦 Santri Putra (Sholih)</option>
-                    <option value="putri">👧 Santri Putri (Sholihah)</option>
+                    <option value="all">Semua Siswa</option>
+                    <option value="putra">Siswa Putra</option>
+                    <option value="putri">Siswa Putri</option>
                   </select>
 
                   <input
@@ -3635,11 +3635,6 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                     })
                     .map((s) => {
                       const isSelected = halaqohForm.studentIds.includes(s.id);
-                      const isFemale = (() => {
-                        const n = s.name.toLowerCase();
-                        const femaleKeywords = ["siti", "nur", "aisyah", "fatimah", "zahra", "khadijah", "annisa", "putri", "salsabila", "salma", "nabila", "zahira", "kayla", "naura", "dinda", "fauziyah", "amalia", "zaskia", "aulia", "safira", "husna", "rahma", "syifa", "nadia", "fitri", "intan", "dewi", "sri", "lestari", "pertiwi", "wulan", "melati", "ananda", "mutiara"];
-                        return femaleKeywords.some(kw => n.includes(kw)) || n.endsWith("a") || n.endsWith("i") || n.endsWith("h");
-                      })();
 
                       return (
                         <div
@@ -3666,13 +3661,6 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                             <span className="text-xs">{s.name}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              isFemale 
-                                ? (isSelected ? "bg-pink-700 text-white" : "bg-pink-100 text-pink-800 border border-pink-300")
-                                : (isSelected ? "bg-sky-700 text-white" : "bg-sky-100 text-sky-800 border border-sky-300")
-                            }`}>
-                              {isFemale ? "👧 Sholihah" : "👦 Sholih"}
-                            </span>
                             <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${
                               isSelected ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-800 font-bold"
                             }`}>

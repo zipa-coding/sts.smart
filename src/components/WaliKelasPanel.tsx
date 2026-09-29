@@ -198,12 +198,12 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       setSpiritualUsaha("B");
       setSpiritualProses("B");
       setSpiritualCapaian("B");
-      setSpiritualDeskripsi(`Alhamdulillah ananda sholihah ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`);
+      setSpiritualDeskripsi(`Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`);
 
       setSosialUsaha("B");
       setSosialProses("B");
       setSosialCapaian("B");
-      setSosialDeskripsi(`Alhamdulillah ananda sholihah ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`);
+      setSosialDeskripsi(`Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`);
     }
 
     // Load student's ekskul grades

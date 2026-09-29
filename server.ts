@@ -850,7 +850,7 @@ app.post("/api/halaqoh", async (req, res) => {
   const newHalaqoh = {
     id: "hlq_" + Date.now(),
     name: name.trim(),
-    mentorName: mentorName.trim(),
+    mentorName: (mentorName || "").trim(),
     mentorTeacherId: mentorTeacherId || "",
     studentIds: Array.isArray(studentIds) ? studentIds : [],
     createdAt: new Date().toISOString(),
@@ -878,7 +878,7 @@ app.put("/api/halaqoh/:id", async (req, res) => {
   db.halaqoh[index] = {
     ...db.halaqoh[index],
     name: name ? name.trim() : db.halaqoh[index].name,
-    mentorName: mentorName ? mentorName.trim() : db.halaqoh[index].mentorName,
+    mentorName: mentorName !== undefined ? (mentorName || "").trim() : db.halaqoh[index].mentorName,
     mentorTeacherId: mentorTeacherId !== undefined ? mentorTeacherId : db.halaqoh[index].mentorTeacherId,
     studentIds: Array.isArray(studentIds) ? studentIds : db.halaqoh[index].studentIds,
     updatedAt: new Date().toISOString(),

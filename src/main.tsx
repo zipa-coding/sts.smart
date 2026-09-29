@@ -991,12 +991,12 @@ const customFetch = async function (input: RequestInfo | URL, init?: RequestInit
     return originalFetch(input, init);
   }
 
-  // If Firebase is configured or on static hosting without backend, route directly to Firestore / client database
-  if (isFirebaseConfigured || isStaticHost) {
+  // Only use static local mock if strictly on a static host without a backend (github.io or file:)
+  if (isStaticHost) {
     return localFetchInterception(input, init);
   }
 
-  // Always try real backend first, seamlessly fallback if static host serves index.html fallback
+  // Always use the real backend server so ALL devices are 100% synchronized!
   try {
     const res = await originalFetch(input, init);
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
@@ -1028,6 +1028,51 @@ try {
     console.error("Failed to assign fetch on window directly:", directError);
   }
 }
+
+// Auto-sync any halaqoh settings stored in the user's laptop localStorage to the central server
+async function syncLocalHalaqohToServer() {
+  try {
+    const raw = localStorage.getItem('smart_sts_db');
+    if (!raw) return;
+    const localDb = JSON.parse(raw);
+    if (!localDb || !Array.isArray(localDb.halaqoh) || localDb.halaqoh.length === 0) return;
+
+    const res = await originalFetch('/api/halaqoh');
+    if (!res.ok) return;
+    const serverHalaqoh = await res.json();
+    if (!Array.isArray(serverHalaqoh)) return;
+
+    for (const lh of localDb.halaqoh) {
+      if (!lh || !lh.id) continue;
+      const sh = serverHalaqoh.find((s: any) => s.id === lh.id);
+      if (!sh) {
+        await originalFetch('/api/halaqoh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lh),
+        });
+      } else {
+        const localIds = Array.isArray(lh.studentIds) ? lh.studentIds : [];
+        const serverIds = Array.isArray(sh.studentIds) ? sh.studentIds : [];
+        if (
+          (localIds.length > 0 && serverIds.length === 0) ||
+          JSON.stringify(localIds) !== JSON.stringify(serverIds) ||
+          (lh.name && lh.name !== sh.name) ||
+          (lh.mentorTeacherId && lh.mentorTeacherId !== sh.mentorTeacherId)
+        ) {
+          await originalFetch(`/api/halaqoh/${lh.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(lh),
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Sync halaqoh to server error:", err);
+  }
+}
+syncLocalHalaqohToServer();
 
 // Mount application
 createRoot(document.getElementById('root')!).render(

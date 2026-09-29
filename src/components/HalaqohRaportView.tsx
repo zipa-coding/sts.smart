@@ -169,8 +169,8 @@ export default function HalaqohRaportView({
         // If current user is a mentor of a halaqoh, auto-select it
         const myHalaqoh = hArr.find(
           (h: Halaqoh) =>
-            h.mentorTeacherId === currentUser.id ||
-            h.mentorName.toLowerCase().includes(currentUser.name.toLowerCase())
+            (h.mentorTeacherId && h.mentorTeacherId === currentUser.id) ||
+            (Boolean(h.mentorName) && h.mentorName.toLowerCase().includes((currentUser.name || "").toLowerCase()))
         );
         if (myHalaqoh) {
           setSelectedHalaqohId(myHalaqoh.id);
@@ -217,14 +217,22 @@ export default function HalaqohRaportView({
     subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0]
   ) => {
     // 1. Resolve actual member students strictly belonging to this halaqoh
-    let memberStudents = (halaqoh.studentIds || [])
+    const memberStudents = (halaqoh.studentIds || [])
       .map((id) => students.find((s) => String(s.id).trim() === String(id).trim()))
       .filter((s): s is Student => Boolean(s));
 
-    // Fallback only if halaqoh has no students assigned yet
     if (memberStudents.length === 0) {
-      const k8 = students.filter((s) => String(s.kelas) === "8");
-      memberStudents = k8.length > 0 ? k8.slice(0, 10) : students.slice(0, 8);
+      return `
+        <div style="background-color: #ffffff; color: #000000; padding: 30px 20px; text-align: center; font-family: 'Times New Roman', serif;">
+          <img src="${kopSuratBannerUrl}" alt="Kop Surat" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto 24px auto;" />
+          <div style="margin: 30px auto; max-width: 520px; padding: 24px; border: 2px dashed #cbd5e1; border-radius: 12px; background-color: #f8fafc;">
+            <p style="font-size: 13pt; font-weight: bold; margin-bottom: 8px; color: #0f172a;">Belum Ada Santri di ${halaqoh.name}</p>
+            <p style="font-size: 10.5pt; color: #64748b; line-height: 1.5; margin: 0;">
+              Kelompok halaqoh ini belum memiliki santri yang ditetapkan. Silakan pilih dan masukkan santri melalui menu <strong>Panel Admin &gt; Manajemen Halaqoh</strong>.
+            </p>
+          </div>
+        </div>
+      `;
     }
 
     // 2. Resolve Ustadz/ah Pembimbing name - only from actual halaqoh or registered teacher
@@ -257,7 +265,7 @@ export default function HalaqohRaportView({
         descContent = gradeObj.deskripsi.trim();
       } else {
         const studentFirstName = student.name.split(" ")[0] || student.name;
-        descContent = `Alhamdulillah ananda sholih/ah ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;
+        descContent = `Alhamdulillah ananda ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;
       }
 
       return `
