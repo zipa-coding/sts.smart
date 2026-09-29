@@ -16,6 +16,7 @@ import {
   TabStopType,
 } from "docx";
 import { saveAs } from "file-saver";
+import JSZip from "jszip";
 import { Student, Grade, Halaqoh, Teacher } from "../types";
 import { KEISLAMAN_SUBJECTS } from "../components/HalaqohRaportView";
 import kopSuratBannerUrl from "../assets/images/kop_surat_banner.png";
@@ -41,31 +42,58 @@ const cellMargins = {
   right: 90,
 };
 
-export async function exportHalaqohToWord(
+// Cached banner buffer to avoid re-fetching on every document generation
+let cachedBannerBuffer: ArrayBuffer | null = null;
+
+export function triggerBrowserDownload(blob: Blob, fileName: string): void {
+  try {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch {}
+    }, 2000);
+  } catch {
+    saveAs(blob, fileName);
+  }
+}
+
+export async function generateHalaqohWordBlob(
   halaqoh: Halaqoh,
   subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0],
   allStudents: Student[],
   grades: Grade[],
   teachers: Teacher[]
-): Promise<void> {
-  // 1. Fetch Kop Surat Banner image buffer reliably
-  let bannerBuffer: ArrayBuffer | null = null;
-  try {
-    let res = await fetch(kopSuratBannerUrl);
-    if (!res.ok) {
-      res = await fetch("/kop_surat_banner.png");
-    }
-    if (res.ok) {
-      bannerBuffer = await res.arrayBuffer();
-    }
-  } catch {
+): Promise<{ blob: Blob; fileName: string }> {
+  // 1. Fetch Kop Surat Banner image buffer reliably (with caching for speed)
+  let bannerBuffer: ArrayBuffer | null = cachedBannerBuffer;
+  if (!bannerBuffer) {
     try {
-      const res = await fetch("/kop_surat_banner.png");
+      let res = await fetch(kopSuratBannerUrl);
+      if (!res.ok) {
+        res = await fetch("/kop_surat_banner.png");
+      }
       if (res.ok) {
         bannerBuffer = await res.arrayBuffer();
+        cachedBannerBuffer = bannerBuffer;
       }
-    } catch (err) {
-      console.warn("Could not load kop surat banner image, continuing without image banner", err);
+    } catch {
+      try {
+        const res = await fetch("/kop_surat_banner.png");
+        if (res.ok) {
+          bannerBuffer = await res.arrayBuffer();
+          cachedBannerBuffer = bannerBuffer;
+        }
+      } catch (err) {
+        console.warn("Could not load kop surat banner image, continuing without image banner", err);
+      }
     }
   }
 
@@ -676,11 +704,66 @@ export async function exportHalaqohToWord(
     ],
   });
 
-  // 6. Pack and Download as .docx
+  // 6. Pack document as .docx blob
   const blob = await Packer.toBlob(doc);
   const safeSubName = subjectMeta.shortTitle.replace(/[^a-zA-Z0-9]/g, "_");
   const safeHalaqohName = halaqoh.name.replace(/[^a-zA-Z0-9]/g, "_");
   const fileName = `Raport_ETTQ_${safeSubName}_${safeHalaqohName}.docx`;
 
-  saveAs(blob, fileName);
+  return { blob, fileName };
+}
+
+/**
+ * Export a single subject report to .docx and trigger browser download
+ */
+export async function exportHalaqohToWord(
+  halaqoh: Halaqoh,
+  subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0],
+  allStudents: Student[],
+  grades: Grade[],
+  teachers: Teacher[]
+): Promise<void> {
+  const { blob, fileName } = await generateHalaqohWordBlob(
+    halaqoh,
+    subjectMeta,
+    allStudents,
+    grades,
+    teachers
+  );
+  triggerBrowserDownload(blob, fileName);
+}
+
+/**
+ * Export all 4 subject reports bundled into a single .zip file.
+ * This avoids the browser's "multiple file download permission" popup entirely!
+ */
+export async function exportAllHalaqohToZip(
+  halaqoh: Halaqoh,
+  allStudents: Student[],
+  grades: Grade[],
+  teachers: Teacher[],
+  onProgress?: (current: number, total: number) => void
+): Promise<void> {
+  const zip = new JSZip();
+  const folderName = `Raport_Word_${halaqoh.name.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  const zipFolder = zip.folder(folderName) || zip;
+
+  for (let i = 0; i < KEISLAMAN_SUBJECTS.length; i++) {
+    const subjectMeta = KEISLAMAN_SUBJECTS[i];
+    if (onProgress) {
+      onProgress(i + 1, KEISLAMAN_SUBJECTS.length);
+    }
+    const { blob, fileName } = await generateHalaqohWordBlob(
+      halaqoh,
+      subjectMeta,
+      allStudents,
+      grades,
+      teachers
+    );
+    zipFolder.file(fileName, blob);
+  }
+
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const safeHalaqohName = halaqoh.name.replace(/[^a-zA-Z0-9]/g, "_");
+  triggerBrowserDownload(zipBlob, `Semua_Raport_Word_${safeHalaqohName}.zip`);
 }

@@ -16,12 +16,13 @@ import {
   FileText,
   Calendar,
   UserCheck,
+  Archive,
 } from "lucide-react";
 import logoUrl from "../assets/images/smp_logo_exact_match_revised_1783840969621.jpg";
 import logoJsitUrl from "../assets/images/logo_jsit_indonesia_1783956323407.jpg";
 import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.jpg";
 import kopSuratBannerUrl from "../assets/images/kop_surat_banner.png";
-import { exportHalaqohToWord } from "../lib/wordExport";
+import { exportHalaqohToWord, exportAllHalaqohToZip } from "../lib/wordExport";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
 
@@ -78,6 +79,7 @@ export default function HalaqohRaportView({
     null
   );
   const [isBatchDownloadingWord, setIsBatchDownloadingWord] = useState(false);
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -106,7 +108,26 @@ export default function HalaqohRaportView({
     }
   };
 
-  // Handle batch download of all 4 Word files
+  // Handle batch download of all 4 Word files bundled in 1 ZIP (100% no permission popups)
+  const handleDownloadZipWord = async () => {
+    if (!activeHalaqoh) return;
+    setIsDownloadingZip(true);
+    try {
+      await exportAllHalaqohToZip(
+        activeHalaqoh,
+        students,
+        grades,
+        teachers
+      );
+    } catch (err) {
+      console.error("Gagal mengunduh arsip zip Word:", err);
+      alert("Gagal mengunduh arsip ZIP Word. Silakan coba kembali.");
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
+  // Handle batch download of all 4 Word files separately
   const handleDownloadAllSeparateWord = async () => {
     if (!activeHalaqoh) return;
     setIsBatchDownloadingWord(true);
@@ -720,16 +741,30 @@ export default function HalaqohRaportView({
           </button>
 
           <button
+            onClick={handleDownloadZipWord}
+            disabled={!activeHalaqoh || halaqohStudents.length === 0 || isDownloadingZip}
+            title="Download seluruh 4 mapel dalam 1 paket ZIP tanpa gangguan peringatan izin browser"
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-950/50 border border-emerald-400/40 cursor-pointer transition disabled:opacity-50"
+          >
+            {isDownloadingZip ? (
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+            ) : (
+              <Archive className="w-4 h-4 text-white" />
+            )}
+            <span>Download 4 Berkas (.zip)</span>
+          </button>
+
+          <button
             onClick={handleDownloadAllSeparateWord}
             disabled={!activeHalaqoh || halaqohStudents.length === 0 || isBatchDownloadingWord}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-950/50 border border-indigo-400/40 cursor-pointer transition disabled:opacity-50"
+            className="px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#162442] border border-[#223658] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
           >
             {isBatchDownloadingWord ? (
               <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
             ) : (
-              <FileDown className="w-4 h-4 text-white" />
+              <FileDown className="w-4 h-4 text-indigo-400" />
             )}
-            <span>Download 4 Berkas Word (.docx)</span>
+            <span>Download 4 Word Terpisah</span>
           </button>
 
           <button
