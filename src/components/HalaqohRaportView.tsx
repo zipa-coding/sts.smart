@@ -276,8 +276,8 @@ export default function HalaqohRaportView({
         const normA = normalizeSubject(a);
         const normB = normalizeSubject(b);
         if (normA === normB) return true;
-        const aliasA = normA.replace("tahfizh", "tahfidz").replace("doa", "do'a");
-        const aliasB = normB.replace("tahfizh", "tahfidz").replace("doa", "do'a");
+        const aliasA = normA.replace("tahfizh", "tahfidz").replace("doa", "do'a").replace("&", "dan");
+        const aliasB = normB.replace("tahfizh", "tahfidz").replace("doa", "do'a").replace("&", "dan");
         return aliasA === aliasB;
       };
 
@@ -885,7 +885,7 @@ export default function HalaqohRaportView({
               const isDownloadingWord = downloadingWordSubject === sub.key;
 
               return (
-                <button
+                <div
                   key={sub.key}
                   onClick={() => setSelectedSubjectKey(sub.key)}
                   className={`p-2 rounded-xl text-[11px] font-bold text-left transition flex flex-col justify-between border cursor-pointer ${
@@ -894,14 +894,15 @@ export default function HalaqohRaportView({
                       : "bg-[#0e172a] border-[#223658] text-slate-300 hover:text-white hover:bg-[#15233c]"
                   }`}
                 >
-                  <span className="truncate">{sub.tableHeader}</span>
+                  <span className="truncate select-none">{sub.tableHeader}</span>
                   <div className="mt-1.5 flex items-center justify-between gap-1">
-                    <span
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDownloadSingleWord(sub);
                       }}
-                      className="px-1.5 py-0.5 rounded bg-blue-500 hover:bg-blue-400 text-white text-[9px] font-mono flex items-center gap-1 transition"
+                      className="px-1.5 py-0.5 rounded bg-blue-500 hover:bg-blue-400 text-white text-[9px] font-mono flex items-center gap-1 transition border-none cursor-pointer"
                       title={`Download File Word (.docx) ${sub.tableHeader}`}
                     >
                       {isDownloadingWord ? (
@@ -910,21 +911,22 @@ export default function HalaqohRaportView({
                         <FileText className="w-2.5 h-2.5" />
                       )}
                       <span>DOCX</span>
-                    </span>
+                    </button>
 
-                    <span
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDownloadSinglePDF(sub);
                       }}
-                      className="px-1.5 py-0.5 rounded bg-black/40 hover:bg-black/70 text-slate-200 text-[9px] font-mono flex items-center gap-1 transition"
+                      className="px-1.5 py-0.5 rounded bg-black/40 hover:bg-black/70 text-slate-200 text-[9px] font-mono flex items-center gap-1 transition border-none cursor-pointer"
                       title={`Download File PDF ${sub.tableHeader}`}
                     >
                       <Download className="w-2.5 h-2.5 text-emerald-400" />
                       <span>PDF</span>
-                    </span>
+                    </button>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

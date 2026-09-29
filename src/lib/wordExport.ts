@@ -47,6 +47,9 @@ let cachedBannerBuffer: ArrayBuffer | null = null;
 
 export function triggerBrowserDownload(blob: Blob, fileName: string): void {
   try {
+    saveAs(blob, fileName);
+  } catch (err) {
+    console.warn("saveAs failed, falling back to anchor click", err);
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.style.display = "none";
@@ -60,8 +63,6 @@ export function triggerBrowserDownload(blob: Blob, fileName: string): void {
         window.URL.revokeObjectURL(url);
       } catch {}
     }, 2000);
-  } catch {
-    saveAs(blob, fileName);
   }
 }
 
@@ -144,8 +145,8 @@ export async function generateHalaqohWordBlob(
       const normA = normalizeSub(a);
       const normB = normalizeSub(b);
       if (normA === normB) return true;
-      const aliasA = normA.replace("tahfizh", "tahfidz").replace("doa", "do'a");
-      const aliasB = normB.replace("tahfizh", "tahfidz").replace("doa", "do'a");
+      const aliasA = normA.replace("tahfizh", "tahfidz").replace("doa", "do'a").replace("&", "dan");
+      const aliasB = normB.replace("tahfizh", "tahfidz").replace("doa", "do'a").replace("&", "dan");
       return aliasA === aliasB;
     };
 

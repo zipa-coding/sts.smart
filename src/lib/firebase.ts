@@ -18,13 +18,13 @@ const metaEnv = (import.meta as any).env || {};
 
 // Firebase configuration with smartsts-12f15
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDHuaZ2ean-ZDP84bDC2lOZxVCEklLvD4o",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "smartsts-12f15.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "smartsts-12f15",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "smartsts-12f15.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "400636927793",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:400636927793:web:52dc8ce6b88a8373085a10",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-3YM825SY0M"
+  apiKey: metaEnv.VITE_FIREBASE_API_KEY || "AIzaSyDHuaZ2ean-ZDP84bDC2lOZxVCEklLvD4o",
+  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || "smartsts-12f15.firebaseapp.com",
+  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || "smartsts-12f15",
+  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || "smartsts-12f15.firebasestorage.app",
+  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || "400636927793",
+  appId: metaEnv.VITE_FIREBASE_APP_ID || "1:400636927793:web:52dc8ce6b88a8373085a10",
+  measurementId: metaEnv.VITE_FIREBASE_MEASUREMENT_ID || "G-3YM825SY0M"
 };
 
 // Check if Firebase is genuinely configured with credentials
@@ -762,6 +762,117 @@ export const firebaseApi = {
     if (!db) throw new Error("Database not connected");
     await withTimeout(deleteDoc(doc(db, "ekskul", id)), 2500);
     return { message: "Ekskul deleted" };
+  },
+
+  // 10. GET, POST, PUT, DELETE /api/halaqoh (Cloud Firestore Persistence)
+  getHalaqoh: async (): Promise<any[]> => {
+    if (!db) return dbDataAny.halaqoh || [];
+    try {
+      // 1. Primary: Read from Firestore settings/halaqoh document (universal master cloud sync across all devices)
+      const docSnap = await withTimeout(getDoc(doc(db, "settings", "halaqoh")), 3500).catch(() => null);
+      if (docSnap && docSnap.exists() && Array.isArray(docSnap.data()?.list) && docSnap.data().list.length > 0) {
+        return docSnap.data().list;
+      }
+
+      // 2. Secondary: Check halaqoh collection
+      const snap = await withTimeout(getDocs(collection(db, "halaqoh")), 3500).catch(() => null);
+      if (snap && !snap.empty) {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        await setDoc(doc(db, "settings", "halaqoh"), { list }, { merge: true }).catch(() => {});
+        return list;
+      }
+    } catch (e) {
+      console.warn("Failed to get halaqoh from Firestore:", e);
+    }
+    return dbDataAny.halaqoh || [];
+  },
+  postHalaqoh: async (body: any) => {
+    if (!db) throw new Error("Database not connected");
+    const { name, mentorName, mentorTeacherId, studentIds } = body || {};
+    if (!name || !name.trim()) throw new Error("Nama halaqoh wajib diisi.");
+    const id = "hlq_" + Date.now();
+    const newHalaqoh = {
+      id,
+      name: name.trim(),
+      mentorName: (mentorName || "").trim(),
+      mentorTeacherId: mentorTeacherId || "",
+      studentIds: Array.isArray(studentIds) ? studentIds : [],
+      createdAt: new Date().toISOString()
+    };
+
+    // Fetch current list from Firestore
+    let currentList: any[] = [];
+    try {
+      const snap = await withTimeout(getDoc(doc(db, "settings", "halaqoh")), 3000).catch(() => null);
+      if (snap && snap.exists() && Array.isArray(snap.data()?.list)) {
+        currentList = snap.data().list;
+      }
+    } catch {}
+
+    const updatedList = [...currentList, newHalaqoh];
+    await withTimeout(setDoc(doc(db, "settings", "halaqoh"), { list: updatedList }, { merge: true }), 4000);
+    await setDoc(doc(db, "halaqoh", id), newHalaqoh).catch(() => {});
+    return newHalaqoh;
+  },
+  putHalaqoh: async (id: string, body: any) => {
+    if (!db) throw new Error("Database not connected");
+    const { name, mentorName, mentorTeacherId, studentIds } = body || {};
+
+    let currentList: any[] = [];
+    try {
+      const snap = await withTimeout(getDoc(doc(db, "settings", "halaqoh")), 3000).catch(() => null);
+      if (snap && snap.exists() && Array.isArray(snap.data()?.list)) {
+        currentList = snap.data().list;
+      }
+    } catch {}
+
+    const index = currentList.findIndex((h: any) => h.id === id);
+    let updatedH: any = null;
+    if (index !== -1) {
+      updatedH = {
+        ...currentList[index],
+        name: name ? name.trim() : currentList[index].name,
+        mentorName: mentorName !== undefined ? (mentorName || "").trim() : currentList[index].mentorName,
+        mentorTeacherId: mentorTeacherId !== undefined ? mentorTeacherId : currentList[index].mentorTeacherId,
+        studentIds: Array.isArray(studentIds) ? studentIds : currentList[index].studentIds,
+        updatedAt: new Date().toISOString()
+      };
+      currentList[index] = updatedH;
+    } else {
+      updatedH = {
+        id,
+        name: (name || "").trim(),
+        mentorName: (mentorName || "").trim(),
+        mentorTeacherId: mentorTeacherId || "",
+        studentIds: Array.isArray(studentIds) ? studentIds : [],
+        updatedAt: new Date().toISOString()
+      };
+      currentList.push(updatedH);
+    }
+
+    await withTimeout(setDoc(doc(db, "settings", "halaqoh"), { list: currentList }, { merge: true }), 4000);
+    await setDoc(doc(db, "halaqoh", id), updatedH, { merge: true }).catch(() => {});
+    return updatedH;
+  },
+  deleteHalaqoh: async (id: string) => {
+    if (!db) throw new Error("Database not connected");
+    let currentList: any[] = [];
+    try {
+      const snap = await withTimeout(getDoc(doc(db, "settings", "halaqoh")), 3000).catch(() => null);
+      if (snap && snap.exists() && Array.isArray(snap.data()?.list)) {
+        currentList = snap.data().list;
+      }
+    } catch {}
+
+    const filtered = currentList.filter((h: any) => h.id !== id);
+    await withTimeout(setDoc(doc(db, "settings", "halaqoh"), { list: filtered }, { merge: true }), 4000);
+    await deleteDoc(doc(db, "halaqoh", id)).catch(() => {});
+    return { message: "Halaqoh berhasil dihapus." };
+  },
+  syncHalaqohList: async (list: any[]) => {
+    if (!db || !Array.isArray(list)) return [];
+    await withTimeout(setDoc(doc(db, "settings", "halaqoh"), { list }, { merge: true }), 4000);
+    return list;
   }
 };
 export { db as default };

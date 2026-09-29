@@ -93,6 +93,21 @@
         "type": { "type": "string", "maxLength": 50 }
       },
       "required": ["name", "type"]
+    },
+    "Halaqoh": {
+      "title": "Halaqoh",
+      "description": "Halaqoh groups, mentors, and member students for Keislaman & ETTQ",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "mentorName": { "type": "string", "maxLength": 200 },
+        "mentorTeacherId": { "type": "string", "maxLength": 128 },
+        "studentIds": { "type": "array" },
+        "createdAt": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["name"]
     }
   },
   "firestore": {
@@ -123,6 +138,10 @@
     "/ekskul/{ekskulId}": {
       "schema": "Ekskul",
       "description": "School extracurricular activities"
+    },
+    "/halaqoh/{halaqohId}": {
+      "schema": "Halaqoh",
+      "description": "Halaqoh groups, mentors, and member students"
     }
   }
 }

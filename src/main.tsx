@@ -319,6 +319,51 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           const res = await firebaseApi.deleteEkskul(id);
           return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
+
+        // 10. GET, POST, PUT, DELETE /api/halaqoh for Cloud Firestore
+        if (path === '/api/halaqoh' && method === 'GET') {
+          const hlq = await firebaseApi.getHalaqoh();
+          const db = getDB();
+          if (Array.isArray(hlq)) {
+            db.halaqoh = hlq;
+            saveDB(db);
+          }
+          return new Response(JSON.stringify(hlq), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        if (path === '/api/halaqoh' && method === 'POST') {
+          const newH = await firebaseApi.postHalaqoh(body);
+          const db = getDB();
+          if (!Array.isArray(db.halaqoh)) db.halaqoh = [];
+          db.halaqoh.push(newH);
+          saveDB(db);
+          return new Response(JSON.stringify(newH), { status: 201, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        if (path.startsWith('/api/halaqoh/') && method === 'PUT') {
+          const id = path.split('/').pop() || "";
+          const updatedH = await firebaseApi.putHalaqoh(id, body);
+          const db = getDB();
+          if (Array.isArray(db.halaqoh)) {
+            const idx = db.halaqoh.findIndex((h: any) => h.id === id);
+            if (idx !== -1) {
+              db.halaqoh[idx] = { ...db.halaqoh[idx], ...updatedH };
+              saveDB(db);
+            }
+          }
+          return new Response(JSON.stringify(updatedH), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        if (path.startsWith('/api/halaqoh/') && method === 'DELETE') {
+          const id = path.split('/').pop() || "";
+          const res = await firebaseApi.deleteHalaqoh(id);
+          const db = getDB();
+          if (Array.isArray(db.halaqoh)) {
+            db.halaqoh = db.halaqoh.filter((h: any) => h.id !== id);
+            saveDB(db);
+          }
+          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
       } catch (firebaseErr) {
         console.warn("Firestore call failed, falling back to local database storage:", firebaseErr);
       }
@@ -1029,50 +1074,40 @@ try {
   }
 }
 
-// Auto-sync any halaqoh settings stored in the user's laptop localStorage to the central server
-async function syncLocalHalaqohToServer() {
+// Two-way synchronization for Halaqoh: ensure Cloud Firestore is always the master source of truth across all devices
+async function syncHalaqohAcrossDevices() {
   try {
+    // 1. If Firebase Firestore is configured, fetch live cloud halaqoh records
+    if (isFirebaseConfigured) {
+      const cloudHalaqoh = await firebaseApi.getHalaqoh();
+      if (Array.isArray(cloudHalaqoh) && cloudHalaqoh.length > 0) {
+        // Sync cloud data into localStorage so every device and browser has the exact same latest ustadz/ustadzah names
+        const raw = localStorage.getItem('smart_sts_db');
+        const localDb = raw ? JSON.parse(raw) : {};
+        localDb.halaqoh = cloudHalaqoh;
+        localStorage.setItem('smart_sts_db', JSON.stringify(localDb));
+        if (clientDbCache) clientDbCache.halaqoh = cloudHalaqoh;
+        return;
+      }
+    }
+
+    // 2. If Firestore had 0 records yet, check if user had created halaqoh in their local storage and push it to Cloud/Server
     const raw = localStorage.getItem('smart_sts_db');
     if (!raw) return;
     const localDb = JSON.parse(raw);
     if (!localDb || !Array.isArray(localDb.halaqoh) || localDb.halaqoh.length === 0) return;
 
-    const res = await originalFetch('/api/halaqoh');
-    if (!res.ok) return;
-    const serverHalaqoh = await res.json();
-    if (!Array.isArray(serverHalaqoh)) return;
-
-    for (const lh of localDb.halaqoh) {
-      if (!lh || !lh.id) continue;
-      const sh = serverHalaqoh.find((s: any) => s.id === lh.id);
-      if (!sh) {
-        await originalFetch('/api/halaqoh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(lh),
-        });
-      } else {
-        const localIds = Array.isArray(lh.studentIds) ? lh.studentIds : [];
-        const serverIds = Array.isArray(sh.studentIds) ? sh.studentIds : [];
-        if (
-          (localIds.length > 0 && serverIds.length === 0) ||
-          JSON.stringify(localIds) !== JSON.stringify(serverIds) ||
-          (lh.name && lh.name !== sh.name) ||
-          (lh.mentorTeacherId && lh.mentorTeacherId !== sh.mentorTeacherId)
-        ) {
-          await originalFetch(`/api/halaqoh/${lh.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lh),
-          });
-        }
+    if (isFirebaseConfigured) {
+      for (const h of localDb.halaqoh) {
+        if (!h || !h.id) continue;
+        await firebaseApi.postHalaqoh(h).catch(() => {});
       }
     }
   } catch (err) {
-    console.warn("Sync halaqoh to server error:", err);
+    console.warn("Sync halaqoh across devices error:", err);
   }
 }
-syncLocalHalaqohToServer();
+syncHalaqohAcrossDevices();
 
 // Mount application
 createRoot(document.getElementById('root')!).render(

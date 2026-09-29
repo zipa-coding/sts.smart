@@ -155,6 +155,26 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // 8. KELOMPOK HALAQOH & KEISLAMAN (halaqoh)
+    // ==========================================
+    function isValidHalaqohDoc(data) {
+      return (
+        'name' in data && isNonEmptyString(data.name, 200)
+        && isOptionalString(data, 'mentorName', 200)
+        && isOptionalString(data, 'mentorTeacherId', 128)
+        && isOptionalList(data, 'studentIds')
+        && isOptionalString(data, 'createdAt', 100)
+        && isOptionalString(data, 'updatedAt', 100)
+      );
+    }
+
+    match /halaqoh/{halaqohId} {
+      allow read: if true;
+      allow create, update: if isValidId(halaqohId) && isValidHalaqohDoc(request.resource.data);
+      allow delete: if isValidId(halaqohId);
+    }
+
+    // ==========================================
     // ⛔ DEFAULT DENY: Tolak akses dokumen lain di luar skema
     // ==========================================
     match /{document=**} {
