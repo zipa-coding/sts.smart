@@ -35,10 +35,10 @@ const tableBorders = {
 };
 
 const cellMargins = {
-  top: 35, // dxa (~1.75pt)
-  bottom: 35,
-  left: 70,
-  right: 70,
+  top: 55, // dxa (~2.75pt) - moderate comfortable spacing
+  bottom: 55,
+  left: 90,
+  right: 90,
 };
 
 export async function exportHalaqohToWord(
@@ -123,7 +123,7 @@ export async function exportHalaqohToWord(
       descContent = `Alhamdulillah ananda sholih/ah ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;
     }
 
-    // Name paragraph with TabStop for perfect colon alignment, compact line height
+    // Name paragraph with TabStop for perfect colon alignment, moderate balanced spacing
     const pName = new Paragraph({
       children: [
         new TextRun({
@@ -138,10 +138,10 @@ export async function exportHalaqohToWord(
         }),
       ],
       tabStops: [{ type: TabStopType.LEFT, position: 1100 }],
-      spacing: { before: isFirstOnPage ? 0 : 35, after: 0, line: 220 },
+      spacing: { before: isFirstOnPage ? 0 : 100, after: 15, line: 240 },
     });
 
-    // Class paragraph with TabStop for perfect colon alignment, very tight spacing before table
+    // Class paragraph with TabStop for perfect colon alignment, moderate balanced spacing before table
     const pClass = new Paragraph({
       children: [
         new TextRun({
@@ -156,10 +156,10 @@ export async function exportHalaqohToWord(
         }),
       ],
       tabStops: [{ type: TabStopType.LEFT, position: 1100 }],
-      spacing: { before: 0, after: 15, line: 220 },
+      spacing: { before: 0, after: 35, line: 240 },
     });
 
-    // Score & Description Table with compact cell spacing
+    // Score & Description Table with balanced cell spacing
     const table = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: tableBorders,
@@ -348,10 +348,10 @@ export async function exportHalaqohToWord(
               ],
               borders: tableBorders,
               margins: {
-                top: 40,
-                bottom: 40,
-                left: 90,
-                right: 90,
+                top: 60,
+                bottom: 60,
+                left: 100,
+                right: 100,
               },
             }),
           ],
@@ -372,7 +372,7 @@ export async function exportHalaqohToWord(
   const documentChildren: (Paragraph | Table)[] = [];
 
   // ================= PAGE 1 =================
-  // Banner Image - Large, full-width matching the page margins
+  // Banner Image - Large, full-width matching the page margins with prominent official logos
   if (bannerBuffer) {
     documentChildren.push(
       new Paragraph({
@@ -381,13 +381,13 @@ export async function exportHalaqohToWord(
             type: "png",
             data: new Uint8Array(bannerBuffer),
             transformation: {
-              width: 690,
-              height: 92,
+              width: 685,
+              height: 102.75,
             },
           }),
         ],
         alignment: AlignmentType.CENTER,
-        spacing: { before: 0, after: 60 },
+        spacing: { before: 0, after: 70 },
       })
     );
   }
