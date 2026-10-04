@@ -34,6 +34,41 @@ export default function PrintRaportView({
   // Permanently in dark mode
   const darkMode = true;
 
+  const [liveGrades, setLiveGrades] = useState<Grade[]>(grades || []);
+  const [liveNote, setLiveNote] = useState<WaliKelasNote>(waliKelasNote);
+
+  React.useEffect(() => {
+    setLiveGrades(grades || []);
+  }, [grades]);
+
+  React.useEffect(() => {
+    setLiveNote(waliKelasNote);
+  }, [waliKelasNote]);
+
+  // Synchronize live fresh data from DB on mount
+  React.useEffect(() => {
+    if (student?.id) {
+      Promise.all([
+        fetch("/api/grades").then((r) => r.json()),
+        fetch("/api/walikelas/notes").then((r) => r.json()),
+      ])
+        .then(([allG, allN]) => {
+          if (Array.isArray(allG)) {
+            const studentOnly = allG.filter(
+              (g: any) => String(g.studentId).trim() === String(student.id).trim()
+            );
+            if (studentOnly.length > 0) {
+              setLiveGrades(studentOnly);
+            }
+          }
+          if (allN && typeof allN === "object" && allN[student.id]) {
+            setLiveNote(allN[student.id]);
+          }
+        })
+        .catch((e) => console.error("Error refreshing live grades in raport:", e));
+    }
+  }, [student?.id]);
+
   // Dynamic state for Headmaster/Principal info & Raport format configurations
   const [principal, setPrincipal] = useState({
     name: "Ustadz H. Ir. Abdul Muhyi, M.Pd",
@@ -272,14 +307,14 @@ export default function PrintRaportView({
   };
 
   const getSubjectGradeObj = (sub: string) => {
-    return grades.find((x) => isSameSubject(x.subject, sub));
+    return liveGrades.find((x) => isSameSubject(x.subject, sub));
   };
 
   const scoreToPredicate = (score: number | string | undefined | null): string => {
     if (score === undefined || score === null || score === "") return "";
     const num = typeof score === "number" ? score : parseFloat(String(score));
     if (isNaN(num)) return String(score).trim();
-    if (num >= 90) return "A";
+    if (num > 91) return "A";
     if (num >= 80) return "B";
     if (num >= 70) return "C";
     return "D";
@@ -287,14 +322,14 @@ export default function PrintRaportView({
 
   const getSubjectScore = (sub: string) => {
     const g = getSubjectGradeObj(sub);
-    if (g && g.score !== undefined && g.score !== null) return g.score;
+    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "") return g.score;
     return "";
   };
 
   const getSubjectUsaha = (sub: string) => {
     const g = getSubjectGradeObj(sub);
     if (g && g.usaha && g.usaha.trim() !== "") return g.usaha.trim();
-    if (g && g.score !== undefined && g.score !== null) return scoreToPredicate(g.score);
+    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "") return scoreToPredicate(g.score);
     if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
     return "B";
   };
@@ -302,7 +337,7 @@ export default function PrintRaportView({
   const getSubjectProses = (sub: string) => {
     const g = getSubjectGradeObj(sub);
     if (g && g.proses && g.proses.trim() !== "") return g.proses.trim();
-    if (g && g.score !== undefined && g.score !== null) return scoreToPredicate(g.score);
+    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "") return scoreToPredicate(g.score);
     if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
     return "B";
   };
@@ -310,7 +345,7 @@ export default function PrintRaportView({
   const getSubjectCapaian = (sub: string) => {
     const g = getSubjectGradeObj(sub);
     if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
-    if (g && g.score !== undefined && g.score !== null) return scoreToPredicate(g.score);
+    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "") return scoreToPredicate(g.score);
     if (g && g.usaha && g.usaha.trim() !== "") return g.usaha.trim();
     return "B";
   };
