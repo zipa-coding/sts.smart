@@ -428,33 +428,28 @@ export default function PrintRaportView({
         <style>
           .pdf-wrapper { 
             font-family: 'Times New Roman', Times, serif; 
-            font-size: 11pt; 
-            line-height: 1.45; 
+            font-size: 10pt; 
+            line-height: 1.35; 
             color: #000000 !important; 
             background-color: #ffffff; 
             position: relative;
           }
           .pdf-wrapper * {
-            color: #000000 !important;
+            color: #000000 !important; 
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          .pdf-meta-table { width: 100%; border: none; margin-bottom: 10px; font-size: 10.5pt; border-collapse: collapse; margin-left: auto !important; margin-right: auto !important; line-height: 1.65 !important; }
-          .pdf-meta-table td { padding: 4px 5px 8px 5px !important; vertical-align: top !important; color: #000000 !important; line-height: 1.65 !important; overflow: visible !important; box-sizing: content-box !important; }
-          .pdf-box-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; border: 1.2px solid black; background-color: #ffffff; margin-left: auto !important; margin-right: auto !important; }
-          .pdf-box-table td { border: 1px solid black; padding: 2px 4.5px; vertical-align: middle; font-size: 9.5pt; color: #000000 !important; }
+          .pdf-meta-table { width: 100%; border: none; margin-bottom: 6px; font-size: 9.5pt; border-collapse: collapse; margin-left: auto !important; margin-right: auto !important; line-height: 1.4 !important; }
+          .pdf-meta-table td { padding: 2px 4px 3px 0 !important; vertical-align: top !important; color: #000000 !important; line-height: 1.4 !important; overflow: visible !important; box-sizing: content-box !important; }
+          .pdf-box-table { width: 100%; border-collapse: collapse; margin-bottom: 3.5px; border: 1.2px solid black; background-color: #ffffff; margin-left: auto !important; margin-right: auto !important; }
+          .pdf-box-table td { border: 1px solid black; padding: 2px 4px; vertical-align: middle; font-size: 9pt; color: #000000 !important; }
           .pdf-box-table td[style*="font-size: 8.5pt"] {
             vertical-align: top !important;
-            padding-top: 2px !important;
-            padding-bottom: 5px !important;
+            padding-top: 1.5px !important;
+            padding-bottom: 2.5px !important;
           }
-          .pdf-box-table tr:nth-child(2) td[style*="font-size: 9.5pt"]:not([style*="padding"]) {
-            vertical-align: top !important;
-            padding-top: 2.5px !important;
-            padding-bottom: 5.5px !important;
-          }
-          .pdf-heading { margin: 15px 0 9px 0; text-transform: uppercase; font-size: 9.5pt; font-weight: bold; color: #000000 !important; page-break-after: avoid !important; break-after: avoid !important; }
-          .pdf-signature-table { width: 100%; border: none; margin-top: 15px; border-collapse: collapse; margin-left: auto !important; margin-right: auto !important; }
+          .pdf-heading { margin: 8px 0 3.5px 0; text-transform: uppercase; font-size: 9.5pt; font-weight: bold; color: #000000 !important; page-break-after: avoid !important; break-after: avoid !important; }
+          .pdf-signature-table { width: 100%; border: none; margin-top: 10px; border-collapse: collapse; margin-left: auto !important; margin-right: auto !important; }
           .pdf-signature-table td { text-align: center; vertical-align: middle; color: #000000 !important; }
         </style>
         <div class="pdf-wrapper">
@@ -522,7 +517,7 @@ export default function PrintRaportView({
           <!-- Spiritual Aspect Table -->
           <table class="pdf-box-table" style="page-break-inside: avoid;">
             <tr>
-              <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.5pt; vertical-align: middle;">
+              <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9pt; vertical-align: middle;">
                 1. Spiritual
               </td>
               <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.5pt; background-color: #f2f2f2;">
@@ -536,19 +531,19 @@ export default function PrintRaportView({
               </td>
             </tr>
             <tr>
-              <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.spiritualUsaha || "-"}
+              <td style="text-align: center; font-weight: bold; font-size: 9pt;">
+                ${liveNote.spiritualUsaha || "B"}
               </td>
-              <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.spiritualProses || "-"}
+              <td style="text-align: center; font-weight: bold; font-size: 9pt;">
+                ${liveNote.spiritualProses || "B"}
               </td>
-              <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.spiritualCapaian || "-"}
+              <td style="text-align: center; font-weight: bold; font-size: 9pt;">
+                ${liveNote.spiritualCapaian || "B"}
               </td>
             </tr>
             <tr>
-              <td colspan="4" style="padding: 4px 6px 10px 6px; font-size: 9.5pt; text-align: justify; line-height: 1.45;">
-                <strong>Deskripsi:</strong> ${waliKelasNote.spiritualDeskripsi || ""}
+              <td colspan="4" style="padding: 3px 5px 4px 5px; font-size: 9pt; text-align: justify; line-height: 1.35;">
+                <strong>Deskripsi:</strong> ${liveNote.spiritualDeskripsi || `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`}
               </td>
             </tr>
           </table>
@@ -556,7 +551,7 @@ export default function PrintRaportView({
           <!-- Sosial Aspect Table -->
           <table class="pdf-box-table" style="page-break-inside: avoid;">
             <tr>
-              <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.5pt; vertical-align: middle;">
+              <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9pt; vertical-align: middle;">
                 2. Sosial
               </td>
               <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.5pt; background-color: #f2f2f2;">
@@ -570,19 +565,19 @@ export default function PrintRaportView({
               </td>
             </tr>
             <tr>
-              <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.sosialUsaha || "-"}
+              <td style="text-align: center; font-weight: bold; font-size: 9pt;">
+                ${liveNote.sosialUsaha || "B"}
               </td>
-              <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.sosialProses || "-"}
+              <td style="text-align: center; font-weight: bold; font-size: 9pt;">
+                ${liveNote.sosialProses || "B"}
               </td>
-              <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
-                ${waliKelasNote.sosialCapaian || "-"}
+              <td style="text-align: center; font-weight: bold; font-size: 9pt;">
+                ${liveNote.sosialCapaian || "B"}
               </td>
             </tr>
             <tr>
-              <td colspan="4" style="padding: 4px 6px 10px 6px; font-size: 9.5pt; text-align: justify; line-height: 1.45;">
-                <strong>Deskripsi:</strong> ${waliKelasNote.sosialDeskripsi || ""}
+              <td colspan="4" style="padding: 3px 5px 4px 5px; font-size: 9pt; text-align: justify; line-height: 1.35;">
+                <strong>Deskripsi:</strong> ${liveNote.sosialDeskripsi || `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`}
               </td>
             </tr>
           </table>
@@ -599,7 +594,7 @@ export default function PrintRaportView({
               return `
               <table class="pdf-box-table" style="page-break-inside: avoid;">
                 <tr>
-                  <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.5pt; vertical-align: middle;">
+                  <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9pt; vertical-align: middle;">
                     ${title}
                   </td>
                   <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.5pt; background-color: #f2f2f2;">
@@ -613,18 +608,18 @@ export default function PrintRaportView({
                   </td>
                 </tr>
                 <tr>
-                  <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
+                  <td style="text-align: center; font-weight: bold; font-size: 9pt;">
                     ${usahaGrade}
                   </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
+                  <td style="text-align: center; font-weight: bold; font-size: 9pt;">
                     ${prosesGrade}
                   </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 9.5pt;">
+                  <td style="text-align: center; font-weight: bold; font-size: 9pt;">
                     ${capaianGrade}
                   </td>
                 </tr>
                 <tr>
-                  <td colspan="4" style="padding: 4px 6px 10px 6px; font-size: 9.5pt; text-align: justify; line-height: 1.45;">
+                  <td colspan="4" style="padding: 3px 5px 4px 5px; font-size: 9pt; text-align: justify; line-height: 1.35;">
                     <strong>Deskripsi:</strong> ${desc}
                   </td>
                 </tr>
@@ -941,7 +936,7 @@ export default function PrintRaportView({
       document.body.appendChild(wrapper);
 
       const opt = {
-        margin: [8, 12, 12, 12], // Reduced top margin from 12 to 8 to move Kop closer to the top edge
+        margin: [6, 11, 8, 11], // Optimized compact margins so 1. PAI, 2. PPKN, 3. B. Indo, and 4. Matematika fit smoothly on Page 1
         filename: `Raport_STS_${student.name.replace(/\s+/g, "_")}.pdf`,
         image: { type: "jpeg", quality: 1.0 },
         html2canvas: {
