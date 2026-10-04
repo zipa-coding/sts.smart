@@ -2084,49 +2084,45 @@ export default function PrintRaportView({
             </h4>
 
             {/* Spiritual Aspect Box */}
-            <div className="page-break-avoid border p-0 mb-2 border-black bg-transparent text-black">
-              <table className="w-full border-collapse border-none mx-auto">
+            <div className="page-break-avoid border border-black p-0 mb-2.5 bg-white text-black">
+              <table className="w-full border-collapse border-none mx-auto text-black">
                 <tbody>
                   <tr className="border-b border-black">
-                    <td className="w-[50%] p-1 px-2 font-bold text-xs align-middle border-r font-serif border-black text-black">
+                    <td rowSpan={2} className="w-[52%] p-2 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white">
                       1. Spiritual
                     </td>
-                    <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 text-gray-500 align-top">
-                      <div className="text-[8px] font-sans opacity-80 text-gray-500">
-                        Usaha
-                      </div>
-                      <div className="text-xs font-bold text-black">
-                        {waliKelasNote.spiritualUsaha || "-"}
-                      </div>
+                    <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                      Usaha
                     </td>
-                    <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 text-gray-500 align-top">
-                      <div className="text-[8px] font-sans opacity-80 text-gray-500">
-                        Proses
-                      </div>
-                      <div className="text-xs font-bold text-black">
-                        {waliKelasNote.spiritualProses || "-"}
-                      </div>
+                    <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                      Proses
                     </td>
-                    <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] bg-gray-50/50 text-gray-500 align-top">
-                      <div className="text-[8px] font-sans opacity-80 text-gray-500">
-                        Capaian
-                      </div>
-                      <div className="text-xs font-bold text-black">
-                        {waliKelasNote.spiritualCapaian || "-"}
-                      </div>
+                    <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle">
+                      Capaian
+                    </td>
+                  </tr>
+                  <tr className="border-b border-black">
+                    <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                      {liveNote.spiritualUsaha || "B"}
+                    </td>
+                    <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                      {liveNote.spiritualProses || "B"}
+                    </td>
+                    <td className="p-1.5 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle">
+                      {liveNote.spiritualCapaian || "B"}
                     </td>
                   </tr>
                   <tr>
                     <td
                       colSpan={4}
-                      className="pt-1.5 pb-2.5 px-2 leading-relaxed text-justify"
+                      className="p-2 leading-relaxed text-justify text-black bg-white"
                       style={{ fontSize: "9.5pt" }}
                     >
-                      <strong className="font-semibold mr-1 text-black">
+                      <strong className="font-bold mr-1 text-black">
                         Deskripsi:
                       </strong>
-                      <span className="text-gray-800">
-                        {waliKelasNote.spiritualDeskripsi || ""}
+                      <span className="text-black">
+                        {liveNote.spiritualDeskripsi || `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`}
                       </span>
                     </td>
                   </tr>
@@ -2135,49 +2131,45 @@ export default function PrintRaportView({
             </div>
 
             {/* Sosial Aspect Box */}
-            <div className="page-break-avoid border p-0 mb-2 border-black bg-transparent text-black">
-              <table className="w-full border-collapse border-none mx-auto">
+            <div className="page-break-avoid border border-black p-0 mb-2.5 bg-white text-black">
+              <table className="w-full border-collapse border-none mx-auto text-black">
                 <tbody>
                   <tr className="border-b border-black">
-                    <td className="w-[50%] p-1 px-2 font-bold text-xs align-middle border-r font-serif border-black text-black">
+                    <td rowSpan={2} className="w-[52%] p-2 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white">
                       2. Sosial
                     </td>
-                    <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 text-gray-500 align-top">
-                      <div className="text-[8px] font-sans opacity-80 text-gray-500">
-                        Usaha
-                      </div>
-                      <div className="text-xs font-bold text-black">
-                        {waliKelasNote.sosialUsaha || "-"}
-                      </div>
+                    <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                      Usaha
                     </td>
-                    <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 text-gray-500 align-top">
-                      <div className="text-[8px] font-sans opacity-80 text-gray-500">
-                        Proses
-                      </div>
-                      <div className="text-xs font-bold text-black">
-                        {waliKelasNote.sosialProses || "-"}
-                      </div>
+                    <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                      Proses
                     </td>
-                    <td className="w-[16.6%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] bg-gray-50/50 text-gray-500 align-top">
-                      <div className="text-[8px] font-sans opacity-80 text-gray-500">
-                        Capaian
-                      </div>
-                      <div className="text-xs font-bold text-black">
-                        {waliKelasNote.sosialCapaian || "-"}
-                      </div>
+                    <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle">
+                      Capaian
+                    </td>
+                  </tr>
+                  <tr className="border-b border-black">
+                    <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                      {liveNote.sosialUsaha || "B"}
+                    </td>
+                    <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                      {liveNote.sosialProses || "B"}
+                    </td>
+                    <td className="p-1.5 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle">
+                      {liveNote.sosialCapaian || "B"}
                     </td>
                   </tr>
                   <tr>
                     <td
                       colSpan={4}
-                      className="pt-1.5 pb-2.5 px-2 leading-relaxed text-justify"
+                      className="p-2 leading-relaxed text-justify text-black bg-white"
                       style={{ fontSize: "9.5pt" }}
                     >
-                      <strong className="font-semibold mr-1 text-black">
+                      <strong className="font-bold mr-1 text-black">
                         Deskripsi:
                       </strong>
-                      <span className="text-gray-800">
-                        {waliKelasNote.sosialDeskripsi || ""}
+                      <span className="text-black">
+                        {liveNote.sosialDeskripsi || `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`}
                       </span>
                     </td>
                   </tr>
@@ -2202,49 +2194,45 @@ export default function PrintRaportView({
               return (
                 <div
                   key={sub}
-                  className="page-break-avoid border p-0 mb-2 border-black bg-transparent text-black"
+                  className="page-break-avoid border border-black p-0 mb-2.5 bg-white text-black"
                 >
-                  <table className="w-full border-collapse border-none mx-auto">
+                  <table className="w-full border-collapse border-none mx-auto text-black">
                     <tbody>
                       <tr className="border-b border-black">
-                        <td className="w-[52%] p-1 px-2 font-bold text-xs align-middle border-r font-serif border-black text-slate-900">
+                        <td rowSpan={2} className="w-[52%] p-2 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white">
                           {name}
                         </td>
-                        <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 align-top">
-                          <div className="text-[8px] font-sans text-gray-500">
-                            Usaha
-                          </div>
-                          <div className="text-xs font-mono text-black">
-                            {usahaGrade}
-                          </div>
+                        <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                          Usaha
                         </td>
-                        <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 align-top">
-                          <div className="text-[8px] font-sans text-gray-500">
-                            Proses
-                          </div>
-                          <div className="text-xs font-mono text-black">
-                            {prosesGrade}
-                          </div>
+                        <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                          Proses
                         </td>
-                        <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] bg-gray-50/50 align-top">
-                          <div className="text-[8px] font-sans text-gray-500">
-                            Capaian
-                          </div>
-                          <div className="text-xs font-mono text-black">
-                            {capaianGrade}
-                          </div>
+                        <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle">
+                          Capaian
+                        </td>
+                      </tr>
+                      <tr className="border-b border-black">
+                        <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                          {usahaGrade}
+                        </td>
+                        <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                          {prosesGrade}
+                        </td>
+                        <td className="p-1.5 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle">
+                          {capaianGrade}
                         </td>
                       </tr>
                       <tr>
                         <td
                           colSpan={4}
-                          className="pt-1.5 pb-2.5 px-2 leading-relaxed text-justify text-slate-850"
+                          className="p-2 leading-relaxed text-justify text-black bg-white"
                           style={{ fontSize: "9.5pt" }}
                         >
-                          <strong className="font-semibold mr-1 text-black">
+                          <strong className="font-bold mr-1 text-black">
                             Deskripsi:
                           </strong>
-                          <span>{desc}</span>
+                          <span className="text-black">{desc}</span>
                         </td>
                       </tr>
                     </tbody>
@@ -2270,49 +2258,45 @@ export default function PrintRaportView({
               return (
                 <div
                   key={sub}
-                  className="page-break-avoid border p-0 mb-2 border-black bg-transparent text-black"
+                  className="page-break-avoid border border-black p-0 mb-2.5 bg-white text-black"
                 >
-                  <table className="w-full border-collapse border-none mx-auto">
+                  <table className="w-full border-collapse border-none mx-auto text-black">
                     <tbody>
                       <tr className="border-b border-black">
-                        <td className="w-[52%] p-1 px-2 font-bold text-xs align-middle border-r font-serif border-black text-slate-900">
+                        <td rowSpan={2} className="w-[52%] p-2 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white">
                           {name}
                         </td>
-                        <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 align-top">
-                          <div className="text-[8px] font-sans text-gray-500">
-                            Usaha
-                          </div>
-                          <div className="text-xs font-mono text-black">
-                            {usahaGrade}
-                          </div>
+                        <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                          Usaha
                         </td>
-                        <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 align-top">
-                          <div className="text-[8px] font-sans text-gray-500">
-                            Proses
-                          </div>
-                          <div className="text-xs font-mono text-black">
-                            {prosesGrade}
-                          </div>
+                        <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                          Proses
                         </td>
-                        <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] bg-gray-50/50 align-top">
-                          <div className="text-[8px] font-sans text-gray-500">
-                            Capaian
-                          </div>
-                          <div className="text-xs font-mono text-black">
-                            {capaianGrade}
-                          </div>
+                        <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle">
+                          Capaian
+                        </td>
+                      </tr>
+                      <tr className="border-b border-black">
+                        <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                          {usahaGrade}
+                        </td>
+                        <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                          {prosesGrade}
+                        </td>
+                        <td className="p-1.5 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle">
+                          {capaianGrade}
                         </td>
                       </tr>
                       <tr>
                         <td
                           colSpan={4}
-                          className="pt-1.5 pb-2.5 px-2 leading-relaxed text-justify text-slate-850"
+                          className="p-2 leading-relaxed text-justify text-black bg-white"
                           style={{ fontSize: "9.5pt" }}
                         >
-                          <strong className="font-semibold mr-1 text-black">
+                          <strong className="font-bold mr-1 text-black">
                             Deskripsi:
                           </strong>
-                          <span>{desc}</span>
+                          <span className="text-black">{desc}</span>
                         </td>
                       </tr>
                     </tbody>
@@ -2338,49 +2322,45 @@ export default function PrintRaportView({
               return (
                 <div
                   key={sub}
-                  className="page-break-avoid border p-0 mb-2 border-black bg-transparent text-black"
+                  className="page-break-avoid border border-black p-0 mb-2.5 bg-white text-black"
                 >
-                  <table className="w-full border-collapse border-none mx-auto">
+                  <table className="w-full border-collapse border-none mx-auto text-black">
                     <tbody>
                       <tr className="border-b border-black">
-                        <td className="w-[52%] p-1 px-2 font-bold text-xs align-middle border-r font-serif border-black text-slate-900">
+                        <td rowSpan={2} className="w-[52%] p-2 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white">
                           {name}
                         </td>
-                        <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 align-top">
-                          <div className="text-[8px] font-sans text-gray-500">
-                            Usaha
-                          </div>
-                          <div className="text-xs font-mono text-black">
-                            {usahaGrade}
-                          </div>
+                        <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                          Usaha
                         </td>
-                        <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 align-top">
-                          <div className="text-[8px] font-sans text-gray-500">
-                            Proses
-                          </div>
-                          <div className="text-xs font-mono text-black">
-                            {prosesGrade}
-                          </div>
+                        <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                          Proses
                         </td>
-                        <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] bg-gray-50/50 align-top">
-                          <div className="text-[8px] font-sans text-gray-500">
-                            Capaian
-                          </div>
-                          <div className="text-xs font-mono text-black">
-                            {capaianGrade}
-                          </div>
+                        <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle">
+                          Capaian
+                        </td>
+                      </tr>
+                      <tr className="border-b border-black">
+                        <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                          {usahaGrade}
+                        </td>
+                        <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                          {prosesGrade}
+                        </td>
+                        <td className="p-1.5 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle">
+                          {capaianGrade}
                         </td>
                       </tr>
                       <tr>
                         <td
                           colSpan={4}
-                          className="pt-1.5 pb-2.5 px-2 leading-relaxed text-justify text-slate-850"
+                          className="p-2 leading-relaxed text-justify text-black bg-white"
                           style={{ fontSize: "9.5pt" }}
                         >
-                          <strong className="font-semibold mr-1 text-black">
+                          <strong className="font-bold mr-1 text-black">
                             Deskripsi:
                           </strong>
-                          <span>{desc}</span>
+                          <span className="text-black">{desc}</span>
                         </td>
                       </tr>
                     </tbody>
@@ -2395,61 +2375,56 @@ export default function PrintRaportView({
             <h4 className="text-xs md:text-sm font-bold mb-2.5 uppercase tracking-wide text-black">
               E. Ekstrakurikuler dan Keterampilan
             </h4>
-            {((waliKelasNote as any).ekskul || []).length === 0 ? (
-              <div className="page-break-avoid border p-2 text-center text-slate-500 italic text-xs border-black bg-transparent">
+            {((liveNote as any).ekskul || []).length === 0 ? (
+              <div className="page-break-avoid border border-black p-3 text-center text-black italic text-xs bg-white">
                 Tidak mengikuti kegiatan ekstrakurikuler.
               </div>
             ) : (
-              ((waliKelasNote as any).ekskul || []).map(
+              ((liveNote as any).ekskul || []).map(
                 (e: any, idx: number) => {
                   const grades = getEkskulGrades(e);
                   return (
                     <div
                       key={idx}
-                      className="page-break-avoid border p-0 mb-2 border-black bg-transparent text-black"
+                      className="page-break-avoid border border-black p-0 mb-2.5 bg-white text-black"
                     >
-                      <table className="w-full border-collapse border-none mx-auto">
+                      <table className="w-full border-collapse border-none mx-auto text-black">
                         <tbody>
                           <tr className="border-b border-black">
-                            <td className="w-[52%] p-1 px-2 font-bold text-xs align-middle border-r font-serif border-black text-slate-900">
-                              {idx + 1}. Ekstrakurikuler {e.type || "Pilihan"}:{" "}
-                              {e.name}
+                            <td rowSpan={2} className="w-[52%] p-2 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white">
+                              {idx + 1}. Ekstrakurikuler {e.type || "Pilihan"}: {e.name}
                             </td>
-                            <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 align-top">
-                              <div className="text-[8px] font-sans text-gray-500">
-                                Usaha
-                              </div>
-                              <div className="text-xs font-mono text-black">
-                                {grades.usaha}
-                              </div>
+                            <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                              Usaha
                             </td>
-                            <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] border-r border-black bg-gray-50/50 align-top">
-                              <div className="text-[8px] font-sans text-gray-500">
-                                Proses
-                              </div>
-                              <div className="text-xs font-mono text-black">
-                                {grades.proses}
-                              </div>
+                            <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle">
+                              Proses
                             </td>
-                            <td className="w-[16%] p-0.5 pt-[2px] pb-[5px] text-center font-bold text-[10px] bg-gray-50/50 align-top">
-                              <div className="text-[8px] font-sans text-gray-500">
-                                Capaian
-                              </div>
-                              <div className="text-xs font-mono text-black">
-                                {grades.capaian}
-                              </div>
+                            <td className="w-[16%] p-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle">
+                              Capaian
+                            </td>
+                          </tr>
+                          <tr className="border-b border-black">
+                            <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                              {grades.usaha}
+                            </td>
+                            <td className="p-1.5 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle">
+                              {grades.proses}
+                            </td>
+                            <td className="p-1.5 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle">
+                              {grades.capaian}
                             </td>
                           </tr>
                           <tr>
                             <td
                               colSpan={4}
-                              className="pt-1.5 pb-2.5 px-2 leading-relaxed text-justify text-slate-850"
+                              className="p-2 leading-relaxed text-justify text-black bg-white"
                               style={{ fontSize: "9.5pt" }}
                             >
-                              <strong className="font-semibold mr-1 text-black">
+                              <strong className="font-bold mr-1 text-black">
                                 Deskripsi:
                               </strong>
-                              <span>{e.description || e.deskripsi || "-"}</span>
+                              <span className="text-black">{e.description || e.deskripsi || "-"}</span>
                             </td>
                           </tr>
                         </tbody>
