@@ -2772,101 +2772,98 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
 
       {/* EDIT EKSKUL MODAL */}
       {isEkskulEditModalOpen && editingEkskul && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto animate-scale-up">
-            <div className="bg-emerald-800 px-5 sm:px-6 py-4 text-white flex items-center justify-between shrink-0">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-scale-up">
+            <div className="bg-emerald-800 px-6 py-4 text-white flex items-center justify-between">
               <h3 className="font-bold text-sm uppercase tracking-wide flex items-center gap-2">
                 <Award className="w-4 h-4" />
                 <span>Edit Ekstrakurikuler & Pembina</span>
               </h3>
               <button
-                type="button"
                 onClick={() => setIsEkskulEditModalOpen(false)}
-                className="text-white/80 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-white/10 transition"
+                className="text-white/85 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateEkskul} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                    Nama Kegiatan Ekstrakurikuler
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editEkskulForm.name}
-                    onChange={(e) =>
-                      setEditEkskulForm((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                    Tipe Ekstrakurikuler
-                  </label>
-                  <select
-                    value={editEkskulForm.type}
-                    onChange={(e) =>
-                      setEditEkskulForm((prev) => ({
-                        ...prev,
-                        type: e.target.value as "Wajib" | "Pilihan",
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-250 bg-white rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600"
-                  >
-                    <option value="Wajib">Wajib (Compulsory)</option>
-                    <option value="Pilihan">Pilihan (Elective)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                    Tugaskan Guru Pembina
-                  </label>
-                  <select
-                    value={editEkskulForm.pembinaTeacherId}
-                    onChange={(e) =>
-                      setEditEkskulForm((prev) => ({
-                        ...prev,
-                        pembinaTeacherId: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-250 bg-white rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 font-semibold"
-                  >
-                    <option value="">-- Belum Ditugaskan --</option>
-                    {teachers.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} ({t.subject})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[10px] text-gray-500 mt-1">
-                    Guru pembina yang dipilih akan memiliki akses penginputan nilai Usaha, Proses, dan Capaian siswa di Rapor.
-                  </p>
-                </div>
+            <form onSubmit={handleUpdateEkskul} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Nama Kegiatan Ekstrakurikuler
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editEkskulForm.name}
+                  onChange={(e) =>
+                    setEditEkskulForm((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600"
+                />
               </div>
 
-              <div className="shrink-0 p-4 sm:px-6 bg-slate-50 border-t border-slate-200 flex gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Tipe Ekstrakurikuler
+                </label>
+                <select
+                  value={editEkskulForm.type}
+                  onChange={(e) =>
+                    setEditEkskulForm((prev) => ({
+                      ...prev,
+                      type: e.target.value as "Wajib" | "Pilihan",
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-250 bg-white rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600"
+                >
+                  <option value="Wajib">Wajib (Compulsory)</option>
+                  <option value="Pilihan">Pilihan (Elective)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Tugaskan Guru Pembina
+                </label>
+                <select
+                  value={editEkskulForm.pembinaTeacherId}
+                  onChange={(e) =>
+                    setEditEkskulForm((prev) => ({
+                      ...prev,
+                      pembinaTeacherId: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-250 bg-white rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 font-semibold"
+                >
+                  <option value="">-- Belum Ditugaskan --</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.subject})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-gray-500 mt-1">
+                  Guru pembina yang dipilih akan memiliki akses penginputan nilai Usaha, Proses, dan Capaian siswa di Rapor.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   disabled={ekskulLoading}
                   onClick={() => setIsEkskulEditModalOpen(false)}
-                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-100 text-xs font-bold rounded-lg cursor-pointer transition"
+                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={ekskulLoading || !editEkskulForm.name.trim()}
-                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition"
+                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
                 >
                   <Save className="w-4 h-4" />
                   <span>{ekskulLoading ? "Menyimpan..." : "Simpan Perubahan"}</span>
@@ -2879,256 +2876,249 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
 
       {/* TEACHER MODAL FORM */}
       {isTeacherModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto animate-scale-up">
-            {/* Header */}
-            <div className="bg-emerald-800 px-5 sm:px-6 py-4 text-white flex items-center justify-between shrink-0 shadow-xs">
-              <h3 className="font-bold text-sm uppercase tracking-wide flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span>{editingTeacher ? "Edit Akun Guru" : "Tambah Guru Baru"}</span>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-scale-up">
+            <div className="bg-emerald-800 px-6 py-4 text-white flex items-center justify-between">
+              <h3 className="font-bold text-sm uppercase tracking-wide">
+                {editingTeacher ? "Edit Akun Guru" : "Tambah Guru Baru"}
               </h3>
               <button
-                type="button"
                 onClick={() => setIsTeacherModalOpen(false)}
-                className="text-white/80 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-white/10 transition"
+                className="text-white/85 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Scrollable Form */}
-            <form onSubmit={handleTeacherSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
-                {teacherModalError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex gap-2 items-start animate-fade-in">
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-                    <span className="font-semibold">{teacherModalError}</span>
-                  </div>
-                )}
-
-                {/* Petunjuk Guru Multi-Mapel */}
-                <div className="bg-emerald-50 border-l-4 border-emerald-600 p-3 rounded-r-lg text-2xs md:text-xs text-emerald-800 leading-relaxed space-y-1">
-                  <p className="font-bold uppercase tracking-wider text-[10px]">
-                    Panduan Guru Multi-Mapel:
-                  </p>
-                  <p>
-                    Nama lengkap diperbolehkan sama persis. Jika guru mengampu
-                    beberapa mata pelajaran sekaligus, silakan buat akun tambahan
-                    untuk tiap mapel dengan{" "}
-                    <strong>Login Username yang berbeda</strong> (contoh:{" "}
-                    <code className="bg-emerald-100/80 px-1 rounded">
-                      budi_ipa
-                    </code>{" "}
-                    dan{" "}
-                    <code className="bg-emerald-100/80 px-1 rounded">
-                      budi_ips
-                    </code>
-                    ).
-                  </p>
+            <form onSubmit={handleTeacherSubmit} className="p-6 space-y-4">
+              {teacherModalError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex gap-2 items-start animate-fade-in">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+                  <span className="font-semibold">{teacherModalError}</span>
                 </div>
+              )}
 
+              {/* Petunjuk Guru Multi-Mapel */}
+              <div className="bg-emerald-50 border-l-4 border-emerald-600 p-3 rounded-r-lg text-2xs md:text-xs text-emerald-800 leading-relaxed space-y-1">
+                <p className="font-bold uppercase tracking-wider text-[10px]">
+                  Panduan Guru Multi-Mapel:
+                </p>
+                <p>
+                  Nama lengkap diperbolehkan sama persis. Jika guru mengampu
+                  beberapa mata pelajaran sekaligus, silakan buat akun tambahan
+                  untuk tiap mapel dengan{" "}
+                  <strong>Login Username yang berbeda</strong> (contoh:{" "}
+                  <code className="bg-emerald-100/80 px-1 rounded">
+                    budi_ipa
+                  </code>{" "}
+                  dan{" "}
+                  <code className="bg-emerald-100/80 px-1 rounded">
+                    budi_ips
+                  </code>
+                  ).
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Nama Lengkap & Gelar
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={teacherForm.name}
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    setTeacherForm((prev) => {
+                      const updated = { ...prev, name: newName };
+                      // If adding new teacher and username is still empty or default, suggest clean username
+                      if (!editingTeacher && (!prev.username || prev.username === "")) {
+                        const clean = newName
+                          .toLowerCase()
+                          .replace(/[^a-z0-9]/g, "")
+                          .substring(0, 12);
+                        if (clean) updated.username = clean;
+                      }
+                      return updated;
+                    });
+                  }}
+                  placeholder="Contoh: Dr. H. Slamet, M.Pd"
+                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="teacher-name-input"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                    Nama Lengkap & Gelar
+                    Login Username
                   </label>
                   <input
                     type="text"
                     required
-                    value={teacherForm.name}
-                    onChange={(e) => {
-                      const newName = e.target.value;
-                      setTeacherForm((prev) => {
-                        const updated = { ...prev, name: newName };
-                        // If adding new teacher and username is still empty or default, suggest clean username
-                        if (!editingTeacher && (!prev.username || prev.username === "")) {
-                          const clean = newName
-                            .toLowerCase()
-                            .replace(/[^a-z0-9]/g, "")
-                            .substring(0, 12);
-                          if (clean) updated.username = clean;
-                        }
-                        return updated;
-                      });
-                    }}
-                    placeholder="Contoh: Dr. H. Slamet, M.Pd"
-                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
-                    id="teacher-name-input"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                      Login Username
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={teacherForm.username}
-                      onChange={(e) =>
-                        setTeacherForm((prev) => ({
-                          ...prev,
-                          username: e.target.value.toLowerCase().replace(/\s+/g, ""),
-                        }))
-                      }
-                      placeholder="nama_panggil"
-                      className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white font-mono text-xs"
-                      id="teacher-username-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                      Masuk/PIN Sandi
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={teacherForm.password}
-                      onChange={(e) =>
-                        setTeacherForm((prev) => ({
-                          ...prev,
-                          password: e.target.value,
-                        }))
-                      }
-                      placeholder="Sandi Akun"
-                      className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
-                      id="teacher-password-input"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                    Mata Pelajaran yang Diampu
-                  </label>
-                  <select
-                    value={teacherForm.subject}
+                    value={teacherForm.username}
                     onChange={(e) =>
                       setTeacherForm((prev) => ({
                         ...prev,
-                        subject: e.target.value,
+                        username: e.target.value.toLowerCase().replace(/\s+/g, ""),
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
-                    id="teacher-subject-select"
-                  >
-                    {SUBJECT_LIST.map((sub, i) => (
-                      <option key={i} value={sub}>
-                        {sub}
-                      </option>
-                    ))}
-                    <option value="Admin">Hanya Admin</option>
-                  </select>
+                    placeholder="nama_panggil"
+                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white font-mono text-xs"
+                    id="teacher-username-input"
+                  />
                 </div>
-
-                <div className="pt-2 border-t border-gray-150 space-y-3">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs md:text-sm text-gray-800 select-none">
-                    <input
-                      type="checkbox"
-                      checked={teacherForm.isWaliKelas}
-                      onChange={(e) =>
-                        setTeacherForm((prev) => ({
-                          ...prev,
-                          isWaliKelas: e.target.checked,
-                        }))
-                      }
-                      className="w-4 h-4 rounded border-gray-300 text-emerald-800 focus:ring-emerald-500"
-                    />
-                    <span className="font-medium">Tugaskan sebagai Wali Kelas</span>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                    Masuk/PIN Sandi
                   </label>
-
-                  {teacherForm.isWaliKelas && (
-                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 animate-fade-in">
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">
-                        Kelas yang Diajar & Asuh
-                      </label>
-                      <select
-                        value={teacherForm.kelas}
-                        onChange={(e) =>
-                          setTeacherForm((prev) => ({
-                            ...prev,
-                            kelas: e.target.value,
-                          }))
-                        }
-                        className="w-full p-2 bg-white border border-gray-250 rounded text-xs focus:outline-none focus:border-emerald-600"
-                      >
-                        <option value="">-- Pilih Kelas --</option>
-                        <option value="7">Kelas 7</option>
-                        <option value="8">Kelas 8</option>
-                        <option value="9">Kelas 9</option>
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Pembina Ekstrakurikuler Assignment */}
-                  <label className="flex items-center gap-2 cursor-pointer text-xs md:text-sm text-gray-800 select-none">
-                    <input
-                      type="checkbox"
-                      checked={teacherForm.isPembinaEkskul}
-                      onChange={(e) => {
-                        const isChecked = e.target.checked;
-                        setTeacherForm((prev) => {
-                          const defaultEks = ekskuls.length > 0 ? ekskuls[0] : null;
-                          return {
-                            ...prev,
-                            isPembinaEkskul: isChecked,
-                            pembinaEkskulId: isChecked ? (prev.pembinaEkskulId || defaultEks?.id || "") : "",
-                            pembinaEkskulName: isChecked ? (prev.pembinaEkskulName || defaultEks?.name || "") : "",
-                          };
-                        });
-                      }}
-                      className="w-4 h-4 rounded border-gray-300 text-purple-700 focus:ring-purple-500"
-                    />
-                    <span className="font-medium">Tugaskan sebagai Pembina Ekstrakurikuler</span>
-                  </label>
-
-                  {teacherForm.isPembinaEkskul && (
-                    <div className="bg-purple-50/70 p-3 rounded-lg border border-purple-200 animate-fade-in space-y-1.5">
-                      <label className="block text-xs font-semibold text-purple-900 mb-1">
-                        Pilih Kegiatan Ekstrakurikuler yang Dibina:
-                      </label>
-                      <select
-                        value={teacherForm.pembinaEkskulId}
-                        onChange={(e) => {
-                          const selectedId = e.target.value;
-                          const matchedEks = ekskuls.find((x) => x.id === selectedId);
-                          setTeacherForm((prev) => ({
-                            ...prev,
-                            pembinaEkskulId: selectedId,
-                            pembinaEkskulName: matchedEks ? matchedEks.name : "",
-                          }));
-                        }}
-                        className="w-full p-2 bg-white border border-purple-300 rounded text-xs focus:outline-none focus:border-purple-600 font-semibold text-purple-950"
-                      >
-                        <option value="">-- Pilih Ekstrakurikuler --</option>
-                        {ekskuls.map((eks) => (
-                          <option key={eks.id} value={eks.id}>
-                            {eks.name} ({eks.type})
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-[10px] text-purple-700 leading-tight">
-                        Guru yang ditugaskan dapat langsung menginput nilai 3 aspek (Usaha, Proses, Capaian) dan deskripsi kegiatan melalui menu Nilai Ekstrakurikuler.
-                      </p>
-                    </div>
-                  )}
+                  <input
+                    type="text"
+                    required
+                    value={teacherForm.password}
+                    onChange={(e) =>
+                      setTeacherForm((prev) => ({
+                        ...prev,
+                        password: e.target.value,
+                      }))
+                    }
+                    placeholder="Sandi Akun"
+                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                    id="teacher-password-input"
+                  />
                 </div>
               </div>
 
-              {/* Fixed Footer */}
-              <div className="shrink-0 p-4 sm:px-6 bg-slate-50 border-t border-slate-200 flex gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Mata Pelajaran yang Diampu
+                </label>
+                <select
+                  value={teacherForm.subject}
+                  onChange={(e) =>
+                    setTeacherForm((prev) => ({
+                      ...prev,
+                      subject: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="teacher-subject-select"
+                >
+                  {SUBJECT_LIST.map((sub, i) => (
+                    <option key={i} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                  <option value="Admin">Hanya Admin</option>
+                </select>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer text-xs md:text-sm text-gray-800">
+                  <input
+                    type="checkbox"
+                    checked={teacherForm.isWaliKelas}
+                    onChange={(e) =>
+                      setTeacherForm((prev) => ({
+                        ...prev,
+                        isWaliKelas: e.target.checked,
+                      }))
+                    }
+                    className="w-4 h-4 rounded border-gray-300 text-emerald-800 focus:ring-emerald-500"
+                  />
+                  <span>Tugaskan sebagai Wali Kelas</span>
+                </label>
+
+                {teacherForm.isWaliKelas && (
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-150 animate-fade-in">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Kelas yang Diajar & Asuh
+                    </label>
+                    <select
+                      value={teacherForm.kelas}
+                      onChange={(e) =>
+                        setTeacherForm((prev) => ({
+                          ...prev,
+                          kelas: e.target.value,
+                        }))
+                      }
+                      className="w-full p-2 bg-white border border-gray-250 rounded text-xs focus:outline-none focus:border-emerald-600"
+                    >
+                      <option value="">-- Pilih Kelas --</option>
+                      <option value="7">Kelas 7</option>
+                      <option value="8">Kelas 8</option>
+                      <option value="9">Kelas 9</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Pembina Ekstrakurikuler Assignment */}
+                <label className="flex items-center gap-2 cursor-pointer text-xs md:text-sm text-gray-800">
+                  <input
+                    type="checkbox"
+                    checked={teacherForm.isPembinaEkskul}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      setTeacherForm((prev) => {
+                        const defaultEks = ekskuls.length > 0 ? ekskuls[0] : null;
+                        return {
+                          ...prev,
+                          isPembinaEkskul: isChecked,
+                          pembinaEkskulId: isChecked ? (prev.pembinaEkskulId || defaultEks?.id || "") : "",
+                          pembinaEkskulName: isChecked ? (prev.pembinaEkskulName || defaultEks?.name || "") : "",
+                        };
+                      });
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-purple-700 focus:ring-purple-500"
+                  />
+                  <span>Tugaskan sebagai Pembina Ekstrakurikuler</span>
+                </label>
+
+                {teacherForm.isPembinaEkskul && (
+                  <div className="bg-purple-50/60 p-3 rounded-lg border border-purple-200 animate-fade-in space-y-1.5">
+                    <label className="block text-xs font-semibold text-purple-900 mb-1">
+                      Pilih Kegiatan Ekstrakurikuler yang Dibina:
+                    </label>
+                    <select
+                      value={teacherForm.pembinaEkskulId}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const matchedEks = ekskuls.find((x) => x.id === selectedId);
+                        setTeacherForm((prev) => ({
+                          ...prev,
+                          pembinaEkskulId: selectedId,
+                          pembinaEkskulName: matchedEks ? matchedEks.name : "",
+                        }));
+                      }}
+                      className="w-full p-2 bg-white border border-purple-300 rounded text-xs focus:outline-none focus:border-purple-600 font-semibold text-purple-950"
+                    >
+                      <option value="">-- Pilih Ekstrakurikuler --</option>
+                      {ekskuls.map((eks) => (
+                        <option key={eks.id} value={eks.id}>
+                          {eks.name} ({eks.type})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-purple-700 leading-tight">
+                      Guru yang ditugaskan dapat langsung menginput nilai 3 aspek (Usaha, Proses, Capaian) dan deskripsi kegiatan melalui menu Nilai Ekstrakurikuler.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   disabled={isSubmittingTeacher}
                   onClick={() => setIsTeacherModalOpen(false)}
-                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-100 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50 transition"
+                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingTeacher}
-                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60 shadow-sm hover:shadow"
+                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60"
                 >
                   {isSubmittingTeacher ? (
                     <>
@@ -3138,7 +3128,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      <span>{editingTeacher ? "Simpan Perubahan" : "Simpan Guru Baru"}</span>
+                      <span>Simpan Data</span>
                     </>
                   )}
                 </button>
@@ -3150,106 +3140,102 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
 
       {/* STUDENT MODAL FORM */}
       {isStudentModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto animate-scale-up">
-            <div className="bg-emerald-800 px-5 sm:px-6 py-4 text-white flex items-center justify-between shrink-0 shadow-xs">
-              <h3 className="font-bold text-sm uppercase tracking-wide flex items-center gap-2">
-                <GraduationCap className="w-4 h-4" />
-                <span>{editingStudent ? "Edit Identitas Siswa" : "Tambah Siswa Baru"}</span>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-scale-up">
+            <div className="bg-emerald-800 px-6 py-4 text-white flex items-center justify-between">
+              <h3 className="font-bold text-sm uppercase tracking-wide">
+                {editingStudent ? "Edit Identitas Siswa" : "Tambah Siswa Baru"}
               </h3>
               <button
-                type="button"
                 onClick={() => setIsStudentModalOpen(false)}
-                className="text-white/80 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-white/10 transition"
+                className="text-white/85 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleStudentSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
-                {studentModalError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex gap-2 items-start animate-fade-in">
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-                    <span className="font-semibold">{studentModalError}</span>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                    Nama Lengkap Siswa
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={studentForm.name}
-                    onChange={(e) =>
-                      setStudentForm((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
-                    }
-                    placeholder="Contoh: Muhammad Al-Farabi"
-                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
-                    id="student-name-input"
-                  />
+            <form onSubmit={handleStudentSubmit} className="p-6 space-y-4">
+              {studentModalError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex gap-2 items-start animate-fade-in">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+                  <span className="font-semibold">{studentModalError}</span>
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                    NISN Siswa (Nomor Induk Nasional)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={studentForm.nisn}
-                    onChange={(e) =>
-                      setStudentForm((prev) => ({
-                        ...prev,
-                        nisn: e.target.value,
-                      }))
-                    }
-                    placeholder="Contoh: 0134988712"
-                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white font-mono text-xs"
-                    id="student-nisn-input"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-750 mb-1.5">
-                    Kelas / Rombongan Belajar
-                  </label>
-                  <select
-                    value={studentForm.kelas}
-                    onChange={(e) =>
-                      setStudentForm((prev) => ({
-                        ...prev,
-                        kelas: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
-                    id="student-class-select"
-                  >
-                    <option value="7">Kelas 7</option>
-                    <option value="8">Kelas 8</option>
-                    <option value="9">Kelas 9</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Nama Lengkap Siswa
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={studentForm.name}
+                  onChange={(e) =>
+                    setStudentForm((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
+                  placeholder="Contoh: Muhammad Al-Farabi"
+                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="student-name-input"
+                />
               </div>
 
-              <div className="shrink-0 p-4 sm:px-6 bg-slate-50 border-t border-slate-200 flex gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  NISN Siswa (Nomor Induk Nasional)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={studentForm.nisn}
+                  onChange={(e) =>
+                    setStudentForm((prev) => ({
+                      ...prev,
+                      nisn: e.target.value,
+                    }))
+                  }
+                  placeholder="Contoh: 0134988712"
+                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="student-nisn-input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Kelas / Rombongan Belajar
+                </label>
+                <select
+                  value={studentForm.kelas}
+                  onChange={(e) =>
+                    setStudentForm((prev) => ({
+                      ...prev,
+                      kelas: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  id="student-class-select"
+                >
+                  <option value="7">Kelas 7</option>
+                  <option value="8">Kelas 8</option>
+                  <option value="9">Kelas 9</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   disabled={isSubmittingStudent}
                   onClick={() => setIsStudentModalOpen(false)}
-                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-100 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50 transition"
+                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingStudent}
-                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60 shadow-sm hover:shadow"
+                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60"
                 >
                   {isSubmittingStudent ? (
                     <>
@@ -3259,7 +3245,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      <span>{editingStudent ? "Simpan Perubahan" : "Simpan Siswa"}</span>
+                      <span>Simpan Data</span>
                     </>
                   )}
                 </button>
