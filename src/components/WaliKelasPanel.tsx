@@ -653,10 +653,13 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                   </span>
                 </div>
 
-                <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-3 text-[11px] text-emerald-900 leading-relaxed flex items-start gap-2">
-                  <Award className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="bg-[#0b1f16] border-2 border-emerald-500 rounded-xl p-3.5 text-xs text-emerald-50 leading-relaxed flex items-start gap-3 shadow-md">
+                  <div className="p-1.5 bg-emerald-600/30 rounded-lg shrink-0 mt-0.5 border border-emerald-400/50">
+                    <Award className="w-4 h-4 text-emerald-300" />
+                  </div>
                   <div>
-                    <span className="font-bold">Info Integrasi Penilaian:</span> Pengisian nilai ekstrakurikuler mencakup 3 aspek (<strong className="text-emerald-800">Usaha</strong>, <strong className="text-emerald-800">Proses</strong>, dan <strong className="text-emerald-800">Capaian</strong>) serta deskripsi kegiatan dilakukan langsung oleh masing-masing <strong>Guru Pembina Ekskul</strong> melalui menu <em>Nilai Ekstrakurikuler</em>. Data berikut otomatis tercetak pada lembar Rapor Siswa.
+                    <span className="font-extrabold text-amber-300">Info Integrasi Penilaian:</span>{" "}
+                    Pengisian nilai ekstrakurikuler mencakup 3 aspek (<strong className="text-emerald-200 font-bold">Usaha</strong>, <strong className="text-emerald-200 font-bold">Proses</strong>, dan <strong className="text-emerald-200 font-bold">Capaian</strong>) serta deskripsi kegiatan dilakukan langsung oleh masing-masing <strong className="text-white font-bold underline decoration-emerald-400">Guru Pembina Ekskul</strong> melalui menu <em className="text-emerald-200 not-italic font-semibold">Nilai Ekstrakurikuler</em>. Data berikut otomatis tercetak pada lembar Rapor Siswa.
                   </div>
                 </div>
 
