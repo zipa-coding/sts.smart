@@ -11,7 +11,10 @@
         "password": { "type": "string", "maxLength": 100 },
         "subject": { "type": "string", "maxLength": 100 },
         "isWaliKelas": { "type": "boolean" },
-        "kelas": { "type": "string", "maxLength": 50 }
+        "kelas": { "type": "string", "maxLength": 50 },
+        "isPembinaEkskul": { "type": "boolean" },
+        "pembinaEkskulId": { "type": "string", "maxLength": 128 },
+        "pembinaEkskulName": { "type": "string", "maxLength": 200 }
       },
       "required": ["name", "username", "password", "subject"]
     },
@@ -90,7 +93,9 @@
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
         "name": { "type": "string", "maxLength": 200 },
-        "type": { "type": "string", "maxLength": 50 }
+        "type": { "type": "string", "maxLength": 50 },
+        "pembinaTeacherId": { "type": "string", "maxLength": 128 },
+        "pembinaName": { "type": "string", "maxLength": 200 }
       },
       "required": ["name", "type"]
     },

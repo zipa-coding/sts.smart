@@ -131,7 +131,7 @@ app.get("/api/teachers", async (req, res) => {
 });
 
 app.post("/api/teachers", async (req, res) => {
-  const { name, username, password, subject, isWaliKelas, kelas } = req.body;
+  const { name, username, password, subject, isWaliKelas, kelas, isPembinaEkskul, pembinaEkskulId, pembinaEkskulName } = req.body;
   if (!name || !username || !password || !subject) {
     return res.status(400).json({ error: "Data guru kurang lengkap." });
   }
@@ -154,6 +154,9 @@ app.post("/api/teachers", async (req, res) => {
     subject,
     isWaliKelas: !!isWaliKelas,
     kelas: kelas || "",
+    isPembinaEkskul: !!isPembinaEkskul,
+    pembinaEkskulId: pembinaEkskulId || "",
+    pembinaEkskulName: pembinaEkskulName || "",
   };
 
   db.teachers.push(newTeacher);
@@ -163,7 +166,7 @@ app.post("/api/teachers", async (req, res) => {
 
 app.put("/api/teachers/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, username, password, subject, isWaliKelas, kelas } = req.body;
+  const { name, username, password, subject, isWaliKelas, kelas, isPembinaEkskul, pembinaEkskulId, pembinaEkskulName } = req.body;
 
   const db = await readDB();
   const index = db.teachers.findIndex((t: any) => t.id === id);
@@ -188,6 +191,9 @@ app.put("/api/teachers/:id", async (req, res) => {
     subject,
     isWaliKelas: !!isWaliKelas,
     kelas: kelas || "",
+    isPembinaEkskul: !!isPembinaEkskul,
+    pembinaEkskulId: pembinaEkskulId || "",
+    pembinaEkskulName: pembinaEkskulName || "",
   };
 
   await writeDB(db);
@@ -633,7 +639,7 @@ app.get("/api/ekskul", async (req, res) => {
 });
 
 app.post("/api/ekskul", async (req, res) => {
-  const { name, type } = req.body;
+  const { name, type, pembinaTeacherId, pembinaName } = req.body;
   if (!name || !type) {
     return res.status(400).json({ error: "Nama dan tipe ekskul wajib diisi." });
   }
@@ -652,10 +658,32 @@ app.post("/api/ekskul", async (req, res) => {
     id: "e_" + Date.now(),
     name,
     type,
+    pembinaTeacherId: pembinaTeacherId || "",
+    pembinaName: pembinaName || "",
   };
   db.ekskul.push(newEkskul);
   await writeDB(db);
   res.status(201).json(newEkskul);
+});
+
+app.put("/api/ekskul/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, type, pembinaTeacherId, pembinaName } = req.body;
+  const db = await readDB();
+  if (!db.ekskul) db.ekskul = [];
+  const idx = db.ekskul.findIndex((e: any) => e.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ error: "Ekskul tidak ditemukan." });
+  }
+  db.ekskul[idx] = {
+    ...db.ekskul[idx],
+    name: name || db.ekskul[idx].name,
+    type: type || db.ekskul[idx].type,
+    pembinaTeacherId: pembinaTeacherId !== undefined ? pembinaTeacherId : db.ekskul[idx].pembinaTeacherId,
+    pembinaName: pembinaName !== undefined ? pembinaName : db.ekskul[idx].pembinaName,
+  };
+  await writeDB(db);
+  res.json(db.ekskul[idx]);
 });
 
 app.delete("/api/ekskul/:id", async (req, res) => {
@@ -666,6 +694,70 @@ app.delete("/api/ekskul/:id", async (req, res) => {
     await writeDB(db);
   }
   res.json({ message: "Ekskul berhasil dihapus." });
+});
+
+app.post("/api/ekskul/grades/bulk", async (req, res) => {
+  const { grades } = req.body;
+  if (!Array.isArray(grades) || grades.length === 0) {
+    return res.status(400).json({ error: "Daftar nilai ekskul wajib diisi." });
+  }
+
+  const db = await readDB();
+  if (!db.walikelas_notes) {
+    db.walikelas_notes = {};
+  }
+
+  for (const item of grades) {
+    const { studentId, ekskulId, name, type, usaha, proses, capaian, description, pembinaName, pembinaTeacherId, selected } = item;
+    if (!studentId || !name) continue;
+
+    if (!db.walikelas_notes[studentId]) {
+      db.walikelas_notes[studentId] = {
+        sakit: 0,
+        izin: 0,
+        alpa: 0,
+        catatan: "",
+        spiritualUsaha: "B",
+        spiritualProses: "B",
+        spiritualCapaian: "B",
+        spiritualDeskripsi: "",
+        sosialUsaha: "B",
+        sosialProses: "B",
+        sosialCapaian: "B",
+        sosialDeskripsi: "",
+        ekskul: []
+      };
+    }
+
+    let currentEkskuls = Array.isArray(db.walikelas_notes[studentId].ekskul) ? db.walikelas_notes[studentId].ekskul : [];
+    if (selected === false) {
+      currentEkskuls = currentEkskuls.filter((e: any) => e.name !== name && e.ekskulId !== ekskulId);
+    } else {
+      const existIdx = currentEkskuls.findIndex((e: any) => e.name === name || (ekskulId && e.ekskulId === ekskulId));
+      const newEkskulEntry = {
+        ekskulId: ekskulId || "",
+        name,
+        type: type || "Pilihan",
+        usaha: usaha || "B",
+        proses: proses || "B",
+        capaian: capaian || "B",
+        predicate: capaian || "Baik",
+        description: description || "",
+        pembinaName: pembinaName || "",
+        pembinaTeacherId: pembinaTeacherId || "",
+        updatedAt: new Date().toISOString()
+      };
+      if (existIdx !== -1) {
+        currentEkskuls[existIdx] = { ...currentEkskuls[existIdx], ...newEkskulEntry };
+      } else {
+        currentEkskuls.push(newEkskulEntry);
+      }
+    }
+    db.walikelas_notes[studentId].ekskul = currentEkskuls;
+  }
+
+  await writeDB(db);
+  res.json({ success: true, count: grades.length });
 });
 
 // 7. General Progress / Summary APIs

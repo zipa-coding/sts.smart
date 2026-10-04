@@ -218,17 +218,11 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       };
     });
 
-    if (note && note.ekskul) {
-      const safeNoteEkskul = Array.isArray(note.ekskul) ? note.ekskul : [];
-      safeNoteEkskul.forEach((saved: any) => {
-        initialGrades[saved.name] = {
-          predicate: saved.predicate || saved.capaian || "Baik",
-          description: saved.description || saved.deskripsi || "",
-          selected: true
-        };
-      });
-    }
-
+    const currentStudentNote = safeNotesMap[student.id];
+    const existingEkskuls = currentStudentNote && Array.isArray(currentStudentNote.ekskul)
+      ? currentStudentNote.ekskul
+      : [];
+    
     setStudentEkskulGrades(initialGrades);
   };
 
@@ -238,19 +232,11 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     setError("");
     setSuccess("");
 
-    const ekskulArray = Object.entries(studentEkskulGrades)
-      .filter(([_, g]) => (g as any).selected)
-      .map(([name, g]) => {
-        const safeActiveEkskulList = Array.isArray(activeEkskulList) ? activeEkskulList : [];
-        const match = safeActiveEkskulList.find(e => e.name === name);
-        const val = g as any;
-        return {
-          name,
-          type: match ? match.type : "Pilihan",
-          predicate: val.predicate,
-          description: val.description
-        };
-      });
+    // Preserve the student's existing ekskul grades given by Pembina Ekskul
+    const currentStudentNote = allClassNotes[selectedStudent.id];
+    const existingEkskul = currentStudentNote && Array.isArray(currentStudentNote.ekskul)
+      ? currentStudentNote.ekskul
+      : [];
 
     setSaveLoading(true);
     try {
@@ -271,14 +257,14 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
           sosialProses,
           sosialCapaian,
           sosialDeskripsi,
-          ekskul: ekskulArray
+          ekskul: existingEkskul
         })
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal menyimpan catatan.");
 
-      setSuccess(`Presensi, capaian karakter, catatan, dan nilai ekskul ${selectedStudent.name} berhasil disimpan!`);
+      setSuccess(`Presensi, capaian karakter, dan catatan wali kelas untuk ${selectedStudent.name} berhasil disimpan!`);
       onRefreshTrigger(); // trigger live summary recalculation in dashboard app
 
       const getNotes = await fetch("/api/walikelas/notes");
@@ -655,100 +641,115 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                 </div>
               </div>
 
-              {/* EXTRACURRICULAR EVALUATION FORM */}
+              {/* EXTRACURRICULAR EVALUATION DISPLAY (READ-ONLY FOR WALI KELAS, MANAGED BY PEMBINA EKSKUL) */}
               <div className="border-t border-slate-100 pt-3 space-y-3">
-                <h4 className="font-extrabold text-[10px] uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5 text-emerald-850" />
-                  Evaluasi Kegiatan Ekstrakurikuler (Ekskul)
-                </h4>
-                <p className="text-[10px] text-slate-400">
-                  Tandai kegiatan ekstrakurikuler yang diikuti oleh ananda dan berikan nilai predikat serta keterangan capaiannya.
-                </p>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-extrabold text-[10px] uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-emerald-600" />
+                    Penilaian Ekstrakurikuler (Oleh Guru Pembina)
+                  </h4>
+                  <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-bold">
+                    Otomatis dari Pembina Ekskul
+                  </span>
+                </div>
 
-                {activeEkskulList.length === 0 ? (
-                  <p className="text-[11px] text-slate-450 italic bg-slate-50 p-2 rounded text-center">
-                    Belum ada ekstrakurikuler yang dibuat di Admin Panel. Silakan buat di Admin terlebih dahulu.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {activeEkskulList.map((eks) => {
-                      const gradeInfo = studentEkskulGrades[eks.name] || { selected: eks.type === "Wajib", predicate: "Baik", description: "" };
-                      return (
-                        <div key={eks.id} className={`p-3 rounded-lg border transition ${gradeInfo.selected ? "bg-emerald-50/10 border-emerald-150" : "bg-slate-50/50 border-slate-200"}`}>
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={gradeInfo.selected}
-                                onChange={(e) => {
-                                  const checked = e.target.checked;
-                                  setStudentEkskulGrades(prev => ({
-                                    ...prev,
-                                    [eks.name]: {
-                                      ...prev[eks.name],
-                                      selected: checked
-                                    }
-                                  }));
-                                }}
-                                className="rounded text-emerald-600 focus:ring-emerald-550 w-4 h-4"
-                              />
-                              <span className="text-xs font-bold text-slate-800">{eks.name}</span>
-                              <span className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold tracking-wider uppercase ${eks.type === "Wajib" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-sky-100 text-sky-800 border border-sky-200"}`}>
-                                {eks.type}
-                              </span>
-                            </label>
-                          </div>
+                <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-3 text-[11px] text-emerald-900 leading-relaxed flex items-start gap-2">
+                  <Award className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Info Integrasi Penilaian:</span> Pengisian nilai ekstrakurikuler mencakup 3 aspek (<strong className="text-emerald-800">Usaha</strong>, <strong className="text-emerald-800">Proses</strong>, dan <strong className="text-emerald-800">Capaian</strong>) serta deskripsi kegiatan dilakukan langsung oleh masing-masing <strong>Guru Pembina Ekskul</strong> melalui menu <em>Nilai Ekstrakurikuler</em>. Data berikut otomatis tercetak pada lembar Rapor Siswa.
+                  </div>
+                </div>
 
-                          {gradeInfo.selected && (
-                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mt-2 pl-6 animate-fade-in">
-                              <div className="sm:col-span-3">
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Predikat</label>
-                                <select
-                                  value={gradeInfo.predicate}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setStudentEkskulGrades(prev => ({
-                                      ...prev,
-                                      [eks.name]: {
-                                        ...prev[eks.name],
-                                        predicate: val
-                                      }
-                                    }));
-                                  }}
-                                  className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                {(() => {
+                  const studentNote = selectedStudent ? allClassNotes[selectedStudent.id] : null;
+                  const studentEkskuls: any[] = studentNote && Array.isArray(studentNote.ekskul) ? studentNote.ekskul : [];
+
+                  if (studentEkskuls.length === 0) {
+                    return (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-slate-400 text-xs italic">
+                        Belum ada kegiatan ekstrakurikuler yang dinilai oleh Pembina untuk santri ini.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-2.5">
+                      {studentEkskuls.map((eks: any, idx: number) => {
+                        const usahaVal = eks.usaha || eks.predicate || "B";
+                        const prosesVal = eks.proses || eks.predicate || "B";
+                        const capaianVal = eks.capaian || eks.predicate || "B";
+
+                        return (
+                          <div
+                            key={idx}
+                            className="p-3 rounded-xl border border-slate-200 bg-white shadow-xs space-y-2"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold flex items-center justify-center">
+                                  {idx + 1}
+                                </span>
+                                <span className="font-bold text-xs text-slate-900">
+                                  {eks.name}
+                                </span>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase ${
+                                    eks.type === "Wajib"
+                                      ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                      : "bg-sky-100 text-sky-800 border border-sky-200"
+                                  }`}
                                 >
-                                  <option value="Sangat Baik">A (Sangat Baik)</option>
-                                  <option value="Baik">B (Baik)</option>
-                                  <option value="Cukup font-sans">C (Cukup)</option>
-                                  <option value="Kurang">D (Kurang)</option>
-                                </select>
+                                  {eks.type || "Pilihan"}
+                                </span>
                               </div>
-                              <div className="sm:col-span-9">
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Keterangan / Capaian Kegiatan</label>
-                                <input
-                                  type="text"
-                                  value={gradeInfo.description}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setStudentEkskulGrades(prev => ({
-                                      ...prev,
-                                      [eks.name]: {
-                                        ...prev[eks.name],
-                                        description: val
-                                      }
-                                    }));
-                                  }}
-                                  placeholder={`Contoh: Aktif mengikuti kegiatan ${eks.name} dengan kedisiplinan tinggi.`}
-                                  className="w-full p-1.5 border border-slate-200 rounded text-xs focus:outline-none text-slate-700 font-sans leading-relaxed"
-                                />
+
+                              {eks.pembinaName && (
+                                <span className="text-[10px] text-slate-500">
+                                  Pembina: <strong className="text-slate-700">{eks.pembinaName}</strong>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* 3 Aspects Badges: Usaha, Proses, Capaian */}
+                            <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100">
+                              <div className="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
+                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                                  1. Usaha
+                                </div>
+                                <div className="font-extrabold text-sm text-emerald-700">
+                                  {usahaVal}
+                                </div>
+                              </div>
+                              <div className="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
+                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                                  2. Proses
+                                </div>
+                                <div className="font-extrabold text-sm text-emerald-700">
+                                  {prosesVal}
+                                </div>
+                              </div>
+                              <div className="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
+                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                                  3. Capaian
+                                </div>
+                                <div className="font-extrabold text-sm text-emerald-700">
+                                  {capaianVal}
+                                </div>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+
+                            {/* Description */}
+                            {(eks.description || eks.deskripsi) && (
+                              <div className="text-2xs text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 leading-relaxed italic">
+                                "{eks.description || eks.deskripsi}"
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* CATATAN PERKEMBANGAN UMUM */}

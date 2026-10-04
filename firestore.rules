@@ -38,6 +38,8 @@ service cloud.firestore {
         && isOptionalString(data, 'subject', 100)
         && isOptionalString(data, 'mapel', 100)
         && isOptionalString(data, 'kelas', 50)
+        && isOptionalString(data, 'pembinaEkskulId', 128)
+        && isOptionalString(data, 'pembinaEkskulName', 200)
       );
     }
 
@@ -150,7 +152,9 @@ service cloud.firestore {
     match /ekskul/{ekskulId} {
       allow read: if true;
       allow create, update: if isValidId(ekskulId)
-        && isNonEmptyString(request.resource.data.name, 200);
+        && isNonEmptyString(request.resource.data.name, 200)
+        && isOptionalString(request.resource.data, 'pembinaTeacherId', 128)
+        && isOptionalString(request.resource.data, 'pembinaName', 200);
       allow delete: if isValidId(ekskulId);
     }
 

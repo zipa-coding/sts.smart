@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Teacher, Student, SUBJECT_LIST, Halaqoh } from "../types";
+import { Teacher, Student, SUBJECT_LIST, Halaqoh, Ekskul } from "../types";
 import {
   Users,
   GraduationCap,
@@ -113,6 +113,9 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
     subject: "IPA",
     isWaliKelas: false,
     kelas: "",
+    isPembinaEkskul: false,
+    pembinaEkskulId: "",
+    pembinaEkskulName: "",
   });
 
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
@@ -390,7 +393,21 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   const [newEkskulType, setNewEkskulType] = useState<"Wajib" | "Pilihan">(
     "Pilihan",
   );
+  const [newEkskulPembinaTeacherId, setNewEkskulPembinaTeacherId] = useState("");
   const [ekskulLoading, setEkskulLoading] = useState(false);
+
+  // Edit Ekskul Modal State
+  const [isEkskulEditModalOpen, setIsEkskulEditModalOpen] = useState(false);
+  const [editingEkskul, setEditingEkskul] = useState<Ekskul | null>(null);
+  const [editEkskulForm, setEditEkskulForm] = useState<{
+    name: string;
+    type: "Wajib" | "Pilihan";
+    pembinaTeacherId: string;
+  }>({
+    name: "",
+    type: "Pilihan",
+    pembinaTeacherId: "",
+  });
 
   const handleAddEkskul = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,22 +415,100 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
     setError("");
     setEkskulLoading(true);
     try {
+      const selectedTeacher = teachers.find(
+        (t) => t.id === newEkskulPembinaTeacherId,
+      );
       const res = await fetch("/api/ekskul", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newEkskulName.trim(),
           type: newEkskulType,
+          pembinaTeacherId: newEkskulPembinaTeacherId || "",
+          pembinaName: selectedTeacher ? selectedTeacher.name : "",
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menambah ekskul.");
+      
+      // If teacher was selected, update teacher object as well
+      if (selectedTeacher && data.id) {
+        await fetch(`/api/teachers/${selectedTeacher.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...selectedTeacher,
+            isPembinaEkskul: true,
+            pembinaEkskulId: data.id,
+            pembinaEkskulName: data.name,
+          }),
+        });
+      }
+
       setNewEkskulName("");
       setNewEkskulType("Pilihan");
+      setNewEkskulPembinaTeacherId("");
       await fetchAllData();
       showSuccess("Ekstrakurikuler berhasil ditambahkan!");
     } catch (err: any) {
       setError(err.message || "Gagal menyimpan.");
+    } finally {
+      setEkskulLoading(false);
+    }
+  };
+
+  const startEditEkskul = (e: Ekskul) => {
+    setEditingEkskul(e);
+    setEditEkskulForm({
+      name: e.name,
+      type: e.type,
+      pembinaTeacherId: e.pembinaTeacherId || "",
+    });
+    setIsEkskulEditModalOpen(true);
+  };
+
+  const handleUpdateEkskul = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEkskul || !editEkskulForm.name.trim()) return;
+    setError("");
+    setEkskulLoading(true);
+    try {
+      const selectedTeacher = teachers.find(
+        (t) => t.id === editEkskulForm.pembinaTeacherId,
+      );
+      const res = await fetch(`/api/ekskul/${editingEkskul.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editEkskulForm.name.trim(),
+          type: editEkskulForm.type,
+          pembinaTeacherId: editEkskulForm.pembinaTeacherId || "",
+          pembinaName: selectedTeacher ? selectedTeacher.name : "",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memperbarui ekskul.");
+
+      // Sync teacher's pembina status if assigned
+      if (selectedTeacher) {
+        await fetch(`/api/teachers/${selectedTeacher.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...selectedTeacher,
+            isPembinaEkskul: true,
+            pembinaEkskulId: editingEkskul.id,
+            pembinaEkskulName: editEkskulForm.name.trim(),
+          }),
+        });
+      }
+
+      setIsEkskulEditModalOpen(false);
+      setEditingEkskul(null);
+      await fetchAllData();
+      showSuccess("Ekstrakurikuler berhasil diperbarui!");
+    } catch (err: any) {
+      setError(err.message || "Gagal memperbarui.");
     } finally {
       setEkskulLoading(false);
     }
@@ -660,6 +755,19 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
         throw new Error(data.error || "Gagal menyimpan rincian guru.");
       }
 
+      // If assigned as pembina ekskul, sync to ekskul master document
+      if (payload.isPembinaEkskul && payload.pembinaEkskulId) {
+        const teacherId = data.id || editingTeacher?.id || "";
+        await fetch(`/api/ekskul/${payload.pembinaEkskulId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pembinaTeacherId: teacherId,
+            pembinaName: payload.name,
+          }),
+        });
+      }
+
       await fetchAllData();
       onRefreshTrigger();
       setIsTeacherModalOpen(false);
@@ -672,6 +780,9 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
         subject: "IPA",
         isWaliKelas: false,
         kelas: "",
+        isPembinaEkskul: false,
+        pembinaEkskulId: "",
+        pembinaEkskulName: "",
       });
       showSuccess(
         editingTeacher
@@ -696,6 +807,9 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       subject: t.subject,
       isWaliKelas: t.isWaliKelas,
       kelas: t.kelas || "",
+      isPembinaEkskul: !!t.isPembinaEkskul,
+      pembinaEkskulId: t.pembinaEkskulId || "",
+      pembinaEkskulName: t.pembinaEkskulName || "",
     });
     setIsTeacherModalOpen(true);
   };
@@ -1191,7 +1305,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                     Mata Pelajaran (Mapel)
                   </th>
                   <th className="p-3 font-semibold text-gray-500 uppercase tracking-wider">
-                    Tugas Wali Kelas
+                    Tugas Wali / Pembina Ekskul
                   </th>
                   <th className="p-3 font-semibold text-gray-500 uppercase tracking-wider text-right">
                     Tindakan
@@ -1251,13 +1365,22 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                         </span>
                       </td>
                       <td className="p-3 text-xs">
-                        {t.isWaliKelas ? (
-                          <span className="text-green-700 bg-green-50 border border-green-200 py-0.5 px-2.5 rounded-full font-semibold">
-                            Wali Kelas {t.kelas}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic">Bukan Wali</span>
-                        )}
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          {t.isWaliKelas && (
+                            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 py-0.5 px-2 rounded-full font-semibold text-[10px]">
+                              Wali Kelas {t.kelas}
+                            </span>
+                          )}
+                          {t.isPembinaEkskul && (
+                            <span className="text-purple-700 bg-purple-50 border border-purple-200 py-0.5 px-2 rounded-full font-semibold text-[10px] flex items-center gap-1">
+                              <Award className="w-3 h-3 text-purple-600" />
+                              <span>Pembina {t.pembinaEkskulName || "Ekskul"}</span>
+                            </span>
+                          )}
+                          {!t.isWaliKelas && !t.isPembinaEkskul && (
+                            <span className="text-gray-400 italic text-[11px]">Guru Mapel</span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3 text-right">
                         {isSuperAdmin ? (
@@ -2519,6 +2642,27 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                  Guru Pembina Kegiatan
+                </label>
+                <select
+                  value={newEkskulPembinaTeacherId}
+                  onChange={(e) => setNewEkskulPembinaTeacherId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-600"
+                >
+                  <option value="">-- Belum Ditugaskan --</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.subject})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Guru pembina bertugas menginput nilai aspek Usaha, Proses, dan Capaian siswa.
+                </p>
+              </div>
+
               <button
                 type="submit"
                 disabled={ekskulLoading || !newEkskulName.trim()}
@@ -2537,8 +2681,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 Daftar Kegiatan Ekstrakurikuler ({ekskuls.length})
               </h2>
               <p className="text-[10px] text-slate-400">
-                Daftar kegiatan ekstrakurikuler yang aktif dan dapat dinilai
-                oleh Wali Kelas pada rapor siswa.
+                Daftar kegiatan ekstrakurikuler beserta Guru Pembina yang berhak menginput nilai rapor.
               </p>
             </div>
 
@@ -2551,6 +2694,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                       Nama Ekstrakurikuler
                     </th>
                     <th className="py-2.5 px-3 text-[10px]">Tipe</th>
+                    <th className="py-2.5 px-3 text-[10px]">Guru Pembina</th>
                     <th className="py-2.5 px-3 text-[10px] text-center">
                       Aksi
                     </th>
@@ -2560,7 +2704,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   {ekskuls.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="py-8 text-center text-slate-400 italic"
                       >
                         Belum ada kegiatan ekstrakurikuler. Silakan tambahkan di
@@ -2586,14 +2730,35 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                             {e.type}
                           </span>
                         </td>
+                        <td className="py-2.5 px-3">
+                          {e.pembinaName ? (
+                            <span className="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px] inline-flex items-center gap-1">
+                              <Award className="w-3 h-3 text-emerald-600" />
+                              {e.pembinaName}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px]">
+                              Belum Ditugaskan
+                            </span>
+                          )}
+                        </td>
                         <td className="py-2.5 px-3 text-center">
-                          <button
-                            onClick={() => handleDeleteEkskul(e.id)}
-                            className="p-1 hover:bg-red-50 text-red-500 rounded transition cursor-pointer"
-                            title="Hapus Ekstrakurikuler"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="inline-flex gap-1.5 items-center justify-center">
+                            <button
+                              onClick={() => startEditEkskul(e)}
+                              className="p-1 hover:bg-sky-50 text-sky-600 rounded transition cursor-pointer"
+                              title="Edit Ekstrakurikuler / Ganti Pembina"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEkskul(e.id)}
+                              className="p-1 hover:bg-red-50 text-red-500 rounded transition cursor-pointer"
+                              title="Hapus Ekstrakurikuler"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -2601,6 +2766,110 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT EKSKUL MODAL */}
+      {isEkskulEditModalOpen && editingEkskul && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-scale-up">
+            <div className="bg-emerald-800 px-6 py-4 text-white flex items-center justify-between">
+              <h3 className="font-bold text-sm uppercase tracking-wide flex items-center gap-2">
+                <Award className="w-4 h-4" />
+                <span>Edit Ekstrakurikuler & Pembina</span>
+              </h3>
+              <button
+                onClick={() => setIsEkskulEditModalOpen(false)}
+                className="text-white/85 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateEkskul} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Nama Kegiatan Ekstrakurikuler
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editEkskulForm.name}
+                  onChange={(e) =>
+                    setEditEkskulForm((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Tipe Ekstrakurikuler
+                </label>
+                <select
+                  value={editEkskulForm.type}
+                  onChange={(e) =>
+                    setEditEkskulForm((prev) => ({
+                      ...prev,
+                      type: e.target.value as "Wajib" | "Pilihan",
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-250 bg-white rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600"
+                >
+                  <option value="Wajib">Wajib (Compulsory)</option>
+                  <option value="Pilihan">Pilihan (Elective)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                  Tugaskan Guru Pembina
+                </label>
+                <select
+                  value={editEkskulForm.pembinaTeacherId}
+                  onChange={(e) =>
+                    setEditEkskulForm((prev) => ({
+                      ...prev,
+                      pembinaTeacherId: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-250 bg-white rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 font-semibold"
+                >
+                  <option value="">-- Belum Ditugaskan --</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.subject})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-gray-500 mt-1">
+                  Guru pembina yang dipilih akan memiliki akses penginputan nilai Usaha, Proses, dan Capaian siswa di Rapor.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  disabled={ekskulLoading}
+                  onClick={() => setIsEkskulEditModalOpen(false)}
+                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={ekskulLoading || !editEkskulForm.name.trim()}
+                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{ekskulLoading ? "Menyimpan..." : "Simpan Perubahan"}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -2744,7 +3013,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 </select>
               </div>
 
-              <div className="pt-2 border-t border-gray-100">
+              <div className="pt-2 border-t border-gray-100 space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer text-xs md:text-sm text-gray-800">
                   <input
                     type="checkbox"
@@ -2759,30 +3028,83 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                   />
                   <span>Tugaskan sebagai Wali Kelas</span>
                 </label>
-              </div>
 
-              {teacherForm.isWaliKelas && (
-                <div className="bg-gray-50 p-3 rounded-lg border border-gray-150 animate-fade-in">
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Kelas yang Diajar & Asuh
-                  </label>
-                  <select
-                    value={teacherForm.kelas}
-                    onChange={(e) =>
-                      setTeacherForm((prev) => ({
-                        ...prev,
-                        kelas: e.target.value,
-                      }))
-                    }
-                    className="w-full p-2 bg-white border border-gray-250 rounded text-xs focus:outline-none focus:border-emerald-600"
-                  >
-                    <option value="">-- Pilih Kelas --</option>
-                    <option value="7">Kelas 7</option>
-                    <option value="8">Kelas 8</option>
-                    <option value="9">Kelas 9</option>
-                  </select>
-                </div>
-              )}
+                {teacherForm.isWaliKelas && (
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-150 animate-fade-in">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Kelas yang Diajar & Asuh
+                    </label>
+                    <select
+                      value={teacherForm.kelas}
+                      onChange={(e) =>
+                        setTeacherForm((prev) => ({
+                          ...prev,
+                          kelas: e.target.value,
+                        }))
+                      }
+                      className="w-full p-2 bg-white border border-gray-250 rounded text-xs focus:outline-none focus:border-emerald-600"
+                    >
+                      <option value="">-- Pilih Kelas --</option>
+                      <option value="7">Kelas 7</option>
+                      <option value="8">Kelas 8</option>
+                      <option value="9">Kelas 9</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Pembina Ekstrakurikuler Assignment */}
+                <label className="flex items-center gap-2 cursor-pointer text-xs md:text-sm text-gray-800">
+                  <input
+                    type="checkbox"
+                    checked={teacherForm.isPembinaEkskul}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      setTeacherForm((prev) => {
+                        const defaultEks = ekskuls.length > 0 ? ekskuls[0] : null;
+                        return {
+                          ...prev,
+                          isPembinaEkskul: isChecked,
+                          pembinaEkskulId: isChecked ? (prev.pembinaEkskulId || defaultEks?.id || "") : "",
+                          pembinaEkskulName: isChecked ? (prev.pembinaEkskulName || defaultEks?.name || "") : "",
+                        };
+                      });
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-purple-700 focus:ring-purple-500"
+                  />
+                  <span>Tugaskan sebagai Pembina Ekstrakurikuler</span>
+                </label>
+
+                {teacherForm.isPembinaEkskul && (
+                  <div className="bg-purple-50/60 p-3 rounded-lg border border-purple-200 animate-fade-in space-y-1.5">
+                    <label className="block text-xs font-semibold text-purple-900 mb-1">
+                      Pilih Kegiatan Ekstrakurikuler yang Dibina:
+                    </label>
+                    <select
+                      value={teacherForm.pembinaEkskulId}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const matchedEks = ekskuls.find((x) => x.id === selectedId);
+                        setTeacherForm((prev) => ({
+                          ...prev,
+                          pembinaEkskulId: selectedId,
+                          pembinaEkskulName: matchedEks ? matchedEks.name : "",
+                        }));
+                      }}
+                      className="w-full p-2 bg-white border border-purple-300 rounded text-xs focus:outline-none focus:border-purple-600 font-semibold text-purple-950"
+                    >
+                      <option value="">-- Pilih Ekstrakurikuler --</option>
+                      {ekskuls.map((eks) => (
+                        <option key={eks.id} value={eks.id}>
+                          {eks.name} ({eks.type})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-purple-700 leading-tight">
+                      Guru yang ditugaskan dapat langsung menginput nilai 3 aspek (Usaha, Proses, Capaian) dan deskripsi kegiatan melalui menu Nilai Ekstrakurikuler.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-3 pt-4">
                 <button

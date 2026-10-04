@@ -5,10 +5,11 @@ import DashboardProgress from "./components/DashboardProgress";
 import AdminPanel from "./components/AdminPanel";
 import TeacherPanel from "./components/TeacherPanel";
 import WaliKelasPanel from "./components/WaliKelasPanel";
+import EkskulPanel from "./components/EkskulPanel";
 import HalaqohRaportView from "./components/HalaqohRaportView";
 import SmpIslamSmartLogo from "./components/SmpIslamSmartLogo";
 import { PWAInstallButton } from "./components/PWAInstallButton";
-import { BookOpen, LogOut, Key, BarChart3, Settings, ShieldAlert, GraduationCap, PenTool, Sun, Moon, Menu, X, LayoutDashboard, Sliders, Users } from "lucide-react";
+import { BookOpen, LogOut, Key, BarChart3, Settings, ShieldAlert, GraduationCap, PenTool, Sun, Moon, Menu, X, LayoutDashboard, Sliders, Users, Award } from "lucide-react";
 import { isFirebaseConfigured } from "./lib/firebase";
 
 export default function App() {
@@ -371,6 +372,29 @@ export default function App() {
             </button>
           )}
 
+          {/* Dedicated Pembina Ekstrakurikuler Grading Panel */}
+          <button
+            onClick={() => {
+              setActiveTab("ekskul_panel");
+              setSidebarOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-left transition-all duration-200 cursor-pointer ${
+              activeTab === "ekskul_panel"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-900/50 font-bold border border-blue-400/40"
+                : "text-slate-300 hover:bg-[#131f38] hover:text-white"
+            }`}
+          >
+            <Award className={`w-4 h-4 ${activeTab === "ekskul_panel" ? "text-white" : "text-emerald-400"}`} />
+            <div className="flex-1 flex items-center justify-between min-w-0">
+              <span className="truncate">Nilai Ekstrakurikuler</span>
+              {currentUser.isPembinaEkskul && (
+                <span className="ml-1 px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[8px] font-bold border border-emerald-500/30">
+                  Pembina
+                </span>
+              )}
+            </div>
+          </button>
+
           {/* Halaqoh & Keislaman Raport Download Panel */}
           <button
             onClick={() => {
@@ -423,6 +447,8 @@ export default function App() {
             <div className="text-[10px] text-blue-400 font-semibold truncate">
               {isSysAdmin
                 ? "Administrator Utama"
+                : currentUser.isPembinaEkskul && currentUser.pembinaEkskulName
+                ? `${isWaliKelas ? `Wali Kelas ${currentUser.kelas} • ` : ""}Pembina ${currentUser.pembinaEkskulName}`
                 : isWaliKelas
                 ? `Wali Kelas ${currentUser.kelas}`
                 : `Guru ${currentUser.subject}`}
@@ -552,6 +578,13 @@ export default function App() {
               <div className={activeTab === "walikelas_panel" ? "block animate-fade-in" : "hidden"}>
                 {/* Wali Kelas dashboard integration */}
                 <WaliKelasPanel user={currentUser} onRefreshTrigger={triggerProgressRefresh} />
+              </div>
+            )}
+
+            {visitedTabs["ekskul_panel"] && (
+              <div className={activeTab === "ekskul_panel" ? "block animate-fade-in" : "hidden"}>
+                {/* Pembina Ekstrakurikuler Evaluation Hub */}
+                <EkskulPanel currentUser={currentUser} onRefreshTrigger={triggerProgressRefresh} />
               </div>
             )}
 

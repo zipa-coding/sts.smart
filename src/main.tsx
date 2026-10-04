@@ -314,9 +314,21 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           return new Response(JSON.stringify(e), { status: 201, headers: { 'Content-Type': 'application/json' } });
         }
 
+        if (path.startsWith('/api/ekskul/') && method === 'PUT') {
+          const id = path.split('/').pop() || "";
+          const e = await firebaseApi.putEkskul(id, body);
+          return new Response(JSON.stringify(e), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
         if (path.startsWith('/api/ekskul/') && method === 'DELETE') {
           const id = path.split('/').pop() || "";
           const res = await firebaseApi.deleteEkskul(id);
+          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        if (path === '/api/ekskul/grades/bulk' && method === 'POST') {
+          const grades = body?.grades || [];
+          const res = await firebaseApi.postEkskulGradesBulk(grades);
           return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
@@ -812,7 +824,7 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
 
     // POST /api/ekskul
     if (path === '/api/ekskul' && method === 'POST') {
-      const { name, type } = body || {};
+      const { name, type, pembinaTeacherId, pembinaName } = body || {};
       const db = getDB();
       if (!db.ekskul) {
         db.ekskul = [
@@ -824,10 +836,96 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           { "id": "e6", "name": "Study Club", "type": "Pilihan" }
         ];
       }
-      const newE = { id: "e_" + Date.now(), name, type };
+      const newE = {
+        id: "e_" + Date.now(),
+        name,
+        type,
+        pembinaTeacherId: pembinaTeacherId || "",
+        pembinaName: pembinaName || ""
+      };
       db.ekskul.push(newE);
       saveDB(db);
       return new Response(JSON.stringify(newE), { status: 201, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // PUT /api/ekskul/:id
+    if (path.startsWith('/api/ekskul/') && method === 'PUT') {
+      const id = path.split('/').pop() || "";
+      const { name, type, pembinaTeacherId, pembinaName } = body || {};
+      const db = getDB();
+      if (!db.ekskul) db.ekskul = [];
+      const idx = db.ekskul.findIndex((e: any) => e.id === id);
+      if (idx === -1) {
+        return new Response(JSON.stringify({ error: "Ekskul tidak ditemukan." }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+      }
+      db.ekskul[idx] = {
+        ...db.ekskul[idx],
+        name: name || db.ekskul[idx].name,
+        type: type || db.ekskul[idx].type,
+        pembinaTeacherId: pembinaTeacherId !== undefined ? pembinaTeacherId : db.ekskul[idx].pembinaTeacherId,
+        pembinaName: pembinaName !== undefined ? pembinaName : db.ekskul[idx].pembinaName
+      };
+      saveDB(db);
+      return new Response(JSON.stringify(db.ekskul[idx]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // POST /api/ekskul/grades/bulk
+    if (path === '/api/ekskul/grades/bulk' && method === 'POST') {
+      const grades = body?.grades || [];
+      const db = getDB();
+      if (!db.walikelas_notes) db.walikelas_notes = {};
+
+      for (const item of grades) {
+        const { studentId, ekskulId, name, type, usaha, proses, capaian, description, pembinaName, pembinaTeacherId, selected } = item;
+        if (!studentId || !name) continue;
+
+        if (!db.walikelas_notes[studentId]) {
+          db.walikelas_notes[studentId] = {
+            sakit: 0,
+            izin: 0,
+            alpa: 0,
+            catatan: "",
+            spiritualUsaha: "B",
+            spiritualProses: "B",
+            spiritualCapaian: "B",
+            spiritualDeskripsi: "",
+            sosialUsaha: "B",
+            sosialProses: "B",
+            sosialCapaian: "B",
+            sosialDeskripsi: "",
+            ekskul: []
+          };
+        }
+
+        let currentEkskuls = Array.isArray(db.walikelas_notes[studentId].ekskul) ? db.walikelas_notes[studentId].ekskul : [];
+        if (selected === false) {
+          currentEkskuls = currentEkskuls.filter((e: any) => e.name !== name && e.ekskulId !== ekskulId);
+        } else {
+          const existIdx = currentEkskuls.findIndex((e: any) => e.name === name || (ekskulId && e.ekskulId === ekskulId));
+          const newEkskulEntry = {
+            ekskulId: ekskulId || "",
+            name,
+            type: type || "Pilihan",
+            usaha: usaha || "B",
+            proses: proses || "B",
+            capaian: capaian || "B",
+            predicate: capaian || "Baik",
+            description: description || "",
+            pembinaName: pembinaName || "",
+            pembinaTeacherId: pembinaTeacherId || "",
+            updatedAt: new Date().toISOString()
+          };
+          if (existIdx !== -1) {
+            currentEkskuls[existIdx] = { ...currentEkskuls[existIdx], ...newEkskulEntry };
+          } else {
+            currentEkskuls.push(newEkskulEntry);
+          }
+        }
+        db.walikelas_notes[studentId].ekskul = currentEkskuls;
+      }
+
+      saveDB(db);
+      return new Response(JSON.stringify({ success: true, count: grades.length }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // DELETE /api/ekskul/:id

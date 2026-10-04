@@ -230,6 +230,9 @@ export const firebaseApi = {
                 subject: d.subject || d.mapel || d.mataPelajaran || d.mata_pelajaran || "Guru",
                 isWaliKelas: !!(d.isWaliKelas || d.waliKelas || d.is_wali_kelas || d.isWali),
                 kelas: d.kelas || d.rombel || d.class || "",
+                isPembinaEkskul: !!(d.isPembinaEkskul || d.is_pembina_ekskul),
+                pembinaEkskulId: d.pembinaEkskulId || "",
+                pembinaEkskulName: d.pembinaEkskulName || "",
                 ...d
               };
             });
@@ -245,22 +248,43 @@ export const firebaseApi = {
   },
   postTeacher: async (body: any) => {
     if (!db) throw new Error("Database not connected");
-    const { name, username, password, subject, isWaliKelas, kelas } = body;
+    const { name, username, password, subject, isWaliKelas, kelas, isPembinaEkskul, pembinaEkskulId, pembinaEkskulName } = body;
     // Check duplication
     const q = query(collection(db, "teachers"), where("username", "==", username));
     const dup = await withTimeout(getDocs(q), 2500);
     if (!dup.empty) throw new Error("Username sudah digunakan.");
 
     const id = "t_" + Date.now();
-    const newTeacher = { id, name, username, password, subject, isWaliKelas: !!isWaliKelas, kelas: kelas || "" };
+    const newTeacher = {
+      id,
+      name,
+      username,
+      password,
+      subject,
+      isWaliKelas: !!isWaliKelas,
+      kelas: kelas || "",
+      isPembinaEkskul: !!isPembinaEkskul,
+      pembinaEkskulId: pembinaEkskulId || "",
+      pembinaEkskulName: pembinaEkskulName || ""
+    };
     await withTimeout(setDoc(doc(db, "teachers", id), newTeacher), 2500);
     return newTeacher;
   },
   putTeacher: async (id: string, body: any) => {
     if (!db) throw new Error("Database not connected");
-    const { name, username, password, subject, isWaliKelas, kelas } = body;
+    const { name, username, password, subject, isWaliKelas, kelas, isPembinaEkskul, pembinaEkskulId, pembinaEkskulName } = body;
     const ref = doc(db, "teachers", id);
-    const updated = { name, username, password, subject, isWaliKelas: !!isWaliKelas, kelas: kelas || "" };
+    const updated = {
+      name,
+      username,
+      password,
+      subject,
+      isWaliKelas: !!isWaliKelas,
+      kelas: kelas || "",
+      isPembinaEkskul: !!isPembinaEkskul,
+      pembinaEkskulId: pembinaEkskulId || "",
+      pembinaEkskulName: pembinaEkskulName || ""
+    };
     await withTimeout(updateDoc(ref, updated), 2500);
     return { id, ...updated };
   },
@@ -752,16 +776,81 @@ export const firebaseApi = {
   },
   postEkskul: async (body: any) => {
     if (!db) throw new Error("Database not connected");
-    const { name, type } = body;
+    const { name, type, pembinaTeacherId, pembinaName } = body;
     const id = "e_" + Date.now();
-    const newE = { id, name, type };
+    const newE = {
+      id,
+      name,
+      type,
+      pembinaTeacherId: pembinaTeacherId || "",
+      pembinaName: pembinaName || ""
+    };
     await withTimeout(setDoc(doc(db, "ekskul", id), newE), 2500);
     return newE;
+  },
+  putEkskul: async (id: string, body: any) => {
+    if (!db) throw new Error("Database not connected");
+    const { name, type, pembinaTeacherId, pembinaName } = body;
+    const ref = doc(db, "ekskul", id);
+    const updated = {
+      name,
+      type,
+      pembinaTeacherId: pembinaTeacherId || "",
+      pembinaName: pembinaName || ""
+    };
+    await withTimeout(setDoc(ref, updated, { merge: true }), 2500);
+    return { id, ...updated };
   },
   deleteEkskul: async (id: string) => {
     if (!db) throw new Error("Database not connected");
     await withTimeout(deleteDoc(doc(db, "ekskul", id)), 2500);
     return { message: "Ekskul deleted" };
+  },
+  postEkskulGradesBulk: async (gradesList: any[]) => {
+    if (!db) throw new Error("Database not connected");
+    if (!Array.isArray(gradesList) || gradesList.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    for (const item of gradesList) {
+      const { studentId, ekskulId, name, type, usaha, proses, capaian, description, pembinaName, pembinaTeacherId, selected } = item;
+      if (!studentId || !name) continue;
+
+      const noteRef = doc(db, "walikelas_notes", studentId);
+      const noteSnap = await withTimeout(getDoc(noteRef), 3000).catch(() => null);
+      let currentNote: any = {};
+      if (noteSnap && noteSnap.exists()) {
+        currentNote = noteSnap.data();
+      }
+
+      let currentEkskuls: any[] = Array.isArray(currentNote.ekskul) ? currentNote.ekskul : [];
+      if (selected === false) {
+        currentEkskuls = currentEkskuls.filter((e: any) => e.name !== name && e.ekskulId !== ekskulId);
+      } else {
+        const existIdx = currentEkskuls.findIndex((e: any) => e.name === name || (ekskulId && e.ekskulId === ekskulId));
+        const newEkskulEntry = {
+          ekskulId: ekskulId || "",
+          name,
+          type: type || "Pilihan",
+          usaha: usaha || "B",
+          proses: proses || "B",
+          capaian: capaian || "B",
+          predicate: capaian || "Baik",
+          description: description || "",
+          pembinaName: pembinaName || "",
+          pembinaTeacherId: pembinaTeacherId || "",
+          updatedAt: new Date().toISOString()
+        };
+        if (existIdx !== -1) {
+          currentEkskuls[existIdx] = { ...currentEkskuls[existIdx], ...newEkskulEntry };
+        } else {
+          currentEkskuls.push(newEkskulEntry);
+        }
+      }
+
+      await withTimeout(setDoc(noteRef, { ...currentNote, ekskul: currentEkskuls }, { merge: true }), 3000);
+    }
+    return { success: true, count: gradesList.length };
   },
 
   // 10. GET, POST, PUT, DELETE /api/halaqoh (Cloud Firestore Persistence)

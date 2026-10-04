@@ -6,6 +6,9 @@ export interface Teacher {
   subject: string;
   isWaliKelas: boolean;
   kelas: string;
+  isPembinaEkskul?: boolean;
+  pembinaEkskulId?: string;
+  pembinaEkskulName?: string;
 }
 
 export interface Student {
@@ -13,6 +16,29 @@ export interface Student {
   nisn: string;
   name: string;
   kelas: string;
+}
+
+export interface Ekskul {
+  id: string;
+  name: string;
+  type: "Wajib" | "Pilihan";
+  pembinaTeacherId?: string;
+  pembinaName?: string;
+}
+
+export interface StudentEkskulGrade {
+  ekskulId?: string;
+  name: string;
+  type?: "Wajib" | "Pilihan";
+  usaha: string;    // "A" | "B" | "C" | "D"
+  proses: string;   // "A" | "B" | "C" | "D"
+  capaian: string;  // "A" | "B" | "C" | "D"
+  predicate?: string;
+  description?: string;
+  deskripsi?: string;
+  pembinaName?: string;
+  pembinaTeacherId?: string;
+  updatedAt?: string;
 }
 
 export interface TPItem {
@@ -69,6 +95,7 @@ export interface WaliKelasNote {
   sosialProses?: string;
   sosialCapaian?: string;
   sosialDeskripsi?: string;
+  ekskul?: StudentEkskulGrade[];
 }
 
 export interface WaliKelasNotesMap {
