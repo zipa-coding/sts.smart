@@ -17,7 +17,7 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
-import { Student, Grade, Halaqoh, Teacher } from "../types";
+import { Student, Grade, Halaqoh, Teacher, sortHalaqohStudents } from "../types";
 import { KEISLAMAN_SUBJECTS } from "../components/HalaqohRaportView";
 import kopSuratBannerUrl from "../assets/images/kop_surat_banner.png";
 
@@ -99,11 +99,11 @@ export async function generateHalaqohWordBlob(
     }
   }
 
-  // 2. Resolve member students strictly as assigned in Admin Panel
+  // 2. Resolve member students strictly as assigned in Admin Panel (ordered Kelas 7 -> Kelas 8 -> Kelas 9 then A-Z)
   const memberStudents = (halaqoh.studentIds || [])
     .map((id) => allStudents.find((s) => String(s.id).trim() === String(id).trim()))
     .filter((s): s is Student => Boolean(s))
-    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
+    .sort(sortHalaqohStudents);
 
   // 3. Resolve mentor teacher strictly from halaqoh data or registered teachers (never invent fake names)
   const mentorTeacher = teachers.find((t) => t.id === halaqoh.mentorTeacherId);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Teacher, Student, SUBJECT_LIST, Halaqoh, Ekskul } from "../types";
+import { Teacher, Student, SUBJECT_LIST, Halaqoh, Ekskul, sortHalaqohStudents } from "../types";
 import {
   Users,
   GraduationCap,
@@ -4934,7 +4934,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 const memberCount = h.studentIds?.length || 0;
                 const memberStudents = students
                   .filter((s) => (h.studentIds || []).includes(s.id))
-                  .sort((a, b) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
+                  .sort(sortHalaqohStudents);
 
                 return (
                   <div key={h.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition flex flex-col justify-between shadow-xs">

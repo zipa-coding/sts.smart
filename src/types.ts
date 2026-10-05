@@ -157,3 +157,26 @@ export const SUBJECT_LIST = [
   "Do’a Harian dan Hadits",
   "Wudhu dan Sholat"
 ];
+
+// Helper to sort students in halaqoh by Class (7 -> 8 -> 9) and then alphabetically by Name (A -> Z)
+export const sortHalaqohStudents = (a: Student, b: Student): number => {
+  const parseClassNum = (k: string | number | undefined): number => {
+    if (!k) return 999;
+    const str = String(k).trim().toUpperCase();
+    if (str.startsWith("7") || str === "VII") return 7;
+    if (str.startsWith("8") || str === "VIII") return 8;
+    if (str.startsWith("9") || str === "IX") return 9;
+    const num = parseInt(str, 10);
+    return isNaN(num) ? 999 : num;
+  };
+
+  const classA = parseClassNum(a.kelas);
+  const classB = parseClassNum(b.kelas);
+
+  if (classA !== classB) {
+    return classA - classB;
+  }
+
+  return (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" });
+};
+
