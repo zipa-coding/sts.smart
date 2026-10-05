@@ -426,6 +426,52 @@ app.post("/api/grades", async (req, res) => {
   res.json(updatedGrade);
 });
 
+// POST /api/grades/batch - Bulk update grades for multiple students
+app.post("/api/grades/batch", async (req, res) => {
+  const { grades } = req.body;
+  if (!Array.isArray(grades) || grades.length === 0) {
+    return res.status(400).json({ error: "Daftar nilai wajib berupa array." });
+  }
+
+  const db = await readDB();
+  if (!Array.isArray(db.grades)) {
+    db.grades = [];
+  }
+
+  let updatedCount = 0;
+  for (const item of grades) {
+    const { studentId, subject, score, tps, teacherName, usaha, proses, capaian, deskripsi } = item;
+    if (!studentId || !subject || score === undefined || score === "") continue;
+
+    const index = db.grades.findIndex(
+      (g: any) => g.studentId === studentId && g.subject === subject,
+    );
+
+    const updatedGrade = {
+      studentId,
+      subject,
+      score: Number(score),
+      tps: Array.isArray(tps) ? tps : [],
+      usaha: usaha || "B",
+      proses: proses || "B",
+      capaian: capaian || "B",
+      deskripsi: deskripsi || "",
+      lastUpdatedBy: teacherName || "Guru Mata Pelajaran",
+      lastUpdatedAt: new Date().toISOString(),
+    };
+
+    if (index !== -1) {
+      db.grades[index] = updatedGrade;
+    } else {
+      db.grades.push(updatedGrade);
+    }
+    updatedCount++;
+  }
+
+  await writeDB(db);
+  res.json({ success: true, count: updatedCount });
+});
+
 // 5. Wali Kelas Notes & Attendance
 app.get("/api/walikelas/notes", async (req, res) => {
   const db = await readDB();
