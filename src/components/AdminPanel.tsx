@@ -30,6 +30,11 @@ import {
   Square,
   MinusSquare,
   ShieldAlert,
+  Download,
+  Database,
+  RotateCcw,
+  UploadCloud,
+  RefreshCw,
 } from "lucide-react";
 
 interface AdminPanelProps {
@@ -39,7 +44,7 @@ interface AdminPanelProps {
 export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<
-    "teachers" | "students" | "tps" | "settings" | "ekskul" | "halaqoh"
+    "teachers" | "students" | "tps" | "settings" | "ekskul" | "halaqoh" | "backup"
   >("teachers");
 
   // State arrays fetched from API
@@ -1141,6 +1146,80 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
     }
   };
 
+  // Backup & Restore Handlers
+  const [isRestoring, setIsRestoring] = useState(false);
+
+  const handleDownloadBackup = async () => {
+    try {
+      const res = await fetch("/api/backup");
+      if (!res.ok) throw new Error("Gagal mengunduh berkas cadangan.");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `smart_raport_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showSuccess("Berkas cadangan data raport (.json) berhasil diunduh!");
+    } catch (err: any) {
+      setError(err.message || "Gagal mengunduh cadangan.");
+    }
+  };
+
+  const handleRestoreFromFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsRestoring(true);
+    setError("");
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+
+      const res = await fetch("/api/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(json),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memulihkan data.");
+
+      await fetchAllData();
+      onRefreshTrigger();
+      showSuccess("Alhamdulillah! Data raport berhasil dipulihkan secara penuh dari berkas cadangan!");
+    } catch (err: any) {
+      setError(err.message || "Format berkas JSON tidak valid atau gagal dipulihkan.");
+    } finally {
+      setIsRestoring(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleResetToFactory = async () => {
+    if (!confirm("Apakah Anda yakin ingin mengembalikan seluruh data ke kondisi awal? Seluruh perubahan terbaru akan dikembalikan ke data default bawaan sistem.")) {
+      return;
+    }
+
+    setIsRestoring(true);
+    setError("");
+    try {
+      const res = await fetch("/api/reset", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mereset data.");
+
+      await fetchAllData();
+      onRefreshTrigger();
+      showSuccess("Alhamdulillah! Data raport telah berhasil dipulihkan ke kondisi awal.");
+    } catch (err: any) {
+      setError(err.message || "Gagal mereset data.");
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   return (
     <div className="space-y-4" id="admin-panel">
       {/* Messages */}
@@ -1197,6 +1276,12 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           className={`py-1.5 px-3.5 text-xs font-bold tracking-wider uppercase border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeTab === "halaqoh" ? "border-emerald-850 text-emerald-850 bg-emerald-50/40" : "border-transparent text-slate-500 hover:text-slate-805"}`}
         >
           <Users className="w-3.5 h-3.5 text-teal-600" /> Manajemen Halaqoh & Keislaman
+        </button>
+        <button
+          onClick={() => setActiveTab("backup")}
+          className={`py-1.5 px-3.5 text-xs font-bold tracking-wider uppercase border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeTab === "backup" ? "border-blue-600 text-blue-600 bg-blue-50/40 font-extrabold" : "border-transparent text-slate-500 hover:text-slate-805"}`}
+        >
+          <Database className="w-3.5 h-3.5 text-blue-500" /> Cadangkan & Pulihkan Data
         </button>
       </div>
 
@@ -3765,6 +3850,111 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 <p className="text-xs text-slate-500 mt-1">Klik tombol "Tambah Kelompok Halaqoh" di atas untuk membuat kelompok baru.</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* BACKUP & RESTORE TAB */}
+      {activeTab === "backup" && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6" id="backup-restore-panel">
+          <div>
+            <div className="flex items-center gap-2">
+              <Database className="w-5 h-5 text-blue-600" />
+              <h2 className="text-base font-extrabold text-slate-900">
+                Pusat Cadangan & Pemulihan Data (Backup & Restore)
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Seluruh data akademik (Siswa, Guru, Nilai Mata Pelajaran, Catatan Wali Kelas, Template TP, Ekskul, dan Halaqoh) disimpan secara aman. Anda dapat mengunduh berkas cadangan `.json` kapan saja, mengunggah kembali berkas cadangan lama, atau memulihkan data ke kondisi awal.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Action 1: Download Backup */}
+            <div className="bg-blue-50/50 border border-blue-200 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                  <Download className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">1. Cadangkan Data (.json)</h3>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    Unduh seluruh data raport saat ini ke dalam satu berkas cadangan JSON untuk disimpan di komputer atau Google Drive Anda.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleDownloadBackup}
+                className="mt-5 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>Unduh Berkas Cadangan</span>
+              </button>
+            </div>
+
+            {/* Action 2: Restore from JSON file */}
+            <div className="bg-emerald-50/50 border border-emerald-200 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">2. Pulihkan dari Berkas Cadangan</h3>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    Pilih dan unggah berkas cadangan `.json` yang telah Anda unduh sebelumnya untuk memulihkan seluruh data raport dengan cepat.
+                  </p>
+                </div>
+              </div>
+
+              <label className="mt-5 w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer text-center">
+                <UploadCloud className="w-4 h-4" />
+                <span>{isRestoring ? "Memulihkan..." : "Pilih Berkas .json"}</span>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={handleRestoreFromFile}
+                  disabled={isRestoring}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* Action 3: Restore to Factory Default */}
+            <div className="bg-amber-50/50 border border-amber-200 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-sm">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">3. Pulihkan ke Kondisi Awal</h3>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    Kembalikan database ke kondisi awal bawaan asli sistem jika data Anda mengalami kesalahan atau ingin dibersihkan.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleResetToFactory}
+                disabled={isRestoring}
+                className="mt-5 w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Pulihkan ke Kondisi Awal</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs text-slate-600 space-y-1">
+            <div className="font-bold text-slate-800 flex items-center gap-1.5">
+              <ShieldAlert className="w-4 h-4 text-blue-600" />
+              <span>Petunjuk Keamanan Cadangan Data:</span>
+            </div>
+            <ul className="list-disc list-inside space-y-1 pl-1 text-[11px] text-slate-500">
+              <li>Lakukan pengunduhan cadangan data secara berkala setiap kali selesai melakukan penginputan nilai raport.</li>
+              <li>Proses pemulihan data dari berkas `.json` akan menggantikan data yang ada saat ini secara langsung.</li>
+              <li>Jika Anda memulihkan data ke kondisi awal, seluruh data nilai yang pernah dimasukkan sebelumnya dapat Anda kembalikan dengan mengunggah kembali berkas cadangan `.json`.</li>
+            </ul>
           </div>
         </div>
       )}

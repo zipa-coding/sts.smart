@@ -992,6 +992,53 @@ app.delete("/api/halaqoh/:id", async (req, res) => {
   res.json({ message: "Halaqoh berhasil dihapus." });
 });
 
+// ==================== BACKUP & RESTORE DATA API ====================
+app.get("/api/backup", async (req, res) => {
+  try {
+    const db = await readDB();
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="smart_raport_backup_${Date.now()}.json"`);
+    res.send(JSON.stringify(db, null, 2));
+  } catch (err: any) {
+    res.status(500).json({ error: "Gagal mengunduh cadangan data: " + err.message });
+  }
+});
+
+app.post("/api/restore", async (req, res) => {
+  try {
+    const backupData = req.body;
+    if (!backupData || typeof backupData !== "object" || !Array.isArray(backupData.teachers) || !Array.isArray(backupData.students)) {
+      return res.status(400).json({ error: "Format berkas cadangan JSON tidak valid. Pastikan berkas memiliki struktur data guru dan siswa." });
+    }
+
+    // Write directly to DB
+    await writeDB(backupData);
+    res.json({ success: true, message: "Alhamdulillah! Data raport berhasil dipulihkan secara penuh." });
+  } catch (err: any) {
+    res.status(500).json({ error: "Gagal memulihkan data: " + err.message });
+  }
+});
+
+app.post("/api/reset", async (req, res) => {
+  try {
+    // Read original backup if exists or reset to default state
+    const backupPath = path.join(process.cwd(), "src", "data", "db.backup.json");
+    let originalData;
+    try {
+      const raw = await fs.readFile(backupPath, "utf-8");
+      originalData = JSON.parse(raw);
+    } catch {
+      const raw = await fs.readFile(DB_PATH, "utf-8");
+      originalData = JSON.parse(raw);
+    }
+
+    await writeDB(originalData);
+    res.json({ success: true, message: "Data berhasil dikembalikan ke kondisi awal." });
+  } catch (err: any) {
+    res.status(500).json({ error: "Gagal mereset data: " + err.message });
+  }
+});
+
 // ==================== FRONTEND INTEGRATION ====================
 
 async function startServer() {
