@@ -32,11 +32,15 @@ const isStaticHost =
 // Memory cache for client-side storage simulation
 let clientDbCache: any = null;
 
-// Initialize localStorage with db.json seed data if empty
+// Initialize localStorage with db.json seed data if empty or updated
+const DB_VERSION_KEY = 'smart_sts_db_version_v4';
+
 function initializeLocalStorage() {
   if (!clientDbCache) {
     const raw = localStorage.getItem('smart_sts_db');
-    if (raw) {
+    const savedVersion = localStorage.getItem(DB_VERSION_KEY);
+    
+    if (raw && savedVersion === 'v4') {
       try {
         clientDbCache = JSON.parse(raw);
         // Ensure TP templates are strictly separated per class (Kelas 7, 8, 9)
@@ -44,44 +48,24 @@ function initializeLocalStorage() {
         if (!clientDbCache.tujuan_pembelajaran_templates || typeof clientDbCache.tujuan_pembelajaran_templates !== 'object') {
           clientDbCache.tujuan_pembelajaran_templates = dbData.tujuan_pembelajaran_templates;
           needsSave = true;
-        } else {
-          // Check if any subject has TPs without distinct kelas 7, 8, and 9
-          const seedTemplates = dbData.tujuan_pembelajaran_templates as Record<string, any[]>;
-          for (const sub of Object.keys(seedTemplates)) {
-            const currentList = clientDbCache.tujuan_pembelajaran_templates[sub];
-            if (
-              !Array.isArray(currentList) ||
-              currentList.length === 0 ||
-              currentList.some((t: any) => !t.kelas || t.kelas === "all") ||
-              !currentList.some((t: any) => String(t.kelas).trim() === "8") ||
-              !currentList.some((t: any) => String(t.kelas).trim() === "9")
-            ) {
-              clientDbCache.tujuan_pembelajaran_templates[sub] = seedTemplates[sub];
-              needsSave = true;
-            }
-          }
         }
-        // Ensure halaqoh list and student data are seeded if missing
-        if (!Array.isArray(clientDbCache.halaqoh) || clientDbCache.halaqoh.length === 0) {
-          clientDbCache.halaqoh = (dbData as any).halaqoh || [];
+        // Ensure student list matches the 84 authentic students
+        if (!Array.isArray(clientDbCache.students) || clientDbCache.students.length !== 84 || !clientDbCache.students.some((s: any) => s.name === 'Aaisyah Nuur Husnaa' && s.kelas === '9')) {
+          clientDbCache.students = (dbData as any).students || [];
           needsSave = true;
-        }
-        if (Array.isArray(clientDbCache.students) && !clientDbCache.students.some((s: any) => s.name.toLowerCase().includes('rayyan'))) {
-          const seedRayyan = (dbData as any).students?.find((s: any) => s.name.toLowerCase().includes('rayyan'));
-          if (seedRayyan) {
-            clientDbCache.students.unshift(seedRayyan);
-            needsSave = true;
-          }
         }
         if (needsSave) {
           localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
         }
       } catch (e) {
         clientDbCache = dbData;
+        localStorage.setItem('smart_sts_db', JSON.stringify(dbData));
+        localStorage.setItem(DB_VERSION_KEY, 'v4');
       }
     } else {
       clientDbCache = dbData;
       localStorage.setItem('smart_sts_db', JSON.stringify(dbData));
+      localStorage.setItem(DB_VERSION_KEY, 'v4');
     }
   }
 }
