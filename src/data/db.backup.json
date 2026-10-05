@@ -48,537 +48,513 @@
   ],
   "students": [
     {
-      "id": "s8_rayyan",
-      "nisn": "0130008099",
-      "name": "Aqil Rayyan Ramadhan",
-      "kelas": "8"
-    },
-    {
       "id": "s7_1",
-      "nisn": "0130007001",
-      "name": "Muhammad Al-Fatih",
+      "nisn": "3130660045",
+      "name": "Abi Fatih Assyauqy",
       "kelas": "7"
     },
     {
       "id": "s7_2",
-      "nisn": "0130007002",
-      "name": "Aisha Zahra",
+      "nisn": "0133260319",
+      "name": "Adibyo Nararya Gustian",
       "kelas": "7"
     },
     {
       "id": "s7_3",
-      "nisn": "0130007003",
-      "name": "Yusuf Ibrahim",
+      "nisn": "0144236595",
+      "name": "Aisyah Afiqah Effendy",
       "kelas": "7"
     },
     {
       "id": "s7_4",
-      "nisn": "0130007004",
-      "name": "Siti Khadijah",
+      "nisn": "0136134752",
+      "name": "Akifa Naila Septiani",
       "kelas": "7"
     },
     {
       "id": "s7_5",
-      "nisn": "0130007005",
-      "name": "Ahmad Dahlan",
+      "nisn": "0144830329",
+      "name": "Alice Jasmeen Sampurno",
       "kelas": "7"
     },
     {
       "id": "s7_6",
-      "nisn": "0130007006",
-      "name": "Rahmawati Sukarno",
+      "nisn": "0145506936",
+      "name": "Alif Naurul Alfikri",
       "kelas": "7"
     },
     {
       "id": "s7_7",
-      "nisn": "0130007007",
-      "name": "Agus Salim",
+      "nisn": "0144579552",
+      "name": "Alya Putri Zulaika",
       "kelas": "7"
     },
     {
       "id": "s7_8",
-      "nisn": "0130007008",
-      "name": "Dewi Sartika",
+      "nisn": "0149916504",
+      "name": "Anindya Rahmah Putri",
       "kelas": "7"
     },
     {
       "id": "s7_9",
-      "nisn": "0130007009",
-      "name": "Ki Hajar Dewantara",
+      "nisn": "0147879848",
+      "name": "Arkan Harith Putra",
       "kelas": "7"
     },
     {
       "id": "s7_10",
-      "nisn": "0130007010",
-      "name": "Cut Nyak Dien",
+      "nisn": "0136642819",
+      "name": "Ataya Sangmane Muhani",
       "kelas": "7"
     },
     {
       "id": "s7_11",
-      "nisn": "0130007011",
-      "name": "B.J. Habibie",
+      "nisn": "0149509279",
+      "name": "Athiyah Raihanah Qonita",
       "kelas": "7"
     },
     {
       "id": "s7_12",
-      "nisn": "0130007012",
-      "name": "Abdurrahman Wahid",
+      "nisn": "0145755801",
+      "name": "Azra Syakira",
       "kelas": "7"
     },
     {
       "id": "s7_13",
-      "nisn": "0130007013",
-      "name": "Megawati Soekarnoputri",
+      "nisn": "0145420361",
+      "name": "Azzam Fawwaz",
       "kelas": "7"
     },
     {
       "id": "s7_14",
-      "nisn": "0130007014",
-      "name": "Raden Ajeng Kartini",
+      "nisn": "0147632498",
+      "name": "Danish Izzatul Mirza",
       "kelas": "7"
     },
     {
       "id": "s7_15",
-      "nisn": "0130007015",
-      "name": "Pattimura Ahmad",
+      "nisn": "0146231486",
+      "name": "Dzakira Talita Sakhiy",
       "kelas": "7"
     },
     {
       "id": "s7_16",
-      "nisn": "0130007016",
-      "name": "Sultan Hasanuddin",
+      "nisn": "0147974379",
+      "name": "Fakhrie Zhafran Khairy",
       "kelas": "7"
     },
     {
       "id": "s7_17",
-      "nisn": "0130007017",
-      "name": "Tuanku Imam Bonjol",
+      "nisn": "0146951361",
+      "name": "Farhan Azzam",
       "kelas": "7"
     },
     {
       "id": "s7_18",
-      "nisn": "0130007018",
-      "name": "Pangeran Diponegoro",
+      "nisn": "3146807408",
+      "name": "Kemas Muhammad Arkan",
       "kelas": "7"
     },
     {
       "id": "s7_19",
-      "nisn": "0130007019",
-      "name": "Gajah Mada Adi",
+      "nisn": "0137360331",
+      "name": "Khalilah Fauziyah",
       "kelas": "7"
     },
     {
       "id": "s7_20",
-      "nisn": "0130007020",
-      "name": "Hayam Wuruk Putra",
+      "nisn": "0142146769",
+      "name": "Khanza Hasna Bilqis",
       "kelas": "7"
     },
     {
       "id": "s7_21",
-      "nisn": "0130007021",
-      "name": "Sultan Iskandar Muda",
+      "nisn": "0143000333",
+      "name": "Khayra Adhiyah Nasyamah",
       "kelas": "7"
     },
     {
       "id": "s7_22",
-      "nisn": "0130007022",
-      "name": "Martha Christina Tiahahu",
+      "nisn": "0136584319",
+      "name": "Matahari Habibillah",
       "kelas": "7"
     },
     {
       "id": "s7_23",
-      "nisn": "0130007023",
-      "name": "Frans Kaisiepo",
+      "nisn": "0146088623",
+      "name": "Muhammad Althaf Saddad",
       "kelas": "7"
     },
     {
       "id": "s7_24",
-      "nisn": "0130007024",
-      "name": "I Gusti Ngurah Rai",
+      "nisn": "0135128912",
+      "name": "Muhammad Arsyil Al Fatih",
       "kelas": "7"
     },
     {
       "id": "s7_25",
-      "nisn": "0130007025",
-      "name": "Silas Papare",
+      "nisn": "0144389185",
+      "name": "Muhammad Syafiq Zhafran",
       "kelas": "7"
     },
     {
       "id": "s7_26",
-      "nisn": "0130007026",
-      "name": "Fatmawati Soekarno",
+      "nisn": "3139328581",
+      "name": "Rifki Rahmad Gilang Ramadan",
       "kelas": "7"
     },
     {
       "id": "s7_27",
-      "nisn": "0130007027",
-      "name": "Mohammad Hatta",
+      "nisn": "0133990895",
+      "name": "Sezha Nayla Adeeva",
       "kelas": "7"
     },
     {
       "id": "s7_28",
-      "nisn": "0130007028",
-      "name": "Tan Malaka",
+      "nisn": "0146203188",
+      "name": "Syaza Qurratu Ain",
       "kelas": "7"
     },
     {
       "id": "s7_29",
-      "nisn": "0130007029",
-      "name": "Sutan Sjahrir",
+      "nisn": "0138276688",
+      "name": "Syafiqah Qorry Murni Aina",
       "kelas": "7"
     },
     {
       "id": "s8_1",
-      "nisn": "0118378701",
-      "name": "Aaisyah Nur Husnaa",
+      "nisn": "0122203075",
+      "name": "Aqil Rayyan Ramadhan",
       "kelas": "8"
     },
     {
       "id": "s8_2",
-      "nisn": "0120008002",
-      "name": "Adam Malik",
+      "nisn": "0133975921",
+      "name": "Audrey Arsyifa Putri",
       "kelas": "8"
     },
     {
       "id": "s8_3",
-      "nisn": "0120008003",
-      "name": "Ali Sadikin",
+      "nisn": "3149198807",
+      "name": "Cinta Delisha",
       "kelas": "8"
     },
     {
       "id": "s8_4",
-      "nisn": "0120008004",
-      "name": "Amran Halim",
+      "nisn": "0129661492",
+      "name": "Dafiya Martha Caberta",
       "kelas": "8"
     },
     {
       "id": "s8_5",
-      "nisn": "0120008005",
-      "name": "Andi Meriem Matalatta",
+      "nisn": "0127044131",
+      "name": "Davina Loveianova Sampurno",
       "kelas": "8"
     },
     {
       "id": "s8_6",
-      "nisn": "0120008006",
-      "name": "Anwar Ibrahim Sabri",
+      "nisn": "0126737177",
+      "name": "Deris Adha",
       "kelas": "8"
     },
     {
       "id": "s8_7",
-      "nisn": "0120008007",
-      "name": "Chairil Anwar",
+      "nisn": "0127378838",
+      "name": "Dzaka Pratama Wansah",
       "kelas": "8"
     },
     {
       "id": "s8_8",
-      "nisn": "0120008008",
-      "name": "Emilia Contessa",
+      "nisn": "0122407883",
+      "name": "Encik Irham Kafabihi",
       "kelas": "8"
     },
     {
       "id": "s8_9",
-      "nisn": "0120008009",
-      "name": "Farhan Azizi",
+      "nisn": "0133793933",
+      "name": "Fadia Shidqi",
       "kelas": "8"
     },
     {
       "id": "s8_10",
-      "nisn": "0120008010",
-      "name": "Gibran Rakabuming",
+      "nisn": "0139601473",
+      "name": "Faqih Al Azzam",
       "kelas": "8"
     },
     {
       "id": "s8_11",
-      "nisn": "0120008011",
-      "name": "Hamzah Haz",
+      "nisn": "0137953378",
+      "name": "Habi Azzam Al Fatih",
       "kelas": "8"
     },
     {
       "id": "s8_12",
-      "nisn": "0120008012",
-      "name": "Ismail Marzuki",
+      "nisn": "3129854975",
+      "name": "Kholish Khoirullah",
       "kelas": "8"
     },
     {
       "id": "s8_13",
-      "nisn": "0120008013",
-      "name": "Joko Widodo Putera",
+      "nisn": "0136306965",
+      "name": "M. Althair Atha Dinata",
       "kelas": "8"
     },
     {
       "id": "s8_14",
-      "nisn": "0120008014",
-      "name": "Krisdayanti Nur",
+      "nisn": "0137678677",
+      "name": "Muhammad Dzaky Zain",
       "kelas": "8"
     },
     {
       "id": "s8_15",
-      "nisn": "0120008015",
-      "name": "Ma'ruf Amin",
+      "nisn": "0137550064",
+      "name": "Muhammad Fariz Al Khalifi",
       "kelas": "8"
     },
     {
       "id": "s8_16",
-      "nisn": "0120008016",
-      "name": "Megawati Eka",
+      "nisn": "0138656131",
+      "name": "Muhammad Hisyam Khalfani",
       "kelas": "8"
     },
     {
       "id": "s8_17",
-      "nisn": "0120008017",
-      "name": "Mochtar Lubis",
+      "nisn": "3127989368",
+      "name": "Muhammad Syahmi",
       "kelas": "8"
     },
     {
       "id": "s8_18",
-      "nisn": "0120008018",
-      "name": "Nadiem Makarim",
+      "nisn": "3135836670",
+      "name": "Muharrar Adly",
       "kelas": "8"
     },
     {
       "id": "s8_19",
-      "nisn": "0120008019",
-      "name": "Prabowo Subianto",
+      "nisn": "3131299698",
+      "name": "Nazifa Marsha Triyanti",
       "kelas": "8"
     },
     {
       "id": "s8_20",
-      "nisn": "0120008020",
-      "name": "Raisa Andriana",
+      "nisn": "0136436628",
+      "name": "Rafa Abiela Alfar",
       "kelas": "8"
     },
     {
       "id": "s8_21",
-      "nisn": "0120008021",
-      "name": "Rhoma Irama",
+      "nisn": "0136328250",
+      "name": "Rafifa Inara Wijaya",
       "kelas": "8"
     },
     {
       "id": "s8_22",
-      "nisn": "0120008022",
-      "name": "Sandiaga Uno",
+      "nisn": "0131066915",
+      "name": "Raniah Imtiyaz",
       "kelas": "8"
     },
     {
       "id": "s8_23",
-      "nisn": "0120008023",
-      "name": "Susilo Bambang Yudhoyono",
+      "nisn": "0137752697",
+      "name": "Resti Azura",
       "kelas": "8"
     },
     {
       "id": "s8_24",
-      "nisn": "0120008024",
-      "name": "Tri Rismaharini",
+      "nisn": "3129166205",
+      "name": "Syaqilla Nur Afiqah",
       "kelas": "8"
     },
     {
       "id": "s8_25",
-      "nisn": "0120008025",
-      "name": "Taufiq Kiemas",
+      "nisn": "3149907733",
+      "name": "Vhania Anezka",
       "kelas": "8"
     },
     {
       "id": "s8_26",
-      "nisn": "0120008026",
-      "name": "Usmar Ismail",
-      "kelas": "8"
-    },
-    {
-      "id": "s8_27",
-      "nisn": "0120008027",
-      "name": "Waldjinah Lestari",
-      "kelas": "8"
-    },
-    {
-      "id": "s8_28",
-      "nisn": "0120008028",
-      "name": "WS Rendra",
-      "kelas": "8"
-    },
-    {
-      "id": "s8_29",
-      "nisn": "0120008029",
-      "name": "Yusuf Kalla",
+      "nisn": "0134057979",
+      "name": "Zevany Dineta",
       "kelas": "8"
     },
     {
       "id": "s9_1",
-      "nisn": "0110009001",
-      "name": "Achmad Yani",
+      "nisn": "0118378701",
+      "name": "Aaisyah Nuur Husnaa",
       "kelas": "9"
     },
     {
       "id": "s9_2",
-      "nisn": "0110009002",
-      "name": "Ahmad Yani Jatmiko",
+      "nisn": "3129298856",
+      "name": "Adnan Azzam",
       "kelas": "9"
     },
     {
       "id": "s9_3",
-      "nisn": "0110009003",
-      "name": "Bambang Pamungkas",
+      "nisn": "0123392659",
+      "name": "Afiqah Sholiha",
       "kelas": "9"
     },
     {
       "id": "s9_4",
-      "nisn": "0110009004",
-      "name": "Basuki Tjahaja Purnama",
+      "nisn": "3112351105",
+      "name": "Akbar Al Khedira Maryadi",
       "kelas": "9"
     },
     {
       "id": "s9_5",
-      "nisn": "0110009005",
-      "name": "Chrisye Rahardi",
+      "nisn": "0126304929",
+      "name": "Alesha Nazeera Sakhi",
       "kelas": "9"
     },
     {
       "id": "s9_6",
-      "nisn": "0110009006",
-      "name": "Didi Kempot",
+      "nisn": "0125633932",
+      "name": "Aqila Bagasditya Kesuma",
       "kelas": "9"
     },
     {
       "id": "s9_7",
-      "nisn": "0110009007",
-      "name": "Donald Pandiangan",
+      "nisn": "0129840186",
+      "name": "Bregy Naufal Vialen",
       "kelas": "9"
     },
     {
       "id": "s9_8",
-      "nisn": "0110009008",
-      "name": "Elvy Sukaesih",
+      "nisn": "0114009246",
+      "name": "Chalisa Nadifa",
       "kelas": "9"
     },
     {
       "id": "s9_9",
-      "nisn": "0110009009",
-      "name": "Fakhri Husaini",
+      "nisn": "0126450921",
+      "name": "Daania Ashika Bahri",
       "kelas": "9"
     },
     {
       "id": "s9_10",
-      "nisn": "0110009010",
-      "name": "Gesang Martohartono",
+      "nisn": "0116683035",
+      "name": "Eryna Nabila",
       "kelas": "9"
     },
     {
       "id": "s9_11",
-      "nisn": "0110009011",
-      "name": "Hendra Setiawan",
+      "nisn": "0123600532",
+      "name": "Fadhlan Evandi",
       "kelas": "9"
     },
     {
       "id": "s9_12",
-      "nisn": "0110009012",
-      "name": "Iwan Fals",
+      "nisn": "0121975032",
+      "name": "Fairuz Zilzyan",
       "kelas": "9"
     },
     {
       "id": "s9_13",
-      "nisn": "0110009013",
-      "name": "Jefri Nichol",
+      "nisn": "0113396100",
+      "name": "Falih Sakhiy Denisko",
       "kelas": "9"
     },
     {
       "id": "s9_14",
-      "nisn": "0110009014",
-      "name": "Kasino Warkop",
+      "nisn": "0129540600",
+      "name": "Ghina Aniqah Batrisyia",
       "kelas": "9"
     },
     {
       "id": "s9_15",
-      "nisn": "0110009015",
-      "name": "Lilyana Natsir",
+      "nisn": "0126950938",
+      "name": "Hakiki",
       "kelas": "9"
     },
     {
       "id": "s9_16",
-      "nisn": "0110009016",
-      "name": "Najwa Shihab",
+      "nisn": "0113634219",
+      "name": "Hudzaifah Adly Zaidan",
       "kelas": "9"
     },
     {
       "id": "s9_17",
-      "nisn": "0110009017",
-      "name": "Nicholas Saputra",
+      "nisn": "0121708102",
+      "name": "Kenzo Alvaro Shaquell",
       "kelas": "9"
     },
     {
       "id": "s9_18",
-      "nisn": "0110009018",
-      "name": "Onky Alexander",
+      "nisn": "0123987806",
+      "name": "Kirei Adania Fauri",
       "kelas": "9"
     },
     {
       "id": "s9_19",
-      "nisn": "0110009019",
-      "name": "Pevita Pearce",
+      "nisn": "0118319288",
+      "name": "Mahira Aika Salma",
       "kelas": "9"
     },
     {
       "id": "s9_20",
-      "nisn": "0110009020",
-      "name": "Raditya Dika",
+      "nisn": "0129768069",
+      "name": "Muhammad Dzaki Aqil",
       "kelas": "9"
     },
     {
       "id": "s9_21",
-      "nisn": "0110009021",
-      "name": "Reza Rahadian",
+      "nisn": "0118788924",
+      "name": "Muhammad Rifqi Sumiarto",
       "kelas": "9"
     },
     {
       "id": "s9_22",
-      "nisn": "0110009022",
-      "name": "Rudy Hartono",
+      "nisn": "0115062557",
+      "name": "Muhammad Tsaqif Al Kindi",
       "kelas": "9"
     },
     {
       "id": "s9_23",
-      "nisn": "0110009023",
-      "name": "Susi Susanti",
+      "nisn": "0111964494",
+      "name": "Ninta Neemonsia Muhani",
       "kelas": "9"
     },
     {
       "id": "s9_24",
-      "nisn": "0110009024",
-      "name": "Taufik Hidayat",
+      "nisn": "0129465023",
+      "name": "Rafi Faizullah Nugraha",
       "kelas": "9"
     },
     {
       "id": "s9_25",
-      "nisn": "0110009025",
-      "name": "Titiek Puspa",
+      "nisn": "0121462608",
+      "name": "Richael Aulia Aicha",
       "kelas": "9"
     },
     {
       "id": "s9_26",
-      "nisn": "0110009026",
-      "name": "Utut Adianto",
+      "nisn": "0116151156",
+      "name": "Rizky Ashar Al Majid",
       "kelas": "9"
     },
     {
       "id": "s9_27",
-      "nisn": "0110009027",
-      "name": "Wiji Thukul",
+      "nisn": "3124360932",
+      "name": "Roihan Fathullah Budiman",
       "kelas": "9"
     },
     {
       "id": "s9_28",
-      "nisn": "0110009028",
-      "name": "Yati Octavia",
+      "nisn": "3129793325",
+      "name": "Said Abdurrasyid",
       "kelas": "9"
     },
     {
       "id": "s9_29",
-      "nisn": "0110009029",
-      "name": "Zaskia Adya Mecca",
+      "nisn": "0128137424",
+      "name": "Siti Awaliyah Bahmim",
       "kelas": "9"
     }
   ],
   "grades": [
     {
-      "studentId": "s8_1",
+      "studentId": "s9_1",
       "subject": "PAI",
       "score": 92,
       "tps": [
@@ -606,7 +582,7 @@
       "lastUpdatedAt": "2026-06-17T05:00:00.000Z"
     },
     {
-      "studentId": "s8_1",
+      "studentId": "s9_1",
       "subject": "PPKN",
       "score": 85,
       "tps": [
@@ -634,7 +610,7 @@
       "lastUpdatedAt": "2026-06-17T05:05:00.000Z"
     },
     {
-      "studentId": "s8_1",
+      "studentId": "s9_1",
       "subject": "Bahasa Indonesia",
       "score": 95,
       "tps": [
@@ -662,7 +638,7 @@
       "lastUpdatedAt": "2026-06-17T05:10:00.000Z"
     },
     {
-      "studentId": "s8_1",
+      "studentId": "s9_1",
       "subject": "Matematika",
       "score": 80,
       "tps": [
@@ -690,7 +666,7 @@
       "lastUpdatedAt": "2026-06-17T05:15:00.000Z"
     },
     {
-      "studentId": "s8_1",
+      "studentId": "s9_1",
       "subject": "IPA",
       "score": 88,
       "tps": [
@@ -718,7 +694,7 @@
       "lastUpdatedAt": "2026-06-17T05:20:00.000Z"
     },
     {
-      "studentId": "s8_1",
+      "studentId": "s9_1",
       "subject": "IPS",
       "score": 82,
       "tps": [
@@ -746,7 +722,7 @@
       "lastUpdatedAt": "2026-06-17T05:25:00.000Z"
     },
     {
-      "studentId": "s8_1",
+      "studentId": "s9_1",
       "subject": "Bahasa Inggris",
       "score": 84,
       "tps": [
@@ -774,7 +750,7 @@
       "lastUpdatedAt": "2026-06-17T05:30:00.000Z"
     },
     {
-      "studentId": "s8_1",
+      "studentId": "s9_1",
       "subject": "PJOK",
       "score": 88,
       "tps": [
@@ -802,7 +778,7 @@
       "lastUpdatedAt": "2026-06-17T05:35:00.000Z"
     },
     {
-      "studentId": "s8_rayyan",
+      "studentId": "s8_1",
       "subject": "Do’a Harian dan Hadits",
       "score": 88,
       "usaha": "A",
@@ -812,7 +788,7 @@
     }
   ],
   "walikelas_notes": {
-    "s8_1": {
+    "s9_1": {
       "sakit": 0,
       "izin": 0,
       "alpa": 0,
