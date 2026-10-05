@@ -146,6 +146,37 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
     errors: string[];
   } | null>(null);
 
+  // Batch student edit state (Edit Massal)
+  const [isBatchEditModalOpen, setIsBatchEditModalOpen] = useState(false);
+  const [batchEditActiveTab, setBatchEditActiveTab] = useState<"paste" | "table">("paste");
+  const [batchEditRawText, setBatchEditRawText] = useState("");
+  const [batchEditMatchBy, setBatchEditMatchBy] = useState<"nisn" | "name" | "id">("nisn");
+  const [batchEditDefaultClass, setBatchEditDefaultClass] = useState("7");
+  const [isSubmittingBatchEdit, setIsSubmittingBatchEdit] = useState(false);
+  const [batchEditResult, setBatchEditResult] = useState<{
+    success: boolean;
+    updatedCount: number;
+    notFoundCount: number;
+    notFound: string[];
+    errors: string[];
+  } | null>(null);
+
+  // Table Grid batch edit state
+  const [gridEditStudents, setGridEditStudents] = useState<{
+    id: string;
+    name: string;
+    nisn: string;
+    kelas: string;
+    originalName: string;
+    originalNisn: string;
+    originalKelas: string;
+    isDirty: boolean;
+  }[]>([]);
+  const [gridEditClassFilter, setGridEditClassFilter] = useState<string>("all");
+  const [gridEditSearch, setGridEditSearch] = useState<string>("");
+  const [gridEditSelectedIds, setGridEditSelectedIds] = useState<string[]>([]);
+
+
   // Student filtering & search
   const [studentClassFilter, setStudentClassFilter] = useState<string>("all");
   const [studentSearch, setStudentSearch] = useState<string>("");
@@ -373,18 +404,460 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
     }
   };
 
-  const filteredStudents = React.useMemo(() => {
-    return students.filter((s) => {
-      const matchClass =
-        studentClassFilter === "all" ||
-        String(s.kelas).trim() === studentClassFilter;
-      const q = studentSearch.trim().toLowerCase();
-      const matchSearch =
-        !q ||
-        s.name.toLowerCase().includes(q) ||
-        String(s.nisn).includes(q);
-      return matchClass && matchSearch;
+  // ==================== BATCH EDIT (EDIT MASSAL) HELPERS ====================
+  const openBatchEditModal = () => {
+    setBatchEditResult(null);
+    const sorted = [...students].sort((a, b) => {
+      if (a.kelas && b.kelas && String(a.kelas).trim() !== String(b.kelas).trim()) {
+        return String(a.kelas).localeCompare(String(b.kelas), "id", { numeric: true });
+      }
+      return String(a.name || "").localeCompare(String(b.name || ""), "id", { sensitivity: "base" });
     });
+    setGridEditStudents(
+      sorted.map((s) => ({
+        id: s.id,
+        name: s.name,
+        nisn: s.nisn,
+        kelas: s.kelas,
+        originalName: s.name,
+        originalNisn: s.nisn,
+        originalKelas: s.kelas,
+        isDirty: false,
+      }))
+    );
+    setGridEditSelectedIds([]);
+    setIsBatchEditModalOpen(true);
+  };
+
+  const loadCurrentStudentsIntoBatchEditText = (cls: string = "all") => {
+    let list = cls === "all" ? [...students] : students.filter((s) => String(s.kelas).trim() === cls);
+    if (list.length === 0) {
+      alert(`Tidak ada siswa di ${cls === "all" ? "database" : "Kelas " + cls}.`);
+      return;
+    }
+    list.sort((a, b) => {
+      if (cls === "all" && a.kelas && b.kelas && String(a.kelas).trim() !== String(b.kelas).trim()) {
+        return String(a.kelas).localeCompare(String(b.kelas), "id", { numeric: true });
+      }
+      return String(a.name || "").localeCompare(String(b.name || ""), "id", { sensitivity: "base" });
+    });
+    const text = list.map((s) => `${s.nisn}\t${s.name}\t${s.kelas}`).join("\n");
+    setBatchEditRawText(text);
+    setBatchEditResult(null);
+  };
+
+  const fillSampleBatchEditData = () => {
+    if (students.length > 0) {
+      const sample = students.slice(0, 5).map((s) => `${s.nisn}\t${s.name} (Revisi)\t${s.kelas}`).join("\n");
+      setBatchEditRawText(sample);
+    } else {
+      setBatchEditRawText(`0012984101\tAhmad Fauzi Ramadhan\t7\n0012984102\tAisyah Putri Azzahra\t7\n0012984103\tBilal Al-Ghifari\t8`);
+    }
+  };
+
+  // Memoized live parsing of batch edit input
+  const parsedBatchEditStudents = React.useMemo(() => {
+    if (!batchEditRawText.trim()) return [];
+    const lines = batchEditRawText.split(/\r?\n/);
+
+    const results: {
+      rawLine: string;
+      targetStudentId?: string;
+      currentStudent?: Student;
+      newNisn: string;
+      newName: string;
+      newKelas: string;
+      hasNameChange: boolean;
+      hasNisnChange: boolean;
+      hasKelasChange: boolean;
+      status: "ready" | "unchanged" | "not_found" | "invalid_nisn" | "invalid_name" | "nisn_taken_by_other";
+      message: string;
+    }[] = [];
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+
+      // Skip header row
+      const lower = line.toLowerCase();
+      if (
+        (lower.includes("nisn") && (lower.includes("nama") || lower.includes("name"))) ||
+        (lower.includes("no") && lower.includes("siswa"))
+      ) {
+        continue;
+      }
+
+      // Delimiters
+      let tokens: string[] = [];
+      if (line.includes("\t")) {
+        tokens = line.split("\t");
+      } else if (line.includes(";")) {
+        tokens = line.split(";");
+      } else if (line.includes("|")) {
+        tokens = line.split("|");
+      } else if (line.includes(",")) {
+        tokens = line.split(",");
+      } else {
+        const parts = line.split(/\s+/);
+        if (parts.length >= 2) {
+          tokens = [parts[0], parts.slice(1).join(" ")];
+        } else {
+          tokens = [line];
+        }
+      }
+
+      tokens = tokens.map((t) => t.trim()).filter((t) => t.length > 0);
+      if (tokens.length === 0) continue;
+
+      let keyToken = "";
+      let nameToken = "";
+      let kelasToken = batchEditDefaultClass;
+
+      if (tokens.length === 1) {
+        keyToken = tokens[0];
+      } else if (tokens.length === 2) {
+        const d0 = tokens[0].replace(/\D/g, "");
+        const d1 = tokens[1].replace(/\D/g, "");
+        if (d0.length >= 4 && d1.length < 4) {
+          keyToken = d0;
+          nameToken = tokens[1];
+        } else if (d1.length >= 4 && d0.length < 4) {
+          keyToken = d1;
+          nameToken = tokens[0];
+        } else {
+          keyToken = d0 || tokens[0];
+          nameToken = tokens[1];
+        }
+      } else if (tokens.length === 3) {
+        if (/^\d{1,3}$/.test(tokens[0]) && tokens[1].replace(/\D/g, "").length >= 4) {
+          keyToken = tokens[1].replace(/\D/g, "");
+          nameToken = tokens[2];
+        } else {
+          keyToken = tokens[0].replace(/\D/g, "") || tokens[0];
+          nameToken = tokens[1];
+          const k = tokens[2].replace(/\D/g, "");
+          if (["7", "8", "9"].includes(k)) kelasToken = k;
+          else kelasToken = tokens[2];
+        }
+      } else if (tokens.length >= 4) {
+        keyToken = tokens[1].replace(/\D/g, "") || tokens[1];
+        nameToken = tokens[2];
+        const k = tokens[3].replace(/\D/g, "");
+        if (["7", "8", "9"].includes(k)) kelasToken = k;
+        else kelasToken = tokens[3];
+      }
+
+      // Find matching student
+      let matchedStudent: Student | undefined;
+      const cleanKeyDigits = keyToken.replace(/\D/g, "");
+
+      if (batchEditMatchBy === "nisn") {
+        matchedStudent = students.find(
+          (s) => String(s.nisn).trim().replace(/\D/g, "") === cleanKeyDigits || String(s.nisn).trim() === keyToken
+        );
+      } else if (batchEditMatchBy === "name") {
+        const targetNameSearch = (nameToken || keyToken).toLowerCase();
+        matchedStudent = students.find(
+          (s) => s.name.trim().toLowerCase() === targetNameSearch
+        );
+      } else if (batchEditMatchBy === "id") {
+        matchedStudent = students.find((s) => s.id === keyToken);
+      }
+
+      // Fallback matching if not found
+      if (!matchedStudent) {
+        if (cleanKeyDigits.length >= 4) {
+          matchedStudent = students.find(
+            (s) => String(s.nisn).trim().replace(/\D/g, "") === cleanKeyDigits
+          );
+        }
+        if (!matchedStudent && nameToken) {
+          matchedStudent = students.find(
+            (s) => s.name.trim().toLowerCase() === nameToken.trim().toLowerCase()
+          );
+        }
+      }
+
+      if (!matchedStudent) {
+        results.push({
+          rawLine,
+          newNisn: cleanKeyDigits || keyToken,
+          newName: nameToken || keyToken,
+          newKelas: kelasToken,
+          hasNameChange: false,
+          hasNisnChange: false,
+          hasKelasChange: false,
+          status: "not_found",
+          message: `Siswa "${keyToken}" tidak ditemukan`,
+        });
+        continue;
+      }
+
+      // Determine updated values
+      let finalName = matchedStudent.name;
+      let finalNisn = matchedStudent.nisn;
+      let finalKelas = matchedStudent.kelas;
+
+      if (batchEditMatchBy === "nisn") {
+        if (nameToken) finalName = nameToken;
+        if (kelasToken) finalKelas = kelasToken;
+      } else if (batchEditMatchBy === "name") {
+        if (cleanKeyDigits) finalNisn = cleanKeyDigits;
+        if (kelasToken) finalKelas = kelasToken;
+      } else {
+        if (nameToken) finalName = nameToken;
+        if (kelasToken) finalKelas = kelasToken;
+      }
+
+      const hasNameChange = finalName !== matchedStudent.name;
+      const hasNisnChange = finalNisn !== matchedStudent.nisn;
+      const hasKelasChange = String(finalKelas).trim() !== String(matchedStudent.kelas).trim();
+      const isModified = hasNameChange || hasNisnChange || hasKelasChange;
+
+      // Duplicate checking for new NISN
+      if (hasNisnChange) {
+        const nisnTakenByOther = students.some(
+          (s) => s.id !== matchedStudent!.id && String(s.nisn).trim() === finalNisn
+        );
+        if (nisnTakenByOther) {
+          results.push({
+            rawLine,
+            targetStudentId: matchedStudent.id,
+            currentStudent: matchedStudent,
+            newNisn: finalNisn,
+            newName: finalName,
+            newKelas: finalKelas,
+            hasNameChange,
+            hasNisnChange,
+            hasKelasChange,
+            status: "nisn_taken_by_other",
+            message: `NISN ${finalNisn} sudah digunakan siswa lain`,
+          });
+          continue;
+        }
+      }
+
+      if (!finalName) {
+        results.push({
+          rawLine,
+          targetStudentId: matchedStudent.id,
+          currentStudent: matchedStudent,
+          newNisn: finalNisn,
+          newName: "-",
+          newKelas: finalKelas,
+          hasNameChange,
+          hasNisnChange,
+          hasKelasChange,
+          status: "invalid_name",
+          message: "Nama siswa kosong",
+        });
+        continue;
+      }
+
+      if (!finalNisn || finalNisn.length < 4) {
+        results.push({
+          rawLine,
+          targetStudentId: matchedStudent.id,
+          currentStudent: matchedStudent,
+          newNisn: finalNisn,
+          newName: finalName,
+          newKelas: finalKelas,
+          hasNameChange,
+          hasNisnChange,
+          hasKelasChange,
+          status: "invalid_nisn",
+          message: "NISN tidak valid",
+        });
+        continue;
+      }
+
+      if (isModified) {
+        results.push({
+          rawLine,
+          targetStudentId: matchedStudent.id,
+          currentStudent: matchedStudent,
+          newNisn: finalNisn,
+          newName: finalName,
+          newKelas: finalKelas,
+          hasNameChange,
+          hasNisnChange,
+          hasKelasChange,
+          status: "ready",
+          message: "Siap diperbarui",
+        });
+      } else {
+        results.push({
+          rawLine,
+          targetStudentId: matchedStudent.id,
+          currentStudent: matchedStudent,
+          newNisn: finalNisn,
+          newName: finalName,
+          newKelas: finalKelas,
+          hasNameChange: false,
+          hasNisnChange: false,
+          hasKelasChange: false,
+          status: "unchanged",
+          message: "Data sama (tidak ada perubahan)",
+        });
+      }
+    }
+
+    return results;
+  }, [batchEditRawText, batchEditMatchBy, batchEditDefaultClass, students]);
+
+  const handleBatchEditSubmit = async () => {
+    let updatesToSubmit: { id: string; name: string; nisn: string; kelas: string }[] = [];
+
+    if (batchEditActiveTab === "paste") {
+      const validRows = parsedBatchEditStudents.filter((p) => p.status === "ready" && p.targetStudentId);
+      if (validRows.length === 0) {
+        alert("Tidak ada pembaruan data siswa yang perlu disimpan.");
+        return;
+      }
+      updatesToSubmit = validRows.map((p) => ({
+        id: p.targetStudentId!,
+        name: p.newName,
+        nisn: p.newNisn,
+        kelas: p.newKelas,
+      }));
+    } else {
+      // Table Grid tab
+      const modifiedRows = gridEditStudents.filter((s) => s.isDirty);
+      if (modifiedRows.length === 0) {
+        alert("Belum ada perubahan data siswa di tabel.");
+        return;
+      }
+      updatesToSubmit = modifiedRows.map((s) => ({
+        id: s.id,
+        name: s.name.trim(),
+        nisn: s.nisn.trim().replace(/\D/g, ""),
+        kelas: s.kelas.trim(),
+      }));
+    }
+
+    setIsSubmittingBatchEdit(true);
+    setBatchEditResult(null);
+
+    try {
+      const res = await fetch("/api/students/bulk-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates: updatesToSubmit }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal memperbarui data siswa secara massal.");
+      }
+
+      setBatchEditResult({
+        success: true,
+        updatedCount: data.updatedCount || updatesToSubmit.length,
+        notFoundCount: data.notFoundCount || 0,
+        notFound: data.notFound || [],
+        errors: data.errors || [],
+      });
+
+      await fetchAllData();
+      onRefreshTrigger();
+      showSuccess(`Alhamdulillah! Berhasil memperbarui data ${data.updatedCount || updatesToSubmit.length} siswa secara massal.`);
+
+      // Update grid states
+      setGridEditStudents((prev) =>
+        prev.map((s) => {
+          const updated = updatesToSubmit.find((u) => u.id === s.id);
+          if (updated) {
+            return {
+              ...s,
+              name: updated.name,
+              nisn: updated.nisn,
+              kelas: updated.kelas,
+              originalName: updated.name,
+              originalNisn: updated.nisn,
+              originalKelas: updated.kelas,
+              isDirty: false,
+            };
+          }
+          return s;
+        })
+      );
+    } catch (err: any) {
+      setBatchEditResult({
+        success: false,
+        updatedCount: 0,
+        notFoundCount: 0,
+        notFound: [],
+        errors: [err.message || "Gagal memperbarui data siswa."],
+      });
+    } finally {
+      setIsSubmittingBatchEdit(false);
+    }
+  };
+
+  // In Grid Tab: Quick bulk actions
+  const handleGridBulkClassChange = (targetClass: string) => {
+    setGridEditStudents((prev) =>
+      prev.map((s) => {
+        const isTarget =
+          gridEditSelectedIds.length > 0
+            ? gridEditSelectedIds.includes(s.id)
+            : gridEditClassFilter === "all" || String(s.kelas).trim() === gridEditClassFilter;
+        if (isTarget) {
+          const isDirty =
+            s.name !== s.originalName ||
+            s.nisn !== s.originalNisn ||
+            targetClass !== s.originalKelas;
+          return { ...s, kelas: targetClass, isDirty };
+        }
+        return s;
+      })
+    );
+    showSuccess(`Kelas berhasil diubah ke Kelas ${targetClass}`);
+  };
+
+  const handleGridBulkTitleCase = () => {
+    const toTitleCase = (str: string) =>
+      str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+
+    setGridEditStudents((prev) =>
+      prev.map((s) => {
+        const isTarget =
+          gridEditSelectedIds.length > 0
+            ? gridEditSelectedIds.includes(s.id)
+            : gridEditClassFilter === "all" || String(s.kelas).trim() === gridEditClassFilter;
+        if (isTarget) {
+          const formatted = toTitleCase(s.name.trim());
+          const isDirty =
+            formatted !== s.originalName ||
+            s.nisn !== s.originalNisn ||
+            s.kelas !== s.originalKelas;
+          return { ...s, name: formatted, isDirty };
+        }
+        return s;
+      })
+    );
+    showSuccess("Format nama siswa berhasil dirapikan ke Title Case.");
+  };
+
+
+  const filteredStudents = React.useMemo(() => {
+    return students
+      .filter((s) => {
+        const matchClass =
+          studentClassFilter === "all" ||
+          String(s.kelas).trim() === studentClassFilter;
+        const q = studentSearch.trim().toLowerCase();
+        const matchSearch =
+          !q ||
+          s.name.toLowerCase().includes(q) ||
+          String(s.nisn).includes(q);
+        return matchClass && matchSearch;
+      })
+      .sort((a, b) => {
+        if (studentClassFilter === "all" && a.kelas !== b.kelas) {
+          return String(a.kelas).localeCompare(String(b.kelas), "id", { numeric: true });
+        }
+        return String(a.name || "").localeCompare(String(b.name || ""), "id", { sensitivity: "base" });
+      });
   }, [students, studentClassFilter, studentSearch]);
 
   const [tpForm, setTpForm] = useState({
@@ -1520,7 +1993,14 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 Kelola data siswa, NISN, dan pembagian kelas siswa secara individual atau massal
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={openBatchEditModal}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer transition border border-blue-400/40"
+                title="Edit massal nama, NISN, atau kelas banyak siswa sekaligus tanpa menghapus data nilai"
+              >
+                <Edit className="w-3.5 h-3.5" /> Edit Banyak Siswa (Massal)
+              </button>
               <button
                 onClick={() => {
                   setBatchResult(null);
@@ -1545,6 +2025,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                 <Plus className="w-3.5 h-3.5" /> Tambah Satu Siswa
               </button>
             </div>
+
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
@@ -3599,6 +4080,648 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
         </div>
       )}
 
+      {/* BATCH STUDENT EDIT MODAL (EDIT MASSAL SISWA) */}
+      {isBatchEditModalOpen && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden animate-scale-up my-6 border border-slate-200">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 px-6 py-4 text-white flex items-center justify-between border-b border-blue-800/40">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-300 shadow-inner">
+                  <Edit className="w-5 h-5 text-blue-300" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm uppercase tracking-wide text-white flex items-center gap-2">
+                    <span>Edit Data Siswa Secara Massal</span>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-200 text-[10px] font-mono border border-blue-400/30">
+                      Preserve ID & History Nilai
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-blue-200/90 font-normal">
+                    Perbarui nama, NISN, atau kelas banyak siswa sekaligus tanpa menghapus data nilai raport maupun catatan wali kelas
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsBatchEditModalOpen(false);
+                  setBatchEditResult(null);
+                }}
+                className="text-white/80 hover:text-white cursor-pointer p-1.5 rounded-lg hover:bg-white/10 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Sub-Navigation Tabs: Paste vs Table Grid */}
+            <div className="bg-slate-100 px-6 pt-3 flex items-center gap-2 border-b border-slate-200">
+              <button
+                onClick={() => setBatchEditActiveTab("paste")}
+                className={`py-2 px-4 text-xs font-bold rounded-t-xl transition flex items-center gap-2 cursor-pointer border-t border-x ${
+                  batchEditActiveTab === "paste"
+                    ? "bg-white text-blue-700 border-slate-200 border-b-white -mb-px shadow-2xs"
+                    : "bg-slate-200/70 text-slate-600 border-transparent hover:bg-slate-200"
+                }`}
+              >
+                <FileSpreadsheet className="w-4 h-4 text-blue-600" />
+                <span>Salin & Tempel (Excel / Text)</span>
+              </button>
+              <button
+                onClick={() => setBatchEditActiveTab("table")}
+                className={`py-2 px-4 text-xs font-bold rounded-t-xl transition flex items-center gap-2 cursor-pointer border-t border-x ${
+                  batchEditActiveTab === "table"
+                    ? "bg-white text-blue-700 border-slate-200 border-b-white -mb-px shadow-2xs"
+                    : "bg-slate-200/70 text-slate-600 border-transparent hover:bg-slate-200"
+                }`}
+              >
+                <PenTool className="w-4 h-4 text-blue-600" />
+                <span>Tabel Interaktif (Edit Langsung di Grid)</span>
+                {gridEditStudents.filter((s) => s.isDirty).length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white font-mono text-[10px] font-extrabold">
+                    {gridEditStudents.filter((s) => s.isDirty).length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto bg-slate-50/40">
+              {/* Batch Edit Result Banner */}
+              {batchEditResult && (
+                <div
+                  className={`p-3.5 rounded-xl border text-xs flex items-start gap-2.5 animate-fade-in ${
+                    batchEditResult.success
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                      : "bg-red-50 border-red-300 text-red-900"
+                  }`}
+                >
+                  {batchEditResult.success ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-1">
+                    <p className="font-bold text-sm">
+                      {batchEditResult.success
+                        ? `Alhamdulillah! Berhasil memperbarui ${batchEditResult.updatedCount} siswa secara massal.`
+                        : "Gagal memperbarui data siswa."}
+                    </p>
+                    {batchEditResult.notFoundCount > 0 && (
+                      <p className="text-[11px] text-amber-800 font-medium">
+                        ⚠️ Catatan: {batchEditResult.notFoundCount} entri tidak ditemukan di database siswa.
+                      </p>
+                    )}
+                    {batchEditResult.errors.length > 0 && (
+                      <div className="text-[11px] text-red-700 space-y-0.5">
+                        {batchEditResult.errors.map((err, i) => (
+                          <div key={i}>• {err}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 1: PASTE / EXCEL MODE */}
+              {batchEditActiveTab === "paste" && (
+                <div className="space-y-4">
+                  {/* Controls & Quick Loader Bar */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-xs font-bold text-slate-700">
+                            Metode Pencocokan:
+                          </label>
+                          <select
+                            value={batchEditMatchBy}
+                            onChange={(e) => setBatchEditMatchBy(e.target.value as any)}
+                            className="px-2.5 py-1 text-xs border border-slate-300 rounded-lg bg-white font-bold text-blue-900 focus:outline-none focus:border-blue-600"
+                          >
+                            <option value="nisn">Cocokkan Berdasarkan NISN (Ubah Nama & Kelas)</option>
+                            <option value="name">Cocokkan Berdasarkan Nama (Ubah NISN & Kelas)</option>
+                            <option value="id">Cocokkan Berdasarkan ID Siswa</option>
+                          </select>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-xs font-bold text-slate-700">
+                            Kelas Default:
+                          </label>
+                          <select
+                            value={batchEditDefaultClass}
+                            onChange={(e) => setBatchEditDefaultClass(e.target.value)}
+                            className="px-2.5 py-1 text-xs border border-slate-300 rounded-lg bg-white font-bold text-slate-800 focus:outline-none focus:border-blue-600"
+                          >
+                            <option value="7">Kelas 7</option>
+                            <option value="8">Kelas 8</option>
+                            <option value="9">Kelas 9</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Quick Loader Dropdown / Buttons */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                            Muat Data:
+                          </span>
+                          {["all", "7", "8", "9"].map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => loadCurrentStudentsIntoBatchEditText(c)}
+                              className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-800 border border-slate-200 rounded-md transition cursor-pointer"
+                              title={`Muat data siswa ${c === "all" ? "semua kelas" : "Kelas " + c} ke teks`}
+                            >
+                              {c === "all" ? "Semua" : `Kls ${c}`}
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={fillSampleBatchEditData}
+                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold rounded-lg flex items-center gap-1 border border-blue-200 cursor-pointer transition"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> Contoh Format
+                        </button>
+                        {batchEditRawText && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBatchEditRawText("");
+                              setBatchEditResult(null);
+                            }}
+                            className="px-2.5 py-1 bg-white hover:bg-red-50 text-red-600 text-[11px] font-bold rounded-lg flex items-center gap-1 border border-red-200 cursor-pointer transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Bersihkan
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] text-slate-600 bg-blue-50/50 p-2.5 rounded-lg border border-blue-150 leading-relaxed">
+                      <strong className="text-blue-900 block mb-0.5">Petunjuk Format Edit Massal:</strong>
+                      <span>
+                        Tempelkan kolom yang ingin diperbarui: <code className="font-mono font-bold text-blue-800">NISN [Tab/Koma] Nama Lengkap Baru [Tab/Koma] Kelas Baru</code>. Anda dapat mengedit nama siswa, memperbaiki ejaan, merapikan NISN, atau menaikkan kelas siswa secara massal tanpa merusak data raport yang sudah diisi!
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Textarea Input */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      Tempelkan Teks Data Siswa untuk Diperbarui:
+                    </label>
+                    <textarea
+                      value={batchEditRawText}
+                      onChange={(e) => {
+                        setBatchEditRawText(e.target.value);
+                        if (batchEditResult) setBatchEditResult(null);
+                      }}
+                      rows={6}
+                      placeholder={`Contoh tempel (paste):&#10;0012984101\tAhmad Fauzi Ramadhan\t7&#10;0012984102\tAisyah Putri Azzahra\t8&#10;0012984103\tBilal Al-Ghifari\t9`}
+                      className="w-full p-3 border border-slate-300 rounded-xl text-xs font-mono focus:outline-none focus:border-blue-600 focus:bg-white resize-y shadow-inner bg-white"
+                    ></textarea>
+                  </div>
+
+                  {/* Preview Table for Paste Tab */}
+                  {batchEditRawText.trim() && (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-800 font-bold text-[11px]">
+                            Total Baris: {parsedBatchEditStudents.length}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-bold text-[11px]">
+                            Siap Diperbarui: {parsedBatchEditStudents.filter((p) => p.status === "ready").length}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px]">
+                            Tidak Berubah: {parsedBatchEditStudents.filter((p) => p.status === "unchanged").length}
+                          </span>
+                          {parsedBatchEditStudents.some((p) => p.status !== "ready" && p.status !== "unchanged") && (
+                            <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold text-[11px]">
+                              Tidak Ditemukan / Error: {parsedBatchEditStudents.filter((p) => p.status !== "ready" && p.status !== "unchanged").length}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          Pratinjau Perubahan Data
+                        </span>
+                      </div>
+
+                      <div className="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto bg-white shadow-2xs">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead className="bg-slate-100 sticky top-0 border-b border-slate-200">
+                            <tr>
+                              <th className="p-2 font-bold text-slate-600 w-10 text-center">No</th>
+                              <th className="p-2 font-bold text-slate-600">Siswa Target (Data Lama)</th>
+                              <th className="p-2 font-bold text-slate-600">Perubahan Nama</th>
+                              <th className="p-2 font-bold text-slate-600">Perubahan NISN</th>
+                              <th className="p-2 font-bold text-slate-600">Perubahan Kelas</th>
+                              <th className="p-2 font-bold text-slate-600 text-right">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-150">
+                            {parsedBatchEditStudents.map((item, idx) => {
+                              const isReady = item.status === "ready";
+                              const isUnchanged = item.status === "unchanged";
+
+                              return (
+                                <tr
+                                  key={idx}
+                                  className={
+                                    isReady
+                                      ? "bg-blue-50/30 hover:bg-blue-50/60"
+                                      : isUnchanged
+                                      ? "bg-white hover:bg-slate-50"
+                                      : "bg-red-50/30 hover:bg-red-50/60"
+                                  }
+                                >
+                                  <td className="p-2 text-center text-slate-400 font-mono text-[11px]">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="p-2">
+                                    {item.currentStudent ? (
+                                      <div>
+                                        <p className="font-bold text-slate-900">{item.currentStudent.name}</p>
+                                        <p className="text-[10px] text-slate-500 font-mono">
+                                          NISN: {item.currentStudent.nisn} • Kls {item.currentStudent.kelas}
+                                        </p>
+                                      </div>
+                                    ) : (
+                                      <span className="text-red-600 font-semibold">{item.rawLine}</span>
+                                    )}
+                                  </td>
+                                  <td className="p-2">
+                                    {item.hasNameChange ? (
+                                      <div className="flex items-center gap-1">
+                                        <span className="line-through text-slate-400 text-[10px]">{item.currentStudent?.name}</span>
+                                        <span className="font-bold text-blue-700">{item.newName}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-slate-600">{item.newName}</span>
+                                    )}
+                                  </td>
+                                  <td className="p-2 font-mono">
+                                    {item.hasNisnChange ? (
+                                      <div className="flex items-center gap-1">
+                                        <span className="line-through text-slate-400 text-[10px]">{item.currentStudent?.nisn}</span>
+                                        <span className="font-bold text-blue-700">{item.newNisn}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-slate-600">{item.newNisn}</span>
+                                    )}
+                                  </td>
+                                  <td className="p-2 font-mono">
+                                    {item.hasKelasChange ? (
+                                      <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">
+                                        Kls {item.currentStudent?.kelas} ➔ Kls {item.newKelas}
+                                      </span>
+                                    ) : (
+                                      <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px]">
+                                        Kelas {item.newKelas}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="p-2 text-right">
+                                    {isReady ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                                        <CheckCircle2 className="w-3 h-3 text-blue-600" /> Siap Update
+                                      </span>
+                                    ) : isUnchanged ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px]">
+                                        Tidak Berubah
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-800 text-[10px] font-bold">
+                                        <AlertCircle className="w-3 h-3 text-red-600" /> {item.message}
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: INTERACTIVE TABLE GRID */}
+              {batchEditActiveTab === "table" && (
+                <div className="space-y-3">
+                  {/* Grid Toolbar: Search, Filter, Bulk Operations */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Filter & Search */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+                          {[
+                            { id: "all", label: `Semua (${gridEditStudents.length})` },
+                            { id: "7", label: `Kelas 7 (${gridEditStudents.filter(s => String(s.kelas).trim() === "7").length})` },
+                            { id: "8", label: `Kelas 8 (${gridEditStudents.filter(s => String(s.kelas).trim() === "8").length})` },
+                            { id: "9", label: `Kelas 9 (${gridEditStudents.filter(s => String(s.kelas).trim() === "9").length})` },
+                          ].map((t) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => setGridEditClassFilter(t.id)}
+                              className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer ${
+                                gridEditClassFilter === t.id
+                                  ? "bg-blue-600 text-white shadow-2xs"
+                                  : "text-slate-600 hover:text-slate-900"
+                              }`}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="relative w-48">
+                          <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={gridEditSearch}
+                            onChange={(e) => setGridEditSearch(e.target.value)}
+                            placeholder="Cari di tabel..."
+                            className="w-full pl-7 pr-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 focus:bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Quick Bulk Actions for Table */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                          Aksi Massal:
+                        </span>
+                        <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-lg">
+                          <span className="text-[10px] font-medium text-slate-500 px-1">Set Kelas:</span>
+                          {["7", "8", "9"].map((k) => (
+                            <button
+                              key={k}
+                              type="button"
+                              onClick={() => handleGridBulkClassChange(k)}
+                              className="px-2 py-0.5 bg-white hover:bg-blue-50 text-blue-700 text-[10px] font-bold rounded border border-slate-200 transition cursor-pointer"
+                              title={`Ubah kelas siswa yang tampil / dipilih ke Kelas ${k}`}
+                            >
+                              ➔ Kls {k}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleGridBulkTitleCase}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold rounded-lg border border-slate-200 transition cursor-pointer"
+                          title="Ubah huruf awal nama siswa menjadi kapital (Title Case)"
+                        >
+                          Aa Title Case
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Dirty count badge */}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-600 font-medium">
+                          Status Perubahan:
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-bold text-[11px] font-mono">
+                          {gridEditStudents.filter((s) => s.isDirty).length} siswa telah diedit
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400">
+                        Anda dapat mengedit langsung teks nama, nomor NISN, atau kelas pada kotak tabel di bawah.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Grid Table */}
+                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-72 overflow-y-auto bg-white shadow-2xs">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-100 sticky top-0 border-b border-slate-200 z-10">
+                        <tr>
+                          <th className="p-2.5 w-10 text-center">
+                            <input
+                              type="checkbox"
+                              checked={
+                                gridEditStudents.length > 0 &&
+                                gridEditStudents.every((s) => gridEditSelectedIds.includes(s.id))
+                              }
+                              onChange={() => {
+                                if (gridEditSelectedIds.length === gridEditStudents.length) {
+                                  setGridEditSelectedIds([]);
+                                } else {
+                                  setGridEditSelectedIds(gridEditStudents.map((s) => s.id));
+                                }
+                              }}
+                              className="w-3.5 h-3.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            />
+                          </th>
+                          <th className="p-2.5 font-bold text-slate-600 w-10 text-center">No</th>
+                          <th className="p-2.5 font-bold text-slate-600">Nama Lengkap Siswa</th>
+                          <th className="p-2.5 font-bold text-slate-600 w-44">NISN</th>
+                          <th className="p-2.5 font-bold text-slate-600 w-32">Kelas</th>
+                          <th className="p-2.5 font-bold text-slate-600 text-right w-28">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-150">
+                        {gridEditStudents
+                          .filter((s) => {
+                            const matchClass = gridEditClassFilter === "all" || String(s.kelas).trim() === gridEditClassFilter;
+                            const q = gridEditSearch.trim().toLowerCase();
+                            const matchSearch = !q || s.name.toLowerCase().includes(q) || String(s.nisn).includes(q);
+                            return matchClass && matchSearch;
+                          })
+                          .map((student, idx) => {
+                            const isSelected = gridEditSelectedIds.includes(student.id);
+
+                            return (
+                              <tr
+                                key={student.id}
+                                className={`transition ${
+                                  student.isDirty
+                                    ? "bg-amber-50/40 border-l-4 border-l-amber-500"
+                                    : isSelected
+                                    ? "bg-blue-50/30"
+                                    : "hover:bg-slate-50/60"
+                                }`}
+                              >
+                                <td className="p-2 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {
+                                      setGridEditSelectedIds((prev) =>
+                                        prev.includes(student.id)
+                                          ? prev.filter((id) => id !== student.id)
+                                          : [...prev, student.id]
+                                      );
+                                    }}
+                                    className="w-3.5 h-3.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                  />
+                                </td>
+                                <td className="p-2 text-center text-slate-400 font-mono text-[11px]">
+                                  {idx + 1}
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="text"
+                                    value={student.name}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setGridEditStudents((prev) =>
+                                        prev.map((item) => {
+                                          if (item.id === student.id) {
+                                            const isDirty =
+                                              val !== item.originalName ||
+                                              item.nisn !== item.originalNisn ||
+                                              item.kelas !== item.originalKelas;
+                                            return { ...item, name: val, isDirty };
+                                          }
+                                          return item;
+                                        })
+                                      );
+                                    }}
+                                    className={`w-full px-2.5 py-1 text-xs rounded-lg border focus:outline-none focus:border-blue-600 focus:bg-white font-semibold ${
+                                      student.name !== student.originalName
+                                        ? "border-amber-400 bg-amber-50/50 text-amber-950 font-bold"
+                                        : "border-slate-250 bg-white text-slate-900"
+                                    }`}
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="text"
+                                    value={student.nisn}
+                                    onChange={(e) => {
+                                      const val = e.target.value.replace(/\D/g, "");
+                                      setGridEditStudents((prev) =>
+                                        prev.map((item) => {
+                                          if (item.id === student.id) {
+                                            const isDirty =
+                                              item.name !== item.originalName ||
+                                              val !== item.originalNisn ||
+                                              item.kelas !== item.originalKelas;
+                                            return { ...item, nisn: val, isDirty };
+                                          }
+                                          return item;
+                                        })
+                                      );
+                                    }}
+                                    className={`w-full px-2.5 py-1 text-xs rounded-lg border focus:outline-none focus:border-blue-600 focus:bg-white font-mono ${
+                                      student.nisn !== student.originalNisn
+                                        ? "border-amber-400 bg-amber-50/50 text-amber-950 font-bold"
+                                        : "border-slate-250 bg-white text-slate-800"
+                                    }`}
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <select
+                                    value={student.kelas}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setGridEditStudents((prev) =>
+                                        prev.map((item) => {
+                                          if (item.id === student.id) {
+                                            const isDirty =
+                                              item.name !== item.originalName ||
+                                              item.nisn !== item.originalNisn ||
+                                              val !== item.originalKelas;
+                                            return { ...item, kelas: val, isDirty };
+                                          }
+                                          return item;
+                                        })
+                                      );
+                                    }}
+                                    className={`w-full px-2 py-1 text-xs rounded-lg border focus:outline-none focus:border-blue-600 font-bold ${
+                                      student.kelas !== student.originalKelas
+                                        ? "border-amber-400 bg-amber-50 text-amber-900 font-extrabold"
+                                        : "border-slate-250 bg-white text-slate-800"
+                                    }`}
+                                  >
+                                    <option value="7">Kelas 7</option>
+                                    <option value="8">Kelas 8</option>
+                                    <option value="9">Kelas 9</option>
+                                  </select>
+                                </td>
+                                <td className="p-2 text-right">
+                                  {student.isDirty ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px]">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Diubah
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 font-mono">
+                                      Asli
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
+                <div className="text-[11px] text-slate-500">
+                  {batchEditActiveTab === "paste"
+                    ? `${parsedBatchEditStudents.filter((p) => p.status === "ready").length} pembaruan siap disimpan`
+                    : `${gridEditStudents.filter((s) => s.isDirty).length} data siswa diubah`}
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    disabled={isSubmittingBatchEdit}
+                    onClick={() => {
+                      setIsBatchEditModalOpen(false);
+                      setBatchEditResult(null);
+                    }}
+                    className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-xl cursor-pointer disabled:opacity-50 transition"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    type="button"
+                    disabled={
+                      isSubmittingBatchEdit ||
+                      (batchEditActiveTab === "paste"
+                        ? parsedBatchEditStudents.filter((p) => p.status === "ready").length === 0
+                        : gridEditStudents.filter((s) => s.isDirty).length === 0)
+                    }
+                    onClick={handleBatchEditSubmit}
+                    className="px-5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 active:from-blue-800 text-white text-xs font-bold rounded-xl cursor-pointer flex items-center justify-center gap-2 transition disabled:opacity-40 shadow-md shadow-blue-900/20 border border-blue-400/40"
+                  >
+                    {isSubmittingBatchEdit ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Menyimpan Perubahan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>
+                          Simpan {batchEditActiveTab === "paste"
+                            ? parsedBatchEditStudents.filter((p) => p.status === "ready").length
+                            : gridEditStudents.filter((s) => s.isDirty).length} Pembaruan Siswa
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* PROFESSIONAL CONFIRMATION DELETE MODAL */}
       {confirmDeleteModal.isOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
@@ -3788,7 +4911,9 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
             {halaqohList.length > 0 ? (
               halaqohList.map((h) => {
                 const memberCount = h.studentIds?.length || 0;
-                const memberStudents = students.filter((s) => (h.studentIds || []).includes(s.id));
+                const memberStudents = students
+                  .filter((s) => (h.studentIds || []).includes(s.id))
+                  .sort((a, b) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
 
                 return (
                   <div key={h.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition flex flex-col justify-between shadow-xs">
@@ -4144,6 +5269,12 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                       const matchGender = halaqohGenderFilter === "all" || (halaqohGenderFilter === "putri" ? isFemale : !isFemale);
                       const matchSearch = s.name.toLowerCase().includes(halaqohStudentSearch.toLowerCase()) || s.nisn.includes(halaqohStudentSearch);
                       return matchClass && matchGender && matchSearch;
+                    })
+                    .sort((a, b) => {
+                      if (halaqohClassFilter === "all" && a.kelas !== b.kelas) {
+                        return String(a.kelas).localeCompare(String(b.kelas), "id", { numeric: true });
+                      }
+                      return (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" });
                     })
                     .map((s) => {
                       const isSelected = halaqohForm.studentIds.includes(s.id);

@@ -171,17 +171,24 @@ export default function EkskulPanel({
   }, [activeEkskul, students, allNotes]);
 
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
-      const matchClass =
-        selectedClassFilter === "all" ||
-        String(s.kelas).trim() === String(selectedClassFilter).trim();
-      const q = searchQuery.trim().toLowerCase();
-      const matchSearch =
-        !q ||
-        s.name.toLowerCase().includes(q) ||
-        String(s.nisn).includes(q);
-      return matchClass && matchSearch;
-    });
+    return students
+      .filter((s) => {
+        const matchClass =
+          selectedClassFilter === "all" ||
+          String(s.kelas).trim() === String(selectedClassFilter).trim();
+        const q = searchQuery.trim().toLowerCase();
+        const matchSearch =
+          !q ||
+          s.name.toLowerCase().includes(q) ||
+          String(s.nisn).includes(q);
+        return matchClass && matchSearch;
+      })
+      .sort((a, b) => {
+        if (selectedClassFilter === "all" && a.kelas !== b.kelas) {
+          return String(a.kelas).localeCompare(String(b.kelas), "id", { numeric: true });
+        }
+        return String(a.name || "").localeCompare(String(b.name || ""), "id", { sensitivity: "base" });
+      });
   }, [students, selectedClassFilter, searchQuery]);
 
   const participantCount = useMemo(() => {

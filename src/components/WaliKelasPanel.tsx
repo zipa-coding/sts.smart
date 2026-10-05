@@ -149,7 +149,9 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       setActiveEkskulList(ekskulArray);
 
       // Auto-select first student in this class
-      const classStudents = studentsArray.filter((s: Student) => s.kelas === selectedClass);
+      const classStudents = studentsArray
+        .filter((s: Student) => String(s.kelas).trim() === String(selectedClass).trim())
+        .sort((a: Student, b: Student) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
       if (classStudents.length > 0 && !selectedStudent) {
         handleStudentSelect(classStudents[0], notesObj, ekskulArray);
       }
@@ -278,7 +280,9 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   };
 
   // Helper getters
-  const currentClassStudents = students.filter((s) => s.kelas === selectedClass);
+  const currentClassStudents = students
+    .filter((s) => String(s.kelas).trim() === String(selectedClass).trim())
+    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
   const studentGrades = selectedStudent ? grades.filter((g) => String(g.studentId).trim() === String(selectedStudent.id).trim()) : [];
   const gradesCount = studentGrades.length;
 

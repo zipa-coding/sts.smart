@@ -102,7 +102,8 @@ export async function generateHalaqohWordBlob(
   // 2. Resolve member students strictly as assigned in Admin Panel
   const memberStudents = (halaqoh.studentIds || [])
     .map((id) => allStudents.find((s) => String(s.id).trim() === String(id).trim()))
-    .filter((s): s is Student => Boolean(s));
+    .filter((s): s is Student => Boolean(s))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
 
   // 3. Resolve mentor teacher strictly from halaqoh data or registered teachers (never invent fake names)
   const mentorTeacher = teachers.find((t) => t.id === halaqoh.mentorTeacherId);

@@ -215,6 +215,17 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           }
         }
 
+        // POST /api/students/bulk-update
+        if (path === '/api/students/bulk-update' && method === 'POST') {
+          try {
+            const res = await firebaseApi.putStudentsBulk(body?.updates || []);
+            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          } catch (e: any) {
+            console.warn("Firestore putStudentsBulk failed, falling back:", e);
+          }
+        }
+
+
         // PUT /api/students/:id
         if (path.startsWith('/api/students/') && method === 'PUT') {
           const id = path.split('/').pop() || "";
@@ -496,7 +507,13 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // 3. GET /api/students
     if (path === '/api/students' && method === 'GET') {
       const db = getDB();
-      return new Response(JSON.stringify(db.students), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      const sortedStudents = [...(db.students || [])].sort((a: any, b: any) => {
+        if (a.kelas && b.kelas && String(a.kelas).trim() !== String(b.kelas).trim()) {
+          return String(a.kelas).localeCompare(String(b.kelas), "id", { numeric: true });
+        }
+        return String(a.name || "").localeCompare(String(b.name || ""), "id", { sensitivity: "base" });
+      });
+      return new Response(JSON.stringify(sortedStudents), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // POST /api/students
@@ -567,6 +584,94 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         totalStudents: db.students.length
       }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
+
+    // POST /api/students/bulk-update (Local DB Fallback)
+    if (path === '/api/students/bulk-update' && method === 'POST') {
+      const updates = body?.updates || [];
+      const db = getDB();
+      let updatedCount = 0;
+      const notFound: string[] = [];
+      const errors: string[] = [];
+      const updatedStudents: any[] = [];
+
+      for (const item of updates) {
+        const { id, currentNisn, currentName, name, nisn, kelas } = item;
+
+        let studentIndex = -1;
+        if (id) {
+          studentIndex = db.students.findIndex((s: any) => s.id === id);
+        }
+        if (studentIndex === -1 && currentNisn) {
+          const cleanCurrNisn = String(currentNisn).trim().replace(/\D/g, "");
+          studentIndex = db.students.findIndex(
+            (s: any) => String(s.nisn).trim().replace(/\D/g, "") === cleanCurrNisn
+          );
+        }
+        if (studentIndex === -1 && nisn) {
+          const cleanNisn = String(nisn).trim().replace(/\D/g, "");
+          studentIndex = db.students.findIndex(
+            (s: any) => String(s.nisn).trim().replace(/\D/g, "") === cleanNisn
+          );
+        }
+        if (studentIndex === -1 && currentName) {
+          const cleanCurrName = String(currentName).trim().toLowerCase();
+          studentIndex = db.students.findIndex(
+            (s: any) => String(s.name).trim().toLowerCase() === cleanCurrName
+          );
+        }
+        if (studentIndex === -1 && name) {
+          const cleanName = String(name).trim().toLowerCase();
+          studentIndex = db.students.findIndex(
+            (s: any) => String(s.name).trim().toLowerCase() === cleanName
+          );
+        }
+
+        if (studentIndex === -1) {
+          notFound.push(name || currentName || nisn || currentNisn || "Siswa");
+          continue;
+        }
+
+        const existing = db.students[studentIndex];
+        const newNisn = nisn !== undefined ? String(nisn).trim().replace(/\D/g, "") : existing.nisn;
+        const newName = name !== undefined && String(name).trim() ? String(name).trim() : existing.name;
+        const newKelas = kelas !== undefined && String(kelas).trim() ? String(kelas).trim() : existing.kelas;
+
+        if (newNisn && newNisn !== existing.nisn) {
+          const duplicateExists = db.students.some(
+            (s: any) => s.id !== existing.id && String(s.nisn).trim() === newNisn
+          );
+          if (duplicateExists) {
+            errors.push(`Siswa "${existing.name}": NISN ${newNisn} sudah digunakan oleh siswa lain.`);
+            continue;
+          }
+        }
+
+        db.students[studentIndex] = {
+          ...existing,
+          name: newName,
+          nisn: newNisn || existing.nisn,
+          kelas: newKelas,
+        };
+
+        updatedCount++;
+        updatedStudents.push(db.students[studentIndex]);
+      }
+
+      if (updatedCount > 0) {
+        saveDB(db);
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        updatedCount,
+        notFoundCount: notFound.length,
+        notFound,
+        errors,
+        students: updatedStudents,
+        totalStudents: db.students.length,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
 
     // PUT /api/students/:id
     if (path.startsWith('/api/students/') && method === 'PUT') {
@@ -1134,12 +1239,12 @@ const customFetch = async function (input: RequestInfo | URL, init?: RequestInit
     return originalFetch(input, init);
   }
 
-  // Only use static local mock if strictly on a static host without a backend (github.io or file:)
-  if (isStaticHost) {
+  // When Firebase Firestore is configured or on static deployment, use direct Firestore SDK & client persistence
+  if (isFirebaseConfigured || isStaticHost) {
     return localFetchInterception(input, init);
   }
 
-  // Always use the real backend server so ALL devices are 100% synchronized!
+  // Otherwise, use the backend server
   try {
     const res = await originalFetch(input, init);
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
@@ -1155,6 +1260,7 @@ const customFetch = async function (input: RequestInfo | URL, init?: RequestInit
     return localFetchInterception(input, init);
   }
 };
+
 
 try {
   Object.defineProperty(window, 'fetch', {

@@ -311,14 +311,22 @@ export const firebaseApi = {
 
   // 3. GET, POST, PUT, DELETE /api/students
   getStudents: async (): Promise<any[]> => {
-    if (!db) return dbDataAny.students || [];
+    const sortList = (list: any[]) =>
+      [...list].sort((a: any, b: any) => {
+        if (a.kelas && b.kelas && String(a.kelas).trim() !== String(b.kelas).trim()) {
+          return String(a.kelas).localeCompare(String(b.kelas), "id", { numeric: true });
+        }
+        return String(a.name || "").localeCompare(String(b.name || ""), "id", { sensitivity: "base" });
+      });
+
+    if (!db) return sortList(dbDataAny.students || []);
     const studentCollections = ["students", "siswa", "Students", "Siswa", "data_siswa", "dataSiswa", "data_students", "DataSiswa", "santri"];
     try {
       for (const colName of studentCollections) {
         try {
           const snap = await withTimeout(getDocs(collection(db, colName)), 4000).catch(() => null);
           if (snap && !snap.empty) {
-            return snap.docs.map(docSnap => {
+            const mapped = snap.docs.map(docSnap => {
               const d = docSnap.data();
               return {
                 id: docSnap.id,
@@ -328,6 +336,7 @@ export const firebaseApi = {
                 ...d
               };
             });
+            return sortList(mapped);
           }
         } catch (err) {
           // continue
@@ -336,7 +345,7 @@ export const firebaseApi = {
     } catch (e) {
       console.warn("Failed to get students from Firestore:", e);
     }
-    return dbDataAny.students || [];
+    return sortList(dbDataAny.students || []);
   },
   postStudent: async (body: any) => {
     if (!db) throw new Error("Database not connected");
@@ -400,6 +409,93 @@ export const firebaseApi = {
       totalStudents: existing.length + addedStudents.length,
     };
   },
+  putStudentsBulk: async (updatesList: any[]): Promise<any> => {
+    if (!db) throw new Error("Database not connected");
+    const existing = await firebaseApi.getStudents();
+    let updatedCount = 0;
+    const notFound: string[] = [];
+    const errors: string[] = [];
+    const updatedStudents: any[] = [];
+
+    for (const item of updatesList) {
+      const { id, currentNisn, currentName, name, nisn, kelas } = item;
+
+      // Match student by id, or currentNisn, or currentName
+      let targetStudent = null;
+      if (id) {
+        targetStudent = existing.find((s: any) => s.id === id);
+      }
+      if (!targetStudent && currentNisn) {
+        const cleanCurrNisn = String(currentNisn).trim().replace(/\D/g, "");
+        targetStudent = existing.find(
+          (s: any) => String(s.nisn).trim().replace(/\D/g, "") === cleanCurrNisn
+        );
+      }
+      if (!targetStudent && nisn) {
+        const cleanNisn = String(nisn).trim().replace(/\D/g, "");
+        targetStudent = existing.find(
+          (s: any) => String(s.nisn).trim().replace(/\D/g, "") === cleanNisn
+        );
+      }
+      if (!targetStudent && currentName) {
+        const cleanCurrName = String(currentName).trim().toLowerCase();
+        targetStudent = existing.find(
+          (s: any) => String(s.name).trim().toLowerCase() === cleanCurrName
+        );
+      }
+      if (!targetStudent && name) {
+        const cleanName = String(name).trim().toLowerCase();
+        targetStudent = existing.find(
+          (s: any) => String(s.name).trim().toLowerCase() === cleanName
+        );
+      }
+
+      if (!targetStudent) {
+        notFound.push(name || currentName || nisn || currentNisn || "Siswa");
+        continue;
+      }
+
+      const newNisn = nisn !== undefined ? String(nisn).trim().replace(/\D/g, "") : targetStudent.nisn;
+      const newName = name !== undefined && String(name).trim() ? String(name).trim() : targetStudent.name;
+      const newKelas = kelas !== undefined && String(kelas).trim() ? String(kelas).trim() : targetStudent.kelas;
+
+      // Duplicate NISN check
+      if (newNisn && newNisn !== targetStudent.nisn) {
+        const existsAnother = existing.some(
+          (s: any) => s.id !== targetStudent.id && String(s.nisn).trim() === newNisn
+        );
+        if (existsAnother) {
+          errors.push(`Siswa "${targetStudent.name}": NISN ${newNisn} sudah digunakan oleh siswa lain.`);
+          continue;
+        }
+      }
+
+      const updatedData = {
+        name: newName,
+        nisn: newNisn || targetStudent.nisn,
+        kelas: newKelas,
+      };
+
+      try {
+        await withTimeout(updateDoc(doc(db, "students", targetStudent.id), updatedData), 5000);
+        updatedCount++;
+        updatedStudents.push({ ...targetStudent, ...updatedData });
+      } catch (err: any) {
+        console.warn(`Failed to update student doc ${targetStudent.id}:`, err);
+        errors.push(`Gagal memperbarui ${targetStudent.name}: ${err.message}`);
+      }
+    }
+
+    return {
+      success: true,
+      updatedCount,
+      notFoundCount: notFound.length,
+      notFound,
+      errors,
+      students: updatedStudents,
+      totalStudents: existing.length,
+    };
+  },
   putStudent: async (id: string, body: any) => {
     if (!db) throw new Error("Database not connected");
     const { name, nisn, kelas } = body;
@@ -459,12 +555,19 @@ export const firebaseApi = {
   getGrades: async (): Promise<any[]> => {
     if (!db) return [];
     try {
-      const snap = await withTimeout(getDocs(collection(db, "grades")), 8000);
-      return snap.docs.map(docSnap => docSnap.data());
+      const gradeCollections = ["grades", "nilai", "data_nilai", "raport", "Grades", "Nilai", "dataNilai"];
+      for (const colName of gradeCollections) {
+        try {
+          const snap = await withTimeout(getDocs(collection(db, colName)), 6000).catch(() => null);
+          if (snap && !snap.empty) {
+            return snap.docs.map(docSnap => docSnap.data());
+          }
+        } catch {}
+      }
     } catch (e) {
       console.warn("Failed to get grades from Firestore:", e);
-      return [];
     }
+    return [];
   },
   postGrade: async (body: any) => {
     if (!db) throw new Error("Database not connected");
@@ -492,12 +595,20 @@ export const firebaseApi = {
   // 5. GET & POST /api/walikelas/notes
   getWaliKelasNotes: async () => {
     if (!db) return {};
-    const snap = await withTimeout(getDocs(collection(db, "walikelas_notes")), 2500);
-    const notes: any = {};
-    snap.docs.forEach(docSnap => {
-      notes[docSnap.id] = docSnap.data();
-    });
-    return notes;
+    const noteCollections = ["walikelas_notes", "catatan_walikelas", "notes", "walikelas", "catatanWaliKelas"];
+    for (const colName of noteCollections) {
+      try {
+        const snap = await withTimeout(getDocs(collection(db, colName)), 3000).catch(() => null);
+        if (snap && !snap.empty) {
+          const notes: any = {};
+          snap.docs.forEach(docSnap => {
+            notes[docSnap.id] = docSnap.data();
+          });
+          return notes;
+        }
+      } catch {}
+    }
+    return {};
   },
   postWaliKelasNotes: async (body: any) => {
     if (!db) throw new Error("Database not connected");
@@ -523,18 +634,24 @@ export const firebaseApi = {
 
   // 6. GET, POST, DELETE /api/tps
   getTPs: async (kelas?: string) => {
-    if (!db) return {};
-    const snap = await withTimeout(getDocs(collection(db, "tujuan_pembelajaran_templates")), 2500);
-    const templates: any = {};
-    snap.docs.forEach(docSnap => {
-      let tpsList = docSnap.data().tps || [];
-      if (kelas) {
-        tpsList = tpsList.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
+    if (!db) return dbDataAny.tujuan_pembelajaran_templates || {};
+    try {
+      const snap = await withTimeout(getDocs(collection(db, "tujuan_pembelajaran_templates")), 2500).catch(() => null);
+      if (snap && !snap.empty) {
+        const templates: any = {};
+        snap.docs.forEach(docSnap => {
+          let tpsList = docSnap.data().tps || [];
+          if (kelas) {
+            tpsList = tpsList.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
+          }
+          templates[docSnap.id] = tpsList;
+        });
+        return templates;
       }
-      templates[docSnap.id] = tpsList;
-    });
-    return templates;
+    } catch {}
+    return dbDataAny.tujuan_pembelajaran_templates || {};
   },
+
   postTP: async (body: any) => {
     if (!db) throw new Error("Database not connected");
     const { subject, tpText, kelas } = body;
@@ -634,22 +751,40 @@ export const firebaseApi = {
   // 8. GET /api/summary
   getSummary: async () => {
     // Aggregation logic
-    const students = await firebaseApi.getStudents() as any[];
-    const teachers = await firebaseApi.getTeachers() as any[];
-    const grades = await firebaseApi.getGrades() as any[];
+    const students = (await firebaseApi.getStudents()) as any[];
+    const teachers = (await firebaseApi.getTeachers()) as any[];
+    const grades = (await firebaseApi.getGrades()) as any[];
     
     const subjectsList = [
       "PAI", "PPKN", "Bahasa Indonesia", "Matematika", "IPA", "IPS", "Bahasa Inggris", "PJOK", "Prakarya", "Informatika",
       "Bahasa Arab", "Tahsin ABaTaTsa", "Tahfizh Al-Qur’an", "Do’a Harian dan Hadits", "Wudhu dan Sholat"
     ];
     const totalStudents = students.length;
-    const registeredStudentIds = new Set(students.map((s: any) => s.id));
+
+    // Helper to normalize subjects (removes punctuation, quotes, case-insensitive)
+    const normalizeSub = (str: string) =>
+      String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    // Helper to match a grade to a student
+    const matchesStudent = (g: any, s: any) => {
+      if (!g || !s) return false;
+      if (g.studentId && g.studentId === s.id) return true;
+      if (g.studentId && String(g.studentId).replace(/\D/g, "") === String(s.nisn).replace(/\D/g, "") && String(s.nisn).length >= 4) return true;
+      if (g.nisn && String(g.nisn).replace(/\D/g, "") === String(s.nisn).replace(/\D/g, "")) return true;
+      if (g.studentName && s.name && g.studentName.trim().toLowerCase() === s.name.trim().toLowerCase()) return true;
+      return false;
+    };
     
     const subjectProgress = subjectsList.map(sub => {
-      const filledGradesForSub = grades.filter((g: any) => g.subject === sub && registeredStudentIds.has(g.studentId));
+      const targetNorm = normalizeSub(sub);
+      const filledGradesForSub = grades.filter((g: any) => {
+        const isSubMatch = normalizeSub(g.subject) === targetNorm || g.subject === sub;
+        const isStudentMatch = students.some((s: any) => matchesStudent(g, s));
+        return isSubMatch && isStudentMatch;
+      });
       const completedCount = filledGradesForSub.length;
       const percentage = totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0;
-      const t = teachers.find((teach: any) => teach.subject === sub);
+      const t = teachers.find((teach: any) => normalizeSub(teach.subject) === targetNorm || teach.subject === sub);
       return {
         subject: sub,
         completed: completedCount,
@@ -670,12 +805,12 @@ export const firebaseApi = {
       const studentsInClass = students.filter((s: any) => String(s.kelas || "").trim() === cls);
       const totalGradesNeeded = studentsInClass.length * subjectsList.length;
       let gradesFilledCount = 0;
-      const studentIds = new Set(studentsInClass.map((s: any) => s.id));
-      grades.forEach((g: any) => {
-        if (studentIds.has(g.studentId)) {
-          gradesFilledCount++;
-        }
+      
+      studentsInClass.forEach((s: any) => {
+        const studentGrades = grades.filter((g: any) => matchesStudent(g, s));
+        gradesFilledCount += studentGrades.length;
       });
+
       const percent = totalGradesNeeded > 0 ? Math.round((gradesFilledCount / totalGradesNeeded) * 100) : 0;
       const waliKelas = teachers.find((teach: any) => teach.isWaliKelas && String(teach.kelas || "").trim() === cls);
       return {
@@ -690,7 +825,7 @@ export const firebaseApi = {
 
     // Calculate Student Rankings
     const studentRankings = students.map((s: any) => {
-      const studentGrades = grades.filter((g: any) => g.studentId === s.id);
+      const studentGrades = grades.filter((g: any) => matchesStudent(g, s));
       const subjectScores: Record<string, number> = {};
       let totalScore = 0;
       let filledSubjectsCount = 0;
@@ -757,6 +892,7 @@ export const firebaseApi = {
       lastUpdate: new Date().toISOString()
     };
   },
+
 
   // 9. GET, POST, DELETE /api/ekskul
   getEkskul: async (): Promise<any[]> => {

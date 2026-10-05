@@ -89,9 +89,9 @@ export default function TeacherPanel({
       setTpTemplates(classTps);
 
       // Auto-select first student in this class if available
-      const classStudents = sArr.filter(
-        (s: Student) => s.kelas === selectedClass,
-      );
+      const classStudents = sArr
+        .filter((s: Student) => String(s.kelas).trim() === String(selectedClass).trim())
+        .sort((a: Student, b: Student) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
       if (classStudents.length > 0) {
         handleStudentSelect(classStudents[0], gArr, classTps);
       } else {
@@ -493,9 +493,9 @@ export default function TeacherPanel({
 
   // Helper arrays
   const safeStudents = Array.isArray(students) ? students : [];
-  const classStudents = safeStudents.filter(
-    (s) => s && s.kelas === selectedClass,
-  );
+  const classStudents = safeStudents
+    .filter((s) => s && String(s.kelas).trim() === String(selectedClass).trim())
+    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
   const filledCount = Array.isArray(grades)
     ? classStudents.filter((s) =>
         grades.some(

@@ -206,7 +206,9 @@ export default function HalaqohRaportView({
   const halaqohStudents = React.useMemo(() => {
     if (!activeHalaqoh) return [];
     const idSet = new Set(activeHalaqoh.studentIds || []);
-    return students.filter((s) => idSet.has(s.id));
+    return students
+      .filter((s) => idSet.has(s.id))
+      .sort((a, b) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
   }, [activeHalaqoh, students]);
 
   const activeSubject =
@@ -230,7 +232,8 @@ export default function HalaqohRaportView({
     // 1. Resolve actual member students strictly belonging to this halaqoh
     const memberStudents = (halaqoh.studentIds || [])
       .map((id) => students.find((s) => String(s.id).trim() === String(id).trim()))
-      .filter((s): s is Student => Boolean(s));
+      .filter((s): s is Student => Boolean(s))
+      .sort((a, b) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
 
     if (memberStudents.length === 0) {
       return `

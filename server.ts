@@ -223,7 +223,13 @@ app.delete("/api/teachers/:id", async (req, res) => {
 // 3. Students CRUD
 app.get("/api/students", async (req, res) => {
   const db = await readDB();
-  res.json(db.students);
+  const sortedStudents = [...(db.students || [])].sort((a: any, b: any) => {
+    if (a.kelas && b.kelas && String(a.kelas).trim() !== String(b.kelas).trim()) {
+      return String(a.kelas).localeCompare(String(b.kelas), "id", { numeric: true });
+    }
+    return String(a.name || "").localeCompare(String(b.name || ""), "id", { sensitivity: "base" });
+  });
+  res.json(sortedStudents);
 });
 
 app.post("/api/students", async (req, res) => {
@@ -323,6 +329,102 @@ app.post("/api/students/batch", async (req, res) => {
     totalStudents: db.students.length,
   });
 });
+
+// POST /api/students/bulk-update - Bulk update students without losing existing IDs, grades, or notes
+app.post("/api/students/bulk-update", async (req, res) => {
+  const { updates } = req.body;
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Daftar pembaruan siswa wajib berupa array dan tidak boleh kosong." });
+  }
+
+  const db = await readDB();
+  let updatedCount = 0;
+  const notFound: string[] = [];
+  const errors: string[] = [];
+  const updatedStudents: any[] = [];
+
+  for (const item of updates) {
+    const { id, currentNisn, currentName, name, nisn, kelas } = item;
+
+    // Match student by id, or by currentNisn / nisn, or by currentName / name
+    let studentIndex = -1;
+    if (id) {
+      studentIndex = db.students.findIndex((s: any) => s.id === id);
+    }
+    if (studentIndex === -1 && currentNisn) {
+      const cleanCurrentNisn = String(currentNisn).trim().replace(/\D/g, "");
+      studentIndex = db.students.findIndex(
+        (s: any) => String(s.nisn).trim().replace(/\D/g, "") === cleanCurrentNisn
+      );
+    }
+    if (studentIndex === -1 && nisn) {
+      const cleanNisn = String(nisn).trim().replace(/\D/g, "");
+      studentIndex = db.students.findIndex(
+        (s: any) => String(s.nisn).trim().replace(/\D/g, "") === cleanNisn
+      );
+    }
+    if (studentIndex === -1 && currentName) {
+      const cleanCurrentName = String(currentName).trim().toLowerCase();
+      studentIndex = db.students.findIndex(
+        (s: any) => String(s.name).trim().toLowerCase() === cleanCurrentName
+      );
+    }
+    if (studentIndex === -1 && name) {
+      const cleanName = String(name).trim().toLowerCase();
+      studentIndex = db.students.findIndex(
+        (s: any) => String(s.name).trim().toLowerCase() === cleanName
+      );
+    }
+
+    if (studentIndex === -1) {
+      notFound.push(name || currentName || nisn || currentNisn || "Siswa tidak dikenal");
+      continue;
+    }
+
+    const existing = db.students[studentIndex];
+    const newNisn = nisn !== undefined ? String(nisn).trim().replace(/\D/g, "") : existing.nisn;
+    const newName = name !== undefined && String(name).trim() ? String(name).trim() : existing.name;
+    const newKelas = kelas !== undefined && String(kelas).trim() ? String(kelas).trim() : existing.kelas;
+
+    // Check if new NISN is used by someone else
+    if (newNisn && newNisn !== existing.nisn) {
+      const duplicateExists = db.students.some(
+        (s: any) => s.id !== existing.id && String(s.nisn).trim() === newNisn
+      );
+      if (duplicateExists) {
+        errors.push(`Siswa "${existing.name}": NISN ${newNisn} sudah digunakan oleh siswa lain.`);
+        continue;
+      }
+    }
+
+    db.students[studentIndex] = {
+      ...existing,
+      name: newName,
+      nisn: newNisn || existing.nisn,
+      kelas: newKelas,
+    };
+
+    updatedCount++;
+    updatedStudents.push(db.students[studentIndex]);
+  }
+
+  if (updatedCount > 0) {
+    await writeDB(db);
+  }
+
+  res.status(200).json({
+    success: true,
+    updatedCount,
+    notFoundCount: notFound.length,
+    notFound,
+    errors,
+    students: updatedStudents,
+    totalStudents: db.students.length,
+  });
+});
+
 
 app.put("/api/students/:id", async (req, res) => {
   const { id } = req.params;
@@ -783,13 +885,27 @@ app.get("/api/summary", async (req, res) => {
   ];
 
   const totalStudents = db.students.length;
-  const registeredStudentIds = new Set(db.students.map((s: any) => s.id));
+
+  const normalizeSub = (str: string) =>
+    String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  const matchesStudent = (g: any, s: any) => {
+    if (!g || !s) return false;
+    if (g.studentId && g.studentId === s.id) return true;
+    if (g.studentId && String(g.studentId).replace(/\D/g, "") === String(s.nisn).replace(/\D/g, "") && String(s.nisn).length >= 4) return true;
+    if (g.nisn && String(g.nisn).replace(/\D/g, "") === String(s.nisn).replace(/\D/g, "")) return true;
+    if (g.studentName && s.name && g.studentName.trim().toLowerCase() === s.name.trim().toLowerCase()) return true;
+    return false;
+  };
 
   // Calculate progress mapping - only count grades for active registered students
   const subjectProgress = subjects.map((sub) => {
-    const filledGradesForSub = db.grades.filter(
-      (g: any) => g.subject === sub && registeredStudentIds.has(g.studentId)
-    );
+    const targetNorm = normalizeSub(sub);
+    const filledGradesForSub = db.grades.filter((g: any) => {
+      const isSubMatch = normalizeSub(g.subject) === targetNorm || g.subject === sub;
+      const isStudentMatch = db.students.some((s: any) => matchesStudent(g, s));
+      return isSubMatch && isStudentMatch;
+    });
     const completedCount = filledGradesForSub.length;
     const percentage =
       totalStudents > 0
@@ -797,7 +913,7 @@ app.get("/api/summary", async (req, res) => {
         : 0;
 
     // Find active teacher for this subject
-    const teacher = db.teachers.find((t: any) => t.subject === sub);
+    const teacher = db.teachers.find((t: any) => normalizeSub(t.subject) === targetNorm || t.subject === sub);
 
     return {
       subject: sub,
@@ -823,11 +939,9 @@ app.get("/api/summary", async (req, res) => {
     const totalGradesNeeded = studentsInClass.length * subjects.length;
 
     let gradesFilledCount = 0;
-    const studentIds = new Set(studentsInClass.map((s: any) => s.id));
-    db.grades.forEach((g: any) => {
-      if (studentIds.has(g.studentId)) {
-        gradesFilledCount++;
-      }
+    studentsInClass.forEach((s: any) => {
+      const studentGrades = db.grades.filter((g: any) => matchesStudent(g, s));
+      gradesFilledCount += studentGrades.length;
     });
 
     const percent =
@@ -850,7 +964,7 @@ app.get("/api/summary", async (req, res) => {
 
   // Calculate Student Rankings (Akumulasi Nilai Tertinggi ke Nilai Terendah)
   const studentRankings = db.students.map((s: any) => {
-    const studentGrades = db.grades.filter((g: any) => g.studentId === s.id);
+    const studentGrades = db.grades.filter((g: any) => matchesStudent(g, s));
     const subjectScores: Record<string, number> = {};
     let totalScore = 0;
     let filledSubjectsCount = 0;
@@ -863,6 +977,7 @@ app.get("/api/summary", async (req, res) => {
         filledSubjectsCount++;
       }
     });
+
 
     const averageScore =
       filledSubjectsCount > 0
