@@ -2876,22 +2876,21 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
 
       {/* TEACHER MODAL FORM */}
       {isTeacherModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-up my-auto max-h-[92vh] flex flex-col border border-slate-200">
-            <div className="bg-emerald-800 px-5 sm:px-6 py-3.5 sm:py-4 text-white flex items-center justify-between shrink-0 shadow-xs">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-scale-up">
+            <div className="bg-emerald-800 px-6 py-4 text-white flex items-center justify-between">
               <h3 className="font-bold text-sm uppercase tracking-wide">
                 {editingTeacher ? "Edit Akun Guru" : "Tambah Guru Baru"}
               </h3>
               <button
-                type="button"
                 onClick={() => setIsTeacherModalOpen(false)}
-                className="p-1 text-white/80 hover:text-white hover:bg-emerald-700/50 rounded-lg transition cursor-pointer"
+                className="text-white/85 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleTeacherSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 overscroll-contain">
+            <form onSubmit={handleTeacherSubmit} className="p-6 space-y-4">
               {teacherModalError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex gap-2 items-start animate-fade-in">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
