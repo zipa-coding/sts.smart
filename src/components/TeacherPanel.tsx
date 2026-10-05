@@ -10,14 +10,6 @@ import {
   RefreshCw,
   Plus,
   Trash2,
-  FileSpreadsheet,
-  Table,
-  CheckSquare,
-  Sparkles,
-  Upload,
-  X,
-  FileText,
-  Copy,
 } from "lucide-react";
 
 interface TeacherPanelProps {
@@ -35,9 +27,9 @@ export default function TeacherPanel({
     { id: string; text: string }[]
   >([]);
 
-  // View state tab: grades (pengisian nilai per siswa), table (input cepat tabel kelas), or tps (kelola TP)
-  const [activeViewTab, setActiveViewTab] = useState<"grades" | "table" | "tps">(
-    "table",
+  // View state tab: grades (pengisian nilai) or tps (kelola TP)
+  const [activeViewTab, setActiveViewTab] = useState<"grades" | "tps">(
+    "grades",
   );
 
   // Class selection state (7, 8, 9)
@@ -60,21 +52,6 @@ export default function TeacherPanel({
   // Manage TP template state for teacher
   const [newTpText, setNewTpText] = useState("");
   const [tpSubmitLoading, setTpSubmitLoading] = useState(false);
-
-  // Bulk / Table Input State
-  const [bulkRows, setBulkRows] = useState<{
-    [studentId: string]: {
-      score: string;
-      usaha: string;
-      proses: string;
-      capaian: string;
-      deskripsi: string;
-      tps: { [tpId: string]: boolean };
-    };
-  }>({});
-  const [isBulkSaving, setIsBulkSaving] = useState(false);
-  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
-  const [pasteRawText, setPasteRawText] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -111,9 +88,6 @@ export default function TeacherPanel({
       );
       setTpTemplates(classTps);
 
-      // Initialize bulk table rows
-      initializeBulkRows(sArr, gArr, classTps);
-
       // Auto-select first student in this class if available
       const classStudents = sArr.filter(
         (s: Student) => s.kelas === selectedClass,
@@ -134,236 +108,6 @@ export default function TeacherPanel({
       setError("Gagal memuat sinkronisasi data dari server.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const initializeBulkRows = (
-    currentStudents: Student[],
-    currentGrades: Grade[],
-    currentTps: { id: string; text: string }[],
-  ) => {
-    const classStudents = currentStudents.filter(
-      (s) => String(s.kelas || "").trim() === String(selectedClass).trim(),
-    );
-
-    const rows: { [studentId: string]: any } = {};
-    classStudents.forEach((st) => {
-      const existing = currentGrades.find(
-        (g) => g.studentId === st.id && g.subject === user.subject,
-      );
-
-      const tpMap: { [tpId: string]: boolean } = {};
-      currentTps.forEach((t) => {
-        if (existing && Array.isArray(existing.tps)) {
-          const found = existing.tps.find((x: any) => x && x.id === t.id);
-          tpMap[t.id] = found ? !!found.achieved : true;
-        } else {
-          tpMap[t.id] = true;
-        }
-      });
-
-      let desc = existing?.deskripsi || "";
-      if (!desc && currentTps.length > 0) {
-        desc = generateNarrativeDescription(
-          st,
-          user.subject,
-          currentTps,
-          tpMap,
-        );
-      }
-
-      rows[st.id] = {
-        score:
-          existing && existing.score !== undefined
-            ? String(existing.score)
-            : "",
-        usaha: existing?.usaha || "B",
-        proses: existing?.proses || "B",
-        capaian: existing?.capaian || "B",
-        deskripsi: desc,
-        tps: tpMap,
-      };
-    });
-    setBulkRows(rows);
-  };
-
-  const handleBulkRowChange = (studentId: string, field: string, value: any) => {
-    setBulkRows((prev) => {
-      const current = prev[studentId] || {
-        score: "",
-        usaha: "B",
-        proses: "B",
-        capaian: "B",
-        deskripsi: "",
-        tps: {},
-      };
-
-      const updated = { ...current, [field]: value };
-
-      if (field === "score") {
-        const num = Number(value);
-        if (!isNaN(num) && String(value).trim() !== "") {
-          let pred = "C";
-          if (num > 91) pred = "A";
-          else if (num >= 80) pred = "B";
-          else pred = "C";
-          updated.usaha = pred;
-          updated.proses = pred;
-          updated.capaian = pred;
-        }
-      }
-
-      return { ...prev, [studentId]: updated };
-    });
-  };
-
-  const handleApplyToAll = (action: string) => {
-    setBulkRows((prev) => {
-      const next = { ...prev };
-      Object.keys(next).forEach((sid) => {
-        if (action === "predikatB") {
-          next[sid].usaha = "B";
-          next[sid].proses = "B";
-          next[sid].capaian = "B";
-        } else if (action === "score80") {
-          if (!next[sid].score) next[sid].score = "80";
-          next[sid].usaha = "B";
-          next[sid].proses = "B";
-          next[sid].capaian = "B";
-        } else if (action === "checkAllTps") {
-          const tpMap: { [id: string]: boolean } = {};
-          tpTemplates.forEach((t) => {
-            tpMap[t.id] = true;
-          });
-          next[sid].tps = tpMap;
-        }
-      });
-      return next;
-    });
-    setSuccess("Berhasil menerapkan perubahan cepat ke seluruh siswa!");
-  };
-
-  const handleProcessPasteExcel = () => {
-    if (!pasteRawText.trim()) return;
-    const lines = pasteRawText.trim().split(/\r?\n/);
-    const classStudents = students.filter(
-      (s) => String(s.kelas || "").trim() === String(selectedClass).trim(),
-    );
-
-    setBulkRows((prev) => {
-      const next = { ...prev };
-      lines.forEach((line, idx) => {
-        if (idx < classStudents.length) {
-          const student = classStudents[idx];
-          // Check if line has tab-separated numbers or single number
-          const parts = line.split("\t").map((p) => p.trim()).filter(Boolean);
-          let scoreVal = "";
-          // Extract numeric score
-          for (const p of parts) {
-            const num = Number(p.replace(/[^0-9.]/g, ""));
-            if (!isNaN(num) && num > 0 && num <= 100) {
-              scoreVal = String(num);
-              break;
-            }
-          }
-          if (scoreVal) {
-            const num = Number(scoreVal);
-            let pred = "C";
-            if (num > 91) pred = "A";
-            else if (num >= 80) pred = "B";
-            else pred = "C";
-
-            next[student.id] = {
-              ...(next[student.id] || {}),
-              score: scoreVal,
-              usaha: pred,
-              proses: pred,
-              capaian: pred,
-            };
-          }
-        }
-      });
-      return next;
-    });
-
-    setIsPasteModalOpen(false);
-    setPasteRawText("");
-    setSuccess(`Berhasil menempelkan nilai untuk siswa Kelas ${selectedClass}! Silakan periksa dan klik 'Simpan Semua Nilai'.`);
-  };
-
-  const handleSaveBulkGrades = async () => {
-    setIsBulkSaving(true);
-    setError("");
-    setSuccess("");
-
-    const classStudents = students.filter(
-      (s) => String(s.kelas || "").trim() === String(selectedClass).trim(),
-    );
-
-    const payloadGrades: any[] = [];
-    classStudents.forEach((st) => {
-      const row = bulkRows[st.id];
-      if (row && row.score !== undefined && row.score !== "") {
-        const parsedScore = Number(row.score);
-        if (!isNaN(parsedScore)) {
-          const formattedTps: TPItem[] = tpTemplates.map((tp) => ({
-            id: tp.id,
-            text: tp.text,
-            achieved: row.tps?.[tp.id] ?? true,
-          }));
-
-          let finalDesc = row.deskripsi ? row.deskripsi.trim() : "";
-          if (!finalDesc && tpTemplates.length > 0) {
-            finalDesc = generateNarrativeDescription(
-              st,
-              user.subject,
-              tpTemplates,
-              row.tps || {},
-            );
-          }
-
-          payloadGrades.push({
-            studentId: st.id,
-            subject: user.subject,
-            score: parsedScore,
-            tps: formattedTps,
-            usaha: row.usaha || "B",
-            proses: row.proses || "B",
-            capaian: row.capaian || "B",
-            deskripsi: finalDesc,
-            teacherName: user.name,
-          });
-        }
-      }
-    });
-
-    if (payloadGrades.length === 0) {
-      setError("Belum ada nilai yang diinput pada tabel.");
-      setIsBulkSaving(false);
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/grades/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ grades: payloadGrades }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal menyimpan nilai massal.");
-
-      setSuccess(`Alhamdulillah! Berhasil menyimpan nilai untuk ${payloadGrades.length} siswa Kelas ${selectedClass}!`);
-      onRefreshTrigger();
-
-      // Refresh grades
-      const getGrades = await fetch("/api/grades");
-      const updatedGrades = await getGrades.json();
-      setGrades(updatedGrades);
-    } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan saat menyimpan nilai.");
-    } finally {
-      setIsBulkSaving(false);
     }
   };
 
@@ -838,24 +582,19 @@ export default function TeacherPanel({
       <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm p-4">
         {/* Navigation Tab Headers */}
         <div
-          className="flex border-b border-slate-200 gap-1 mb-4 overflow-x-auto"
+          className="flex border-b border-slate-200 gap-1 mb-4"
           id="teacher-view-tabs"
         >
           <button
-            onClick={() => setActiveViewTab("table")}
-            className={`py-1.5 px-3 uppercase tracking-wider text-[10px] font-extrabold border-b-2 transition flex items-center gap-1.5 cursor-pointer shrink-0 ${activeViewTab === "table" ? "border-emerald-800 text-emerald-850 bg-emerald-50/40 font-black" : "border-transparent text-slate-500 hover:text-slate-800"}`}
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" /> Input Cepat Massal (Tabel Kelas {selectedClass})
-          </button>
-          <button
             onClick={() => setActiveViewTab("grades")}
-            className={`py-1.5 px-3 uppercase tracking-wider text-[10px] font-extrabold border-b-2 transition flex items-center gap-1.5 cursor-pointer shrink-0 ${activeViewTab === "grades" ? "border-emerald-800 text-emerald-850 bg-emerald-50/40" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+            className={`py-1.5 px-3 uppercase tracking-wider text-[10px] font-extrabold border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeViewTab === "grades" ? "border-emerald-800 text-emerald-850 bg-emerald-50/40" : "border-transparent text-slate-500 hover:text-slate-800"}`}
           >
-            <ClipboardPlus className="w-3.5 h-3.5" /> Input Rinci Per Siswa
+            <ClipboardPlus className="w-3.5 h-3.5" /> Pengisian Nilai &
+            Deskripsi
           </button>
           <button
             onClick={() => setActiveViewTab("tps")}
-            className={`py-1.5 px-3 uppercase tracking-wider text-[10px] font-extrabold border-b-2 transition flex items-center gap-1.5 cursor-pointer shrink-0 ${activeViewTab === "tps" ? "border-emerald-800 text-emerald-850 bg-emerald-50/40" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+            className={`py-1.5 px-3 uppercase tracking-wider text-[10px] font-extrabold border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeViewTab === "tps" ? "border-emerald-800 text-emerald-850 bg-emerald-50/40" : "border-transparent text-slate-500 hover:text-slate-800"}`}
           >
             <BookOpen className="w-3.5 h-3.5" /> Kelola TP ({user.subject})
           </button>
@@ -889,213 +628,6 @@ export default function TeacherPanel({
           <div className="p-2.5 bg-green-50 text-green-800 text-xs font-bold rounded border border-green-200 flex items-center gap-1.5 animate-fade-in mb-3">
             <CheckCircle className="w-4 h-4 text-green-600" />
             <span>{success}</span>
-          </div>
-        )}
-
-        {/* TABLE BATCH GRADING TAB */}
-        {activeViewTab === "table" && (
-          <div className="space-y-4" id="batch-table-view">
-            {/* Action Bar & Quick Helpers */}
-            <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsPasteModalOpen(true)}
-                  className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Tempel dari Excel / Sheets</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyToAll("predikatB")}
-                  className="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                  title="Ubah semua kriteria Usaha, Proses, dan Capaian menjadi B (Baik)"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Set Predikat B Semua</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyToAll("checkAllTps")}
-                  className="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                  title="Tandai seluruh TP tercapai untuk semua siswa"
-                >
-                  <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Centang Semua TP</span>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSaveBulkGrades}
-                disabled={isBulkSaving}
-                className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white rounded-xl text-xs font-extrabold transition flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
-              >
-                {isBulkSaving ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                <span>Simpan Semua Nilai Kelas {selectedClass}</span>
-              </button>
-            </div>
-
-            {/* Table */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs bg-white">
-              <div className="overflow-x-auto max-h-[500px]">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-800 text-white sticky top-0 z-10 text-[11px] uppercase tracking-wider font-extrabold">
-                    <tr>
-                      <th className="p-2.5 text-center w-10">No</th>
-                      <th className="p-2.5 w-28">NISN</th>
-                      <th className="p-2.5 min-w-[160px]">Nama Siswa</th>
-                      <th className="p-2.5 text-center w-24">Nilai (0-100)</th>
-                      <th className="p-2.5 text-center w-20">Usaha</th>
-                      <th className="p-2.5 text-center w-20">Proses</th>
-                      <th className="p-2.5 text-center w-20">Capaian</th>
-                      <th className="p-2.5 min-w-[200px]">Tujuan Pembelajaran</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {classStudents.map((st, idx) => {
-                      const row = bulkRows[st.id] || {
-                        score: "",
-                        usaha: "B",
-                        proses: "B",
-                        capaian: "B",
-                        deskripsi: "",
-                        tps: {},
-                      };
-                      const isRowFilled = row.score !== "" && row.score !== undefined;
-
-                      return (
-                        <tr
-                          key={st.id}
-                          className={`hover:bg-slate-50 transition ${
-                            isRowFilled ? "bg-emerald-50/20" : ""
-                          }`}
-                        >
-                          <td className="p-2.5 text-center font-bold text-slate-500 text-xs">
-                            {idx + 1}
-                          </td>
-                          <td className="p-2.5 font-mono text-[11px] text-slate-600 font-semibold">
-                            {st.nisn}
-                          </td>
-                          <td className="p-2.5 font-bold text-slate-900 text-xs">
-                            {st.name}
-                          </td>
-                          <td className="p-2.5 text-center">
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={row.score}
-                              onChange={(e) =>
-                                handleBulkRowChange(st.id, "score", e.target.value)
-                              }
-                              placeholder="0-100"
-                              className="w-18 p-1.5 text-center font-bold text-xs rounded-lg border border-slate-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500 bg-white text-slate-900"
-                            />
-                          </td>
-                          <td className="p-2.5 text-center">
-                            <select
-                              value={row.usaha}
-                              onChange={(e) =>
-                                handleBulkRowChange(st.id, "usaha", e.target.value)
-                              }
-                              className="p-1 text-xs font-bold border border-slate-300 rounded bg-white text-slate-800"
-                            >
-                              <option value="A">A</option>
-                              <option value="B">B</option>
-                              <option value="C">C</option>
-                              <option value="D">D</option>
-                            </select>
-                          </td>
-                          <td className="p-2.5 text-center">
-                            <select
-                              value={row.proses}
-                              onChange={(e) =>
-                                handleBulkRowChange(st.id, "proses", e.target.value)
-                              }
-                              className="p-1 text-xs font-bold border border-slate-300 rounded bg-white text-slate-800"
-                            >
-                              <option value="A">A</option>
-                              <option value="B">B</option>
-                              <option value="C">C</option>
-                              <option value="D">D</option>
-                            </select>
-                          </td>
-                          <td className="p-2.5 text-center">
-                            <select
-                              value={row.capaian}
-                              onChange={(e) =>
-                                handleBulkRowChange(st.id, "capaian", e.target.value)
-                              }
-                              className="p-1 text-xs font-bold border border-slate-300 rounded bg-white text-slate-800"
-                            >
-                              <option value="A">A</option>
-                              <option value="B">B</option>
-                              <option value="C">C</option>
-                              <option value="D">D</option>
-                            </select>
-                          </td>
-                          <td className="p-2.5 text-xs">
-                            <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
-                              {tpTemplates.map((tp, tpIdx) => {
-                                const isChecked = row.tps?.[tp.id] ?? true;
-                                return (
-                                  <label
-                                    key={tp.id}
-                                    className="flex items-start gap-1.5 cursor-pointer text-[11px] text-slate-700 hover:text-slate-900"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={(e) => {
-                                        const newTps = {
-                                          ...(row.tps || {}),
-                                          [tp.id]: e.target.checked,
-                                        };
-                                        handleBulkRowChange(st.id, "tps", newTps);
-                                      }}
-                                      className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-700"
-                                    />
-                                    <span className="leading-tight">
-                                      TP {tpIdx + 1}: {tp.text}
-                                    </span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Bottom Save Bar */}
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-slate-500 font-medium">
-                Total Siswa: <strong>{classStudents.length} orang</strong> (Kelas {selectedClass})
-              </span>
-              <button
-                type="button"
-                onClick={handleSaveBulkGrades}
-                disabled={isBulkSaving}
-                className="px-5 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-extrabold transition flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
-              >
-                {isBulkSaving ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                <span>Simpan Nilai Semua Siswa Kelas {selectedClass}</span>
-              </button>
-            </div>
           </div>
         )}
 
@@ -1492,75 +1024,6 @@ export default function TeacherPanel({
           </div>
         )}
       </div>
-
-      {/* PASTE FROM EXCEL MODAL */}
-      {isPasteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden animate-fade-in my-8">
-            <div className="px-5 py-4 bg-emerald-800 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-emerald-200" />
-                <h3 className="text-sm font-bold uppercase tracking-wide">
-                  Tempel Nilai dari Excel / Google Sheets (Kelas {selectedClass})
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsPasteModalOpen(false)}
-                className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 space-y-1">
-                <p className="font-bold flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-emerald-700" />
-                  Petunjuk Penggunaan Cepat:
-                </p>
-                <ul className="list-disc list-inside text-[11px] text-emerald-800 pl-1 space-y-0.5">
-                  <li>Buka berkas Excel / Spreadsheet Anda.</li>
-                  <li>Salin (*copy*) kolom nilai siswa (urutan 1 sampai {classStudents.length}).</li>
-                  <li>Tempel (*paste*) ke kotak di bawah, lalu klik <strong>"Terapkan ke Tabel"</strong>.</li>
-                  <li>Sistem akan otomatis mengisi nilai dan menyesuaikan predikat A/B/C secara instan!</li>
-                </ul>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Tempelkan Kolom Nilai Di Sini:
-                </label>
-                <textarea
-                  rows={8}
-                  value={pasteRawText}
-                  onChange={(e) => setPasteRawText(e.target.value)}
-                  placeholder={`Contoh:\n85\n90\n78\n88\n95\n... (sesuai urutan siswa Kelas ${selectedClass})`}
-                  className="w-full p-3 font-mono text-xs border border-slate-300 rounded-xl bg-slate-50 focus:bg-white text-slate-900 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setIsPasteModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={handleProcessPasteExcel}
-                  disabled={!pasteRawText.trim()}
-                  className="px-5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  <span>Terapkan ke Tabel</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
