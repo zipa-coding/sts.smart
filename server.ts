@@ -664,8 +664,8 @@ app.delete("/api/tps/:subject/:tpId", async (req, res) => {
 app.get("/api/settings", async (req, res) => {
   const db = await readDB();
   const principalName =
-    db.settings?.principalName || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
-  const principalNip = db.settings?.principalNip || "19780512 200501 1 002";
+    db.settings?.principalName || "Ari Gunawan, S.Kom.";
+  const principalNip = db.settings?.principalNip || "";
   const format = {
     semesterName: "Ganjil",
     tahunPelajaran: "2026/2027",
@@ -676,10 +676,12 @@ app.get("/api/settings", async (req, res) => {
     showAttendance: true,
     showCatatan: true,
     fontFamily: "Times New Roman",
+    descFontSize: "9pt",
     paperSize: "A4",
     tanggalRaport: "17 Juni 2026",
     watermarkSize: 440,
     watermarkOpacity: 0.05,
+    showPrincipalNip: false,
     ...(db.settings?.format || {}),
   };
   res.json({ principalName, principalNip, format });
@@ -692,8 +694,8 @@ app.post("/api/settings", async (req, res) => {
     db.settings = {};
   }
   db.settings.principalName =
-    principalName || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
-  db.settings.principalNip = principalNip || "19780512 200501 1 002";
+    principalName || "Ari Gunawan, S.Kom.";
+  db.settings.principalNip = principalNip || "";
 
   if (format) {
     db.settings.format = {
@@ -708,8 +710,18 @@ app.post("/api/settings", async (req, res) => {
         format.showAttendance !== undefined ? format.showAttendance : true,
       showCatatan: format.showCatatan !== undefined ? format.showCatatan : true,
       fontFamily: format.fontFamily || "Times New Roman",
+      descFontSize: format.descFontSize || "9pt",
       paperSize: format.paperSize || "A4",
       tanggalRaport: format.tanggalRaport || "17 Juni 2026",
+      principalSignaturePosition:
+        format.principalSignaturePosition || "bottom_center",
+      signatureCity: format.signatureCity || "Pangkal Pinang",
+      principalTitle: format.principalTitle || "Kepala Sekolah",
+      showPrincipalNip: false,
+      showParentSignature:
+        format.showParentSignature !== undefined
+          ? format.showParentSignature
+          : true,
       watermarkSize:
         format.watermarkSize !== undefined ? format.watermarkSize : 440,
       watermarkOpacity:

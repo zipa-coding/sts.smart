@@ -71,8 +71,8 @@ export default function PrintRaportView({
 
   // Dynamic state for Headmaster/Principal info & Raport format configurations
   const [principal, setPrincipal] = useState({
-    name: "Ustadz H. Ir. Abdul Muhyi, M.Pd",
-    nip: "19780512 200501 1 002",
+    name: "Ari Gunawan, S.Kom.",
+    nip: "",
   });
 
   const [format, setFormat] = useState({
@@ -85,12 +85,13 @@ export default function PrintRaportView({
     showAttendance: true,
     showCatatan: true,
     fontFamily: "Times New Roman",
+    descFontSize: "9pt",
     paperSize: "A4",
     tanggalRaport: "17 Juni 2026",
     principalSignaturePosition: "bottom_center",
     signatureCity: "Pangkal Pinang",
     principalTitle: "Kepala Sekolah",
-    showPrincipalNip: true,
+    showPrincipalNip: false,
     showParentSignature: true,
     watermarkSize: 440,
     watermarkOpacity: 0.05,
@@ -108,10 +109,10 @@ export default function PrintRaportView({
     fetch("/api/settings")
       .then((res) => res.json())
       .then((data) => {
-        if (data.principalName && data.principalNip) {
+        if (data.principalName) {
           setPrincipal({
             name: data.principalName,
-            nip: data.principalNip,
+            nip: data.principalNip || "",
           });
         }
         if (data.format) {
@@ -137,16 +138,14 @@ export default function PrintRaportView({
                 ? !!data.format.showCatatan
                 : true,
             fontFamily: data.format.fontFamily || "Times New Roman",
+            descFontSize: data.format.descFontSize || "9pt",
             paperSize: data.format.paperSize || "A4",
             tanggalRaport: data.format.tanggalRaport || "17 Juni 2026",
             principalSignaturePosition:
               data.format.principalSignaturePosition || "bottom_center",
             signatureCity: data.format.signatureCity || "Pangkal Pinang",
             principalTitle: data.format.principalTitle || "Kepala Sekolah",
-            showPrincipalNip:
-              data.format.showPrincipalNip !== undefined
-                ? !!data.format.showPrincipalNip
-                : true,
+            showPrincipalNip: false,
             showParentSignature:
               data.format.showParentSignature !== undefined
                 ? !!data.format.showParentSignature
@@ -515,29 +514,29 @@ export default function PrintRaportView({
               <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
                 1. Spiritual
               </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                Usaha
+              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
               </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                Proses
+              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
               </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                Capaian
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                ${liveNote.spiritualUsaha || "B"}
-              </td>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                ${liveNote.spiritualProses || "B"}
-              </td>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                ${liveNote.spiritualCapaian || "B"}
+              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
               </td>
             </tr>
             <tr>
-              <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: 8.8pt; text-align: justify; line-height: 1.35;">
+              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.spiritualUsaha || "B"}</span>
+              </td>
+              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.spiritualProses || "B"}</span>
+              </td>
+              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.spiritualCapaian || "B"}</span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
                 <strong>Deskripsi:</strong> ${liveNote.spiritualDeskripsi || `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`}
               </td>
             </tr>
@@ -549,29 +548,29 @@ export default function PrintRaportView({
               <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
                 2. Sosial
               </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                Usaha
+              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
               </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                Proses
+              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
               </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                Capaian
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                ${liveNote.sosialUsaha || "B"}
-              </td>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                ${liveNote.sosialProses || "B"}
-              </td>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                ${liveNote.sosialCapaian || "B"}
+              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
               </td>
             </tr>
             <tr>
-              <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: 8.8pt; text-align: justify; line-height: 1.35;">
+              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.sosialUsaha || "B"}</span>
+              </td>
+              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.sosialProses || "B"}</span>
+              </td>
+              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.sosialCapaian || "B"}</span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
                 <strong>Deskripsi:</strong> ${liveNote.sosialDeskripsi || `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`}
               </td>
             </tr>
@@ -592,29 +591,29 @@ export default function PrintRaportView({
                   <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
                     ${title}
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Usaha
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Proses
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Capaian
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${usahaGrade}
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${prosesGrade}
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${capaianGrade}
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
                   </td>
                 </tr>
                 <tr>
-                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: 8.8pt; text-align: justify; line-height: 1.35;">
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
+                  </td>
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
+                  </td>
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
                     <strong>Deskripsi:</strong> ${desc}
                   </td>
                 </tr>
@@ -638,29 +637,29 @@ export default function PrintRaportView({
                   <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
                     ${title}
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Usaha
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Proses
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Capaian
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${usahaGrade}
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${prosesGrade}
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${capaianGrade}
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
                   </td>
                 </tr>
                 <tr>
-                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: 8.8pt; text-align: justify; line-height: 1.35;">
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
+                  </td>
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
+                  </td>
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
                     <strong>Deskripsi:</strong> ${desc}
                   </td>
                 </tr>
@@ -684,29 +683,29 @@ export default function PrintRaportView({
                   <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
                     ${title}
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Usaha
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Proses
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Capaian
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${usahaGrade}
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${prosesGrade}
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${capaianGrade}
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
                   </td>
                 </tr>
                 <tr>
-                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: 8.8pt; text-align: justify; line-height: 1.35;">
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
+                  </td>
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
+                  </td>
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
                     <strong>Deskripsi:</strong> ${desc}
                   </td>
                 </tr>
@@ -736,29 +735,29 @@ export default function PrintRaportView({
                   <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
                     ${idx + 1}. Ekstrakurikuler ${e.type || "Pilihan"}: ${e.name}
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Usaha
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Proses
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
                   </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 2.5px 3px 4.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1.1;">
-                    Capaian
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${grades.usaha}
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${grades.proses}
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 2px 3px 4.5px 3px; vertical-align: middle; line-height: 1;">
-                    ${grades.capaian}
+                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
                   </td>
                 </tr>
                 <tr>
-                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: 8.8pt; text-align: justify; line-height: 1.35;">
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${grades.usaha}</span>
+                  </td>
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${grades.proses}</span>
+                  </td>
+                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                    <span style="display: inline-block; position: relative; top: -2px;">${grades.capaian}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
                     <strong>Deskripsi:</strong> ${e.description || e.deskripsi || "-"}
                   </td>
                 </tr>
@@ -771,7 +770,7 @@ export default function PrintRaportView({
           <h4 class="pdf-heading">F. Saran-Saran</h4>
           <table class="pdf-box-table" style="page-break-inside: avoid;">
             <tr>
-              <td style="padding: 5px 8px 6px 8px; font-size: 8.8pt; text-align: justify; line-height: 1.35;">
+              <td style="padding: 5px 8px 6px 8px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
                 ${liveNote.catatan || ""}
               </td>
             </tr>
@@ -780,14 +779,26 @@ export default function PrintRaportView({
           <h4 class="pdf-heading">G. Kedisiplinan</h4>
           <table class="pdf-box-table" style="page-break-inside: avoid; text-align: center; border-collapse: collapse; width: 100%;">
             <tr style="background-color: transparent;">
-              <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 3px 4px 5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">Sakit</td>
-              <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 3px 4px 5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">Izin</td>
-              <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 3px 4px 5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">Tanpa Keterangan</td>
+              <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Sakit</span>
+              </td>
+              <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Izin</span>
+              </td>
+              <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Tanpa Keterangan</span>
+              </td>
             </tr>
             <tr>
-              <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 2px 4px 4px 4px; line-height: 1.1; color: #000000 !important;">${liveNote.sakit && Number(liveNote.sakit) > 0 ? `${liveNote.sakit} Hari` : "- Hari"}</td>
-              <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 2px 4px 4px 4px; line-height: 1.1; color: #000000 !important;">${liveNote.izin && Number(liveNote.izin) > 0 ? `${liveNote.izin} Hari` : "- Hari"}</td>
-              <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 2px 4px 4px 4px; line-height: 1.1; color: #000000 !important;">${liveNote.alpa && Number(liveNote.alpa) > 0 ? `${liveNote.alpa} Hari` : "- Hari"}</td>
+              <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; line-height: 1.1; color: #000000 !important;">
+                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.sakit && Number(liveNote.sakit) > 0 ? `${liveNote.sakit} Hari` : "- Hari"}</span>
+              </td>
+              <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; line-height: 1.1; color: #000000 !important;">
+                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.izin && Number(liveNote.izin) > 0 ? `${liveNote.izin} Hari` : "- Hari"}</span>
+              </td>
+              <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; line-height: 1.1; color: #000000 !important;">
+                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.alpa && Number(liveNote.alpa) > 0 ? `${liveNote.alpa} Hari` : "- Hari"}</span>
+              </td>
             </tr>
           </table>
 
@@ -798,12 +809,9 @@ export default function PrintRaportView({
             const city = format.signatureCity || "Pangkal Pinang";
             const dateStr = format.tanggalRaport || "17 Juni 2026";
             const pTitle = format.principalTitle || "Kepala Sekolah";
-            const showNip = format.showPrincipalNip !== false;
             const showParent = format.showParentSignature !== false;
-            const pName = principal?.name || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
-            const pNip = principal?.nip || "19780512 200501 1 002";
+            const pName = principal?.name || "Ari Gunawan, S.Kom.";
             const wName = waliKelas ? waliKelas.name : "……………………………";
-            const nipHtml = showNip && pNip ? `<p style="margin: 3px 0 0 0; font-size: 9.5pt; color: #555;">NIP. ${pNip}</p>` : "";
             const parentHtml = showParent ? `<p style="margin: 0 0 55px 0;">&nbsp;<br />Orang Tua/Wali Siswa</p><p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>` : "";
 
             if (pos === "inline_three_columns") {
@@ -816,7 +824,6 @@ export default function PrintRaportView({
                     <td style="width: 33.33%; text-align: center; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                      ${nipHtml}
                     </td>
                     <td style="width: 33.33%; text-align: center; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
@@ -843,7 +850,6 @@ export default function PrintRaportView({
                     <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                      ${nipHtml}
                     </td>
                     <td style="width: 50%; border: none;"></td>
                   </tr>
@@ -868,7 +874,6 @@ export default function PrintRaportView({
                     <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0; line-height: 1.3;">${city}, ${dateStr}<br />Mengetahui,<br />${pTitle}</p>
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                      ${nipHtml}
                     </td>
                   </tr>
                 </table>
@@ -882,7 +887,6 @@ export default function PrintRaportView({
                     <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                      ${nipHtml}
                     </td>
                     <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
@@ -916,7 +920,6 @@ export default function PrintRaportView({
                   <td colspan="2" style="text-align: center; padding-top: 15px; vertical-align: top; border: none;">
                     <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
                     <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                    ${nipHtml}
                   </td>
                 </tr>
               </table>
@@ -985,13 +988,13 @@ export default function PrintRaportView({
                 );
               }
 
-              // 2. Draw Page Number at bottom right
+              // 2. Draw Page Number at bottom right (positioned precisely right above the bottom line with a clean gap)
               pdf.setFont("times", "normal");
               pdf.setFontSize(9);
               pdf.setTextColor(0, 0, 0); // Clear high-contrast text color
               const pageText = `Halaman ${i} dari ${totalPages}`;
-              // Align to the right edge with a 12mm margin (matches the right page margin)
-              pdf.text(pageText, pageWidth - 12, pageHeight - 8, {
+              // Align to the right edge with a 12mm margin and sitting just above the line
+              pdf.text(pageText, pageWidth - 12, pageHeight - 9.5, {
                 align: "right",
               });
             }
@@ -1053,7 +1056,7 @@ export default function PrintRaportView({
                   pdf.setFontSize(9);
                   pdf.setTextColor(0, 0, 0);
                   const pageText = `Halaman ${i} dari ${totalPages}`;
-                  pdf.text(pageText, pageWidth - 12, pageHeight - 8, {
+                  pdf.text(pageText, pageWidth - 12, pageHeight - 9.5, {
                     align: "right",
                   });
                 }
@@ -1231,29 +1234,29 @@ export default function PrintRaportView({
           <td rowspan="2" style="width: 52%; border: 1px solid #000000; padding: 4px 6.5px; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #000000; vertical-align: middle;">
             1. Spiritual
           </td>
-          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-            Usaha
+          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
           </td>
-          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-            Proses
+          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
           </td>
-          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-            Capaian
-          </td>
-        </tr>
-        <tr>
-          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.spiritualUsaha || "-"}
-          </td>
-          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.spiritualProses || "-"}
-          </td>
-          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.spiritualCapaian || "-"}
+          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
           </td>
         </tr>
         <tr>
-          <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
+          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2px;">${waliKelasNote.spiritualUsaha || "-"}</span>
+          </td>
+          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2px;">${waliKelasNote.spiritualProses || "-"}</span>
+          </td>
+          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2px;">${waliKelasNote.spiritualCapaian || "-"}</span>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: ${format.descFontSize || "9.5pt"}; text-align: justify; line-height: 1.45; color: #000000;">
             <strong>Deskripsi:</strong> ${waliKelasNote.spiritualDeskripsi || ""}
           </td>
         </tr>
@@ -1265,29 +1268,29 @@ export default function PrintRaportView({
           <td rowspan="2" style="width: 52%; border: 1px solid #000000; padding: 4px 6.5px; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #000000; vertical-align: middle;">
             2. Sosial
           </td>
-          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-            Usaha
+          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
           </td>
-          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-            Proses
+          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
           </td>
-          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-            Capaian
-          </td>
-        </tr>
-        <tr>
-          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.sosialUsaha || "-"}
-          </td>
-          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.sosialProses || "-"}
-          </td>
-          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-            ${waliKelasNote.sosialCapaian || "-"}
+          <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
           </td>
         </tr>
         <tr>
-          <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
+          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2px;">${waliKelasNote.sosialUsaha || "-"}</span>
+          </td>
+          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2px;">${waliKelasNote.sosialProses || "-"}</span>
+          </td>
+          <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2px;">${waliKelasNote.sosialCapaian || "-"}</span>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: ${format.descFontSize || "9.5pt"}; text-align: justify; line-height: 1.45; color: #000000;">
             <strong>Deskripsi:</strong> ${waliKelasNote.sosialDeskripsi || ""}
           </td>
         </tr>
@@ -1310,29 +1313,29 @@ export default function PrintRaportView({
               <td rowspan="2" style="width: 52%; border: 1px solid #000000; padding: 4px 6.5px; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #000000; vertical-align: middle;">
                 ${title}
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Usaha
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Proses
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Capaian
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${usahaGrade}
-              </td>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${prosesGrade}
-              </td>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${capaianGrade}
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
               </td>
             </tr>
             <tr>
-              <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
+              </td>
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
+              </td>
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: ${format.descFontSize || "9.5pt"}; text-align: justify; line-height: 1.45; color: #000000;">
                 <strong>Deskripsi:</strong> ${desc}
               </td>
             </tr>
@@ -1357,29 +1360,29 @@ export default function PrintRaportView({
               <td rowspan="2" style="width: 52%; border: 1px solid #000000; padding: 4px 6.5px; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #000000; vertical-align: middle;">
                 ${title}
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Usaha
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Proses
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Capaian
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${usahaGrade}
-              </td>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${prosesGrade}
-              </td>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${capaianGrade}
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
               </td>
             </tr>
             <tr>
-              <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
+              </td>
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
+              </td>
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: ${format.descFontSize || "9.5pt"}; text-align: justify; line-height: 1.45; color: #000000;">
                 <strong>Deskripsi:</strong> ${desc}
               </td>
             </tr>
@@ -1404,29 +1407,29 @@ export default function PrintRaportView({
               <td rowspan="2" style="width: 52%; border: 1px solid #000000; padding: 4px 6.5px; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #000000; vertical-align: middle;">
                 ${title}
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Usaha
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Proses
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Capaian
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${usahaGrade}
-              </td>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${prosesGrade}
-              </td>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${capaianGrade}
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
               </td>
             </tr>
             <tr>
-              <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
+              </td>
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
+              </td>
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: ${format.descFontSize || "9.5pt"}; text-align: justify; line-height: 1.45; color: #000000;">
                 <strong>Deskripsi:</strong> ${desc}
               </td>
             </tr>
@@ -1456,29 +1459,29 @@ export default function PrintRaportView({
               <td rowspan="2" style="width: 52%; border: 1px solid #000000; padding: 4px 6.5px; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #000000; vertical-align: middle;">
                 ${idx + 1}. Ekstrakurikuler ${e.type || "Pilihan"}: ${e.name}
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Usaha
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Proses
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
               </td>
-              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: top; padding-top: 2px; padding-bottom: 5px; color: #000000;">
-                Capaian
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${grades.usaha}
-              </td>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${grades.proses}
-              </td>
-              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: top; padding-top: 2.5px; padding-bottom: 5.5px; color: #000000;">
-                ${grades.capaian}
+              <td style="width: 16%; border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; background-color: #f2f2f2; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
               </td>
             </tr>
             <tr>
-              <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${grades.usaha}</span>
+              </td>
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${grades.proses}</span>
+              </td>
+              <td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; vertical-align: middle; padding: 0px 3px 5.5px 3px; color: #000000;">
+                <span style="display: inline-block; position: relative; top: -2px;">${grades.capaian}</span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: ${format.descFontSize || "9.5pt"}; text-align: justify; line-height: 1.45; color: #000000;">
                 <strong>Deskripsi:</strong> ${e.description || e.deskripsi || "-"}
               </td>
             </tr>
@@ -1491,7 +1494,7 @@ export default function PrintRaportView({
       <h4 style="margin: 15px 0 10px 0; text-transform: uppercase; font-size: 9.5pt; font-family: 'Times New Roman', Times, serif; font-weight: bold; color: #000000;">F. Saran-Saran</h4>
       <table border="1" cellspacing="0" cellpadding="4" style="width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1.2px solid #000000; background-color: #ffffff; margin-left: auto; margin-right: auto; page-break-inside: avoid;">
         <tr>
-          <td style="border: 1px solid #000000; padding: 6px 8px 10px 8px; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; text-align: justify; line-height: 1.45; color: #000000;">
+          <td style="border: 1px solid #000000; padding: 6px 8px 10px 8px; font-family: 'Times New Roman', Times, serif; font-size: ${format.descFontSize || "9.5pt"}; text-align: justify; line-height: 1.45; color: #000000;">
             ${waliKelasNote.catatan || ""}
           </td>
         </tr>
@@ -1500,19 +1503,25 @@ export default function PrintRaportView({
       <h4 style="margin: 15px 0 10px 0; text-transform: uppercase; font-size: 9.5pt; font-family: 'Times New Roman', Times, serif; font-weight: bold; color: #000000;">G. Kedisiplinan</h4>
       <table border="1" cellspacing="0" cellpadding="4" style="width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1.2px solid #000000; background-color: #ffffff; margin-left: auto; margin-right: auto; page-break-inside: avoid; text-align: center;">
         <tr style="background-color: transparent;">
-          <td style="border: 1px solid #000000; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9pt; width: 33.3%; color: #000000; padding: 6px 4px; vertical-align: middle; text-align: center; line-height: 1.2;">Sakit</td>
-          <td style="border: 1px solid #000000; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9pt; width: 33.3%; color: #000000; padding: 6px 4px; vertical-align: middle; text-align: center; line-height: 1.2;">Izin</td>
-          <td style="border: 1px solid #000000; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9pt; width: 33.3%; color: #000000; padding: 6px 4px; vertical-align: middle; text-align: center; line-height: 1.2;">Tanpa Keterangan</td>
+          <td style="border: 1px solid #000000; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9pt; width: 33.3%; color: #000000; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.2;">
+            <span style="display: inline-block; position: relative; top: -2.5px;">Sakit</span>
+          </td>
+          <td style="border: 1px solid #000000; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9pt; width: 33.3%; color: #000000; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.2;">
+            <span style="display: inline-block; position: relative; top: -2.5px;">Izin</span>
+          </td>
+          <td style="border: 1px solid #000000; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9pt; width: 33.3%; color: #000000; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.2;">
+            <span style="display: inline-block; position: relative; top: -2.5px;">Tanpa Keterangan</span>
+          </td>
         </tr>
         <tr>
-          <td style="border: 1px solid #000000; font-size: 9.5pt; text-align: center; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 6px 4px; vertical-align: middle; line-height: 1.2; color: #000000;">
-            ${waliKelasNote.sakit && Number(waliKelasNote.sakit) > 0 ? `${waliKelasNote.sakit} Hari` : "- Hari"}
+          <td style="border: 1px solid #000000; font-size: 9.5pt; text-align: center; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; vertical-align: middle; line-height: 1.2; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2px;">${waliKelasNote.sakit && Number(waliKelasNote.sakit) > 0 ? `${waliKelasNote.sakit} Hari` : "- Hari"}</span>
           </td>
-          <td style="border: 1px solid #000000; font-size: 9.5pt; text-align: center; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 6px 4px; vertical-align: middle; line-height: 1.2; color: #000000;">
-            ${waliKelasNote.izin && Number(waliKelasNote.izin) > 0 ? `${waliKelasNote.izin} Hari` : "- Hari"}
+          <td style="border: 1px solid #000000; font-size: 9.5pt; text-align: center; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; vertical-align: middle; line-height: 1.2; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2px;">${waliKelasNote.izin && Number(waliKelasNote.izin) > 0 ? `${waliKelasNote.izin} Hari` : "- Hari"}</span>
           </td>
-          <td style="border: 1px solid #000000; font-size: 9.5pt; text-align: center; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 6px 4px; vertical-align: middle; line-height: 1.2; color: #000000;">
-            ${waliKelasNote.alpa && Number(waliKelasNote.alpa) > 0 ? `${waliKelasNote.alpa} Hari` : "- Hari"}
+          <td style="border: 1px solid #000000; font-size: 9.5pt; text-align: center; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; vertical-align: middle; line-height: 1.2; color: #000000;">
+            <span style="display: inline-block; position: relative; top: -2px;">${waliKelasNote.alpa && Number(waliKelasNote.alpa) > 0 ? `${waliKelasNote.alpa} Hari` : "- Hari"}</span>
           </td>
         </tr>
       </table>
@@ -1524,12 +1533,9 @@ export default function PrintRaportView({
         const city = format.signatureCity || "Pangkal Pinang";
         const dateStr = format.tanggalRaport || "17 Juni 2026";
         const pTitle = format.principalTitle || "Kepala Sekolah";
-        const showNip = format.showPrincipalNip !== false;
         const showParent = format.showParentSignature !== false;
-        const pName = principal?.name || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
-        const pNip = principal?.nip || "19780512 200501 1 002";
+        const pName = principal?.name || "Ari Gunawan, S.Kom.";
         const wName = waliKelas ? waliKelas.name : "……………………………";
-        const nipHtml = showNip && pNip ? `<p style="margin: 3px 0 0 0; font-size: 9.5pt; color: #555555; font-family: monospace;">NIP. ${pNip}</p>` : "";
         const parentHtml = showParent ? `<p style="margin: 0 0 50px 0; font-size: 11pt;">&nbsp;<br />Orang Tua/Wali Siswa</p><p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>` : "";
 
         if (pos === "inline_three_columns") {
@@ -1542,7 +1548,6 @@ export default function PrintRaportView({
                 <td style="width: 33.33%; text-align: center; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                  ${nipHtml}
                 </td>
                 <td style="width: 33.33%; text-align: center; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
@@ -1569,7 +1574,6 @@ export default function PrintRaportView({
                 <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                  ${nipHtml}
                 </td>
                 <td style="width: 50%; border: none;"></td>
               </tr>
@@ -1594,7 +1598,6 @@ export default function PrintRaportView({
                 <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">${city}, ${dateStr}<br />Mengetahui,<br />${pTitle}</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                  ${nipHtml}
                 </td>
               </tr>
             </table>
@@ -1608,7 +1611,6 @@ export default function PrintRaportView({
                 <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                  ${nipHtml}
                 </td>
                 <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
@@ -1642,7 +1644,6 @@ export default function PrintRaportView({
               <td colspan="2" style="text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
                 <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
                 <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
-                ${nipHtml}
               </td>
             </tr>
           </table>
@@ -2081,32 +2082,32 @@ export default function PrintRaportView({
                     <td rowSpan={2} className="w-[52%] py-1.5 px-3 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white leading-snug">
                       1. Spiritual
                     </td>
-                    <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                      Usaha
+                    <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                      <span className="inline-block relative -top-1">Usaha</span>
                     </td>
-                    <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                      Proses
+                    <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                      <span className="inline-block relative -top-1">Proses</span>
                     </td>
-                    <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
-                      Capaian
+                    <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
+                      <span className="inline-block relative -top-1">Capaian</span>
                     </td>
                   </tr>
                   <tr className="border-b border-black">
-                    <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                      {liveNote.spiritualUsaha || "B"}
+                    <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                      <span className="inline-block relative -top-1">{liveNote.spiritualUsaha || "B"}</span>
                     </td>
-                    <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                      {liveNote.spiritualProses || "B"}
+                    <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                      <span className="inline-block relative -top-1">{liveNote.spiritualProses || "B"}</span>
                     </td>
-                    <td className="py-1 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
-                      {liveNote.spiritualCapaian || "B"}
+                    <td className="py-0 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
+                      <span className="inline-block relative -top-1">{liveNote.spiritualCapaian || "B"}</span>
                     </td>
                   </tr>
                   <tr>
                     <td
                       colSpan={4}
                       className="py-1.5 px-3 leading-relaxed text-justify text-black bg-white"
-                      style={{ fontSize: "9pt" }}
+                      style={{ fontSize: format.descFontSize || "9pt" }}
                     >
                       <strong className="font-bold mr-1 text-black">
                         Deskripsi:
@@ -2128,32 +2129,32 @@ export default function PrintRaportView({
                     <td rowSpan={2} className="w-[52%] py-1.5 px-3 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white leading-snug">
                       2. Sosial
                     </td>
-                    <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                      Usaha
+                    <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                      <span className="inline-block relative -top-1">Usaha</span>
                     </td>
-                    <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                      Proses
+                    <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                      <span className="inline-block relative -top-1">Proses</span>
                     </td>
-                    <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
-                      Capaian
+                    <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
+                      <span className="inline-block relative -top-1">Capaian</span>
                     </td>
                   </tr>
                   <tr className="border-b border-black">
-                    <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                      {liveNote.sosialUsaha || "B"}
+                    <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                      <span className="inline-block relative -top-1">{liveNote.sosialUsaha || "B"}</span>
                     </td>
-                    <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                      {liveNote.sosialProses || "B"}
+                    <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                      <span className="inline-block relative -top-1">{liveNote.sosialProses || "B"}</span>
                     </td>
-                    <td className="py-1 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
-                      {liveNote.sosialCapaian || "B"}
+                    <td className="py-0 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
+                      <span className="inline-block relative -top-1">{liveNote.sosialCapaian || "B"}</span>
                     </td>
                   </tr>
                   <tr>
                     <td
                       colSpan={4}
                       className="py-1.5 px-3 leading-relaxed text-justify text-black bg-white"
-                      style={{ fontSize: "9pt" }}
+                      style={{ fontSize: format.descFontSize || "9pt" }}
                     >
                       <strong className="font-bold mr-1 text-black">
                         Deskripsi:
@@ -2192,32 +2193,32 @@ export default function PrintRaportView({
                         <td rowSpan={2} className="w-[52%] py-1.5 px-3 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white leading-snug">
                           {name}
                         </td>
-                        <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                          Usaha
+                        <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                          <span className="inline-block relative -top-1">Usaha</span>
                         </td>
-                        <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                          Proses
+                        <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                          <span className="inline-block relative -top-1">Proses</span>
                         </td>
-                        <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
-                          Capaian
+                        <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
+                          <span className="inline-block relative -top-1">Capaian</span>
                         </td>
                       </tr>
                       <tr className="border-b border-black">
-                        <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                          {usahaGrade}
+                        <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                          <span className="inline-block relative -top-1">{usahaGrade}</span>
                         </td>
-                        <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                          {prosesGrade}
+                        <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                          <span className="inline-block relative -top-1">{prosesGrade}</span>
                         </td>
-                        <td className="py-1 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
-                          {capaianGrade}
+                        <td className="py-0 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
+                          <span className="inline-block relative -top-1">{capaianGrade}</span>
                         </td>
                       </tr>
                       <tr>
                         <td
                           colSpan={4}
                           className="py-1.5 px-3 leading-relaxed text-justify text-black bg-white"
-                          style={{ fontSize: "9pt" }}
+                          style={{ fontSize: format.descFontSize || "9pt" }}
                         >
                           <strong className="font-bold mr-1 text-black">
                             Deskripsi:
@@ -2256,32 +2257,32 @@ export default function PrintRaportView({
                         <td rowSpan={2} className="w-[52%] py-1.5 px-3 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white leading-snug">
                           {name}
                         </td>
-                        <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                          Usaha
+                        <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                          <span className="inline-block relative -top-1">Usaha</span>
                         </td>
-                        <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                          Proses
+                        <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                          <span className="inline-block relative -top-1">Proses</span>
                         </td>
-                        <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
-                          Capaian
+                        <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
+                          <span className="inline-block relative -top-1">Capaian</span>
                         </td>
                       </tr>
                       <tr className="border-b border-black">
-                        <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                          {usahaGrade}
+                        <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                          <span className="inline-block relative -top-1">{usahaGrade}</span>
                         </td>
-                        <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                          {prosesGrade}
+                        <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                          <span className="inline-block relative -top-1">{prosesGrade}</span>
                         </td>
-                        <td className="py-1 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
-                          {capaianGrade}
+                        <td className="py-0 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
+                          <span className="inline-block relative -top-1">{capaianGrade}</span>
                         </td>
                       </tr>
                       <tr>
                         <td
                           colSpan={4}
                           className="py-1.5 px-3 leading-relaxed text-justify text-black bg-white"
-                          style={{ fontSize: "9pt" }}
+                          style={{ fontSize: format.descFontSize || "9pt" }}
                         >
                           <strong className="font-bold mr-1 text-black">
                             Deskripsi:
@@ -2320,32 +2321,32 @@ export default function PrintRaportView({
                         <td rowSpan={2} className="w-[52%] py-1.5 px-3 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white leading-snug">
                           {name}
                         </td>
-                        <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                          Usaha
+                        <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                          <span className="inline-block relative -top-1">Usaha</span>
                         </td>
-                        <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                          Proses
+                        <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                          <span className="inline-block relative -top-1">Proses</span>
                         </td>
-                        <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
-                          Capaian
+                        <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
+                          <span className="inline-block relative -top-1">Capaian</span>
                         </td>
                       </tr>
                       <tr className="border-b border-black">
-                        <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                          {usahaGrade}
+                        <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                          <span className="inline-block relative -top-1">{usahaGrade}</span>
                         </td>
-                        <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                          {prosesGrade}
+                        <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                          <span className="inline-block relative -top-1">{prosesGrade}</span>
                         </td>
-                        <td className="py-1 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
-                          {capaianGrade}
+                        <td className="py-0 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
+                          <span className="inline-block relative -top-1">{capaianGrade}</span>
                         </td>
                       </tr>
                       <tr>
                         <td
                           colSpan={4}
                           className="py-1.5 px-3 leading-relaxed text-justify text-black bg-white"
-                          style={{ fontSize: "9pt" }}
+                          style={{ fontSize: format.descFontSize || "9pt" }}
                         >
                           <strong className="font-bold mr-1 text-black">
                             Deskripsi:
@@ -2384,32 +2385,32 @@ export default function PrintRaportView({
                             <td rowSpan={2} className="w-[52%] py-1.5 px-3 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white leading-snug">
                               {idx + 1}. Ekstrakurikuler {e.type || "Pilihan"}: {e.name}
                             </td>
-                            <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                              Usaha
+                            <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                              <span className="inline-block relative -top-1">Usaha</span>
                             </td>
-                            <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                              Proses
+                            <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                              <span className="inline-block relative -top-1">Proses</span>
                             </td>
-                            <td className="w-[16%] py-1 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
-                              Capaian
+                            <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
+                              <span className="inline-block relative -top-1">Capaian</span>
                             </td>
                           </tr>
                           <tr className="border-b border-black">
-                            <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                              {grades.usaha}
+                            <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                              <span className="inline-block relative -top-1">{grades.usaha}</span>
                             </td>
-                            <td className="py-1 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                              {grades.proses}
+                            <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                              <span className="inline-block relative -top-1">{grades.proses}</span>
                             </td>
-                            <td className="py-1 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
-                              {grades.capaian}
+                            <td className="py-0 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
+                              <span className="inline-block relative -top-1">{grades.capaian}</span>
                             </td>
                           </tr>
                           <tr>
                             <td
                               colSpan={4}
                               className="py-1.5 px-3 leading-relaxed text-justify text-black bg-white"
-                              style={{ fontSize: "9pt" }}
+                              style={{ fontSize: format.descFontSize || "9pt" }}
                             >
                               <strong className="font-bold mr-1 text-black">
                                 Deskripsi:
@@ -2433,7 +2434,7 @@ export default function PrintRaportView({
             </h4>
             <div
               className="border py-1.5 px-3 text-xs leading-relaxed text-justify border-black text-slate-900 bg-transparent min-h-[38px]"
-              style={{ fontSize: "9pt" }}
+              style={{ fontSize: format.descFontSize || "9pt" }}
             >
               {waliKelasNote.catatan || ""}
             </div>
@@ -2448,50 +2449,56 @@ export default function PrintRaportView({
               <thead>
                 <tr className="bg-transparent border-b border-black">
                   <th
-                    className="py-1.5 px-2 font-bold border-r border-black w-1/3 text-center align-middle"
+                    className="py-0 px-2 font-bold border-r border-black w-1/3 text-center align-middle"
                     style={{ lineHeight: "1.1" }}
                   >
-                    Sakit
+                    <span className="inline-block relative -top-1">Sakit</span>
                   </th>
                   <th
-                    className="py-1.5 px-2 font-bold border-r border-black w-1/3 text-center align-middle"
+                    className="py-0 px-2 font-bold border-r border-black w-1/3 text-center align-middle"
                     style={{ lineHeight: "1.1" }}
                   >
-                    Izin
+                    <span className="inline-block relative -top-1">Izin</span>
                   </th>
                   <th
-                    className="py-1.5 px-2 font-bold w-1/3 text-center align-middle"
+                    className="py-0 px-2 font-bold w-1/3 text-center align-middle"
                     style={{ lineHeight: "1.1" }}
                   >
-                    Tanpa Keterangan
+                    <span className="inline-block relative -top-1">Tanpa Keterangan</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td
-                    className="py-1.5 border-r border-black text-xs text-center align-middle"
+                    className="py-0 border-r border-black text-xs text-center align-middle"
                     style={{ lineHeight: "1.1" }}
                   >
-                    {waliKelasNote.sakit && Number(waliKelasNote.sakit) > 0
-                      ? `${waliKelasNote.sakit} Hari`
-                      : "- Hari"}
+                    <span className="inline-block relative -top-1">
+                      {waliKelasNote.sakit && Number(waliKelasNote.sakit) > 0
+                        ? `${waliKelasNote.sakit} Hari`
+                        : "- Hari"}
+                    </span>
                   </td>
                   <td
-                    className="py-1.5 border-r border-black text-xs text-center align-middle"
+                    className="py-0 border-r border-black text-xs text-center align-middle"
                     style={{ lineHeight: "1.1" }}
                   >
-                    {waliKelasNote.izin && Number(waliKelasNote.izin) > 0
-                      ? `${waliKelasNote.izin} Hari`
-                      : "- Hari"}
+                    <span className="inline-block relative -top-1">
+                      {waliKelasNote.izin && Number(waliKelasNote.izin) > 0
+                        ? `${waliKelasNote.izin} Hari`
+                        : "- Hari"}
+                    </span>
                   </td>
                   <td
-                    className="py-1.5 text-xs text-center align-middle"
+                    className="py-0 text-xs text-center align-middle"
                     style={{ lineHeight: "1.1" }}
                   >
-                    {waliKelasNote.alpa && Number(waliKelasNote.alpa) > 0
-                      ? `${waliKelasNote.alpa} Hari`
-                      : "- Hari"}
+                    <span className="inline-block relative -top-1">
+                      {waliKelasNote.alpa && Number(waliKelasNote.alpa) > 0
+                        ? `${waliKelasNote.alpa} Hari`
+                        : "- Hari"}
+                    </span>
                   </td>
                 </tr>
               </tbody>

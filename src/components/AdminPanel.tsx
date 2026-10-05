@@ -72,16 +72,15 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   >([]);
 
   // Principal settings state
-  const [principalName, setPrincipalName] = useState(
-    "Ustadz H. Ir. Abdul Muhyi, M.Pd",
-  );
-  const [principalNip, setPrincipalNip] = useState("19780512 200501 1 002");
+  const [principalName, setPrincipalName] = useState("Ari Gunawan, S.Kom.");
+  const [principalNip, setPrincipalNip] = useState("");
   const [settingsLoading, setSettingsLoading] = useState(false);
 
   // Raport formatting settings state
   const [semesterName, setSemesterName] = useState("Ganjil");
   const [tahunPelajaran, setTahunPelajaran] = useState("2026/2027");
   const [fontSize, setFontSize] = useState("11pt");
+  const [descFontSize, setDescFontSize] = useState("9pt");
   const [showLogo, setShowLogo] = useState(true);
   const [showSpiritual, setShowSpiritual] = useState(true);
   const [showSosial, setShowSosial] = useState(true);
@@ -99,7 +98,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   >("bottom_center");
   const [signatureCity, setSignatureCity] = useState("Pangkal Pinang");
   const [principalTitle, setPrincipalTitle] = useState("Kepala Sekolah");
-  const [showPrincipalNip, setShowPrincipalNip] = useState(true);
+  const [showPrincipalNip, setShowPrincipalNip] = useState(false);
   const [showParentSignature, setShowParentSignature] = useState(true);
 
   const [loading, setLoading] = useState(false);
@@ -1043,6 +1042,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           setSemesterName(setData.format.semesterName || "Ganjil");
           setTahunPelajaran(setData.format.tahunPelajaran || "2026/2027");
           setFontSize(setData.format.fontSize || "11pt");
+          setDescFontSize(setData.format.descFontSize || "9pt");
           setShowLogo(
             setData.format.showLogo !== undefined
               ? !!setData.format.showLogo
@@ -1585,6 +1585,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
             semesterName,
             tahunPelajaran,
             fontSize,
+            descFontSize,
             showLogo,
             showSpiritual,
             showSosial,
@@ -2505,21 +2506,20 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                     required
                     value={principalName}
                     onChange={(e) => setPrincipalName(e.target.value)}
-                    placeholder="Contoh: Ustadz H. Ir. Abdul Muhyi, M.Pd"
+                    placeholder="Contoh: Ari Gunawan, S.Kom."
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    NIP Kepala Sekolah
+                    NIP Kepala Sekolah (Opsional)
                   </label>
                   <input
                     type="text"
-                    required
                     value={principalNip}
                     onChange={(e) => setPrincipalNip(e.target.value)}
-                    placeholder="Contoh: 19780512 200501 1 002"
+                    placeholder="Kosongkan jika tanpa NIP"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition"
                   />
                 </div>
@@ -2986,7 +2986,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-1">
                 4. Gaya & Desain Cetak
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                     Jenis Font Word/Cetak
@@ -3007,7 +3007,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
 
                 <div>
                   <label className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Ukuran Font Dasar
+                    Ukuran Font Dasar Dokumen
                   </label>
                   <select
                     value={fontSize}
@@ -3017,6 +3017,27 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                     <option value="10pt">Sangat Kecil (10pt)</option>
                     <option value="11pt">Standar (11pt)</option>
                     <option value="12pt">Besar (12pt)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Ukuran Font Deskripsi / Catatan
+                  </label>
+                  <select
+                    value={descFontSize}
+                    onChange={(e) => setDescFontSize(e.target.value)}
+                    className="w-full px-3 py-2 border border-emerald-300 bg-emerald-50/30 font-medium rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition"
+                  >
+                    <option value="7.5pt">7.5pt (Sangat Ringkas)</option>
+                    <option value="8pt">8pt (Ringkas)</option>
+                    <option value="8.5pt">8.5pt (Kompak)</option>
+                    <option value="8.8pt">8.8pt (Proporsional)</option>
+                    <option value="9pt">9pt (Standar Raport)</option>
+                    <option value="9.5pt">9.5pt (Nyaman Dibaca)</option>
+                    <option value="10pt">10pt (Sedang)</option>
+                    <option value="10.5pt">10.5pt (Besar)</option>
+                    <option value="11pt">11pt (Sangat Besar)</option>
                   </select>
                 </div>
 

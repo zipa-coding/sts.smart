@@ -684,17 +684,20 @@ export const firebaseApi = {
     const docSnap = await withTimeout(getDoc(ref), 2500);
     if (docSnap.exists()) {
       const data = docSnap.data();
+      if (!data.principalName) data.principalName = "Ari Gunawan, S.Kom.";
+      data.principalNip = "";
       if (data.format) {
         if (!data.format.tanggalRaport) data.format.tanggalRaport = "17 Juni 2026";
         if (!data.format.principalSignaturePosition) data.format.principalSignaturePosition = "bottom_center";
         if (!data.format.signatureCity) data.format.signatureCity = "Pangkal Pinang";
         if (!data.format.principalTitle) data.format.principalTitle = "Kepala Sekolah";
+        data.format.showPrincipalNip = false;
       }
       return data;
     }
     return {
-      principalName: "Ustadz H. Ir. Abdul Muhyi, M.Pd",
-      principalNip: "19780512 200501 1 002",
+      principalName: "Ari Gunawan, S.Kom.",
+      principalNip: "",
       format: {
         semesterName: "Ganjil",
         tahunPelajaran: "2026/2027",
@@ -705,12 +708,13 @@ export const firebaseApi = {
         showAttendance: true,
         showCatatan: true,
         fontFamily: "Times New Roman",
+        descFontSize: "9pt",
         paperSize: "A4",
         tanggalRaport: "17 Juni 2026",
         principalSignaturePosition: "bottom_center",
         signatureCity: "Pangkal Pinang",
         principalTitle: "Kepala Sekolah",
-        showPrincipalNip: true,
+        showPrincipalNip: false,
         showParentSignature: true,
         watermarkSize: 440,
         watermarkOpacity: 0.05
@@ -721,8 +725,8 @@ export const firebaseApi = {
     if (!db) throw new Error("Database not connected");
     const { principalName, principalNip, format } = body;
     const settingsData = {
-      principalName: principalName || "Ustadz H. Ir. Abdul Muhyi, M.Pd",
-      principalNip: principalNip || "19780512 200501 1 002",
+      principalName: principalName || "Ari Gunawan, S.Kom.",
+      principalNip: principalNip || "",
       format: format ? {
         semesterName: format.semesterName || "Ganjil",
         tahunPelajaran: format.tahunPelajaran || "2026/2027",
@@ -733,12 +737,13 @@ export const firebaseApi = {
         showAttendance: format.showAttendance !== undefined ? format.showAttendance : true,
         showCatatan: format.showCatatan !== undefined ? format.showCatatan : true,
         fontFamily: format.fontFamily || "Times New Roman",
+        descFontSize: format.descFontSize || "9pt",
         paperSize: format.paperSize || "A4",
         tanggalRaport: format.tanggalRaport || "17 Juni 2026",
         principalSignaturePosition: format.principalSignaturePosition || "bottom_center",
         signatureCity: format.signatureCity || "Pangkal Pinang",
         principalTitle: format.principalTitle || "Kepala Sekolah",
-        showPrincipalNip: format.showPrincipalNip !== undefined ? format.showPrincipalNip : true,
+        showPrincipalNip: false,
         showParentSignature: format.showParentSignature !== undefined ? format.showParentSignature : true,
         watermarkSize: format.watermarkSize !== undefined ? Number(format.watermarkSize) : 440,
         watermarkOpacity: format.watermarkOpacity !== undefined ? Number(format.watermarkOpacity) : 0.05

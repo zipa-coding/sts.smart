@@ -1511,8 +1511,8 @@
     ]
   },
   "settings": {
-    "principalName": "Ustadz H. Ir. Abdul Muhyi, M.Pd",
-    "principalNip": "19780512 200501 1 002",
+    "principalName": "Ari Gunawan, S.Kom.",
+    "principalNip": "",
     "format": {
       "semesterName": "Ganjil",
       "tahunPelajaran": "2026/2027",
@@ -1523,12 +1523,13 @@
       "showAttendance": true,
       "showCatatan": true,
       "fontFamily": "Times New Roman",
+      "descFontSize": "9pt",
       "paperSize": "A4",
       "tanggalRaport": "17 Juni 2026",
       "principalSignaturePosition": "bottom_center",
       "signatureCity": "Pangkal Pinang",
       "principalTitle": "Kepala Sekolah",
-      "showPrincipalNip": true,
+      "showPrincipalNip": false,
       "showParentSignature": true,
       "watermarkSize": 440,
       "watermarkOpacity": 0.05
@@ -1600,6 +1601,38 @@
         "s9_10"
       ],
       "createdAt": "2025-07-15T00:00:00.000Z"
+    }
+  ],
+  "ekskul": [
+    {
+      "id": "e1",
+      "name": "Pramuka",
+      "type": "Wajib"
+    },
+    {
+      "id": "e2",
+      "name": "Mentoring",
+      "type": "Wajib"
+    },
+    {
+      "id": "e3",
+      "name": "Futsal",
+      "type": "Pilihan"
+    },
+    {
+      "id": "e4",
+      "name": "Voli",
+      "type": "Pilihan"
+    },
+    {
+      "id": "e5",
+      "name": "Panahan",
+      "type": "Pilihan"
+    },
+    {
+      "id": "e6",
+      "name": "Study Club",
+      "type": "Pilihan"
     }
   ]
 }

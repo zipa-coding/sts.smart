@@ -348,15 +348,27 @@ export default function HalaqohRaportView({
               <!-- Row 1: Headers & Subject Name (rowspan=2) -->
               <tr style="background-color: #ffffff;">
                 <td rowspan="2" style="border: 1px solid #000000; padding: 3.5px 6px; width: 49%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${subjectMeta.tableHeader}</td>
-                <td style="border: 1px solid #000000; padding: 3.5px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Usaha</td>
-                <td style="border: 1px solid #000000; padding: 3.5px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Proses</td>
-                <td style="border: 1px solid #000000; padding: 3.5px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">Capaian</td>
+                <td style="border: 1px solid #000000; padding: 0px 6px 5.5px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.2; vertical-align: middle;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
+                </td>
+                <td style="border: 1px solid #000000; padding: 0px 6px 5.5px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.2; vertical-align: middle;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
+                </td>
+                <td style="border: 1px solid #000000; padding: 0px 6px 5.5px 6px; width: 17%; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.2; vertical-align: middle;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
+                </td>
               </tr>
               <!-- Row 2: Scores -->
               <tr style="background-color: #ffffff;">
-                <td style="border: 1px solid #000000; padding: 3.5px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${usahaVal}</td>
-                <td style="border: 1px solid #000000; padding: 3.5px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${prosesVal}</td>
-                <td style="border: 1px solid #000000; padding: 3.5px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">${capaianVal}</td>
+                <td style="border: 1px solid #000000; padding: 0px 6px 5.5px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${usahaVal}</span>
+                </td>
+                <td style="border: 1px solid #000000; padding: 0px 6px 5.5px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${prosesVal}</span>
+                </td>
+                <td style="border: 1px solid #000000; padding: 0px 6px 5.5px 6px; font-weight: bold; text-align: center; color: #000000; background-color: #ffffff; line-height: 1.3; vertical-align: middle;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${capaianVal}</span>
+                </td>
               </tr>
               <!-- Row 3: Description -->
               <tr style="background-color: #ffffff;">

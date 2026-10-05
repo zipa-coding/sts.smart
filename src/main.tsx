@@ -61,17 +61,10 @@ function initializeLocalStorage() {
             }
           }
         }
-        // Ensure halaqoh list and student data are seeded if missing
+        // Ensure halaqoh list is initialized if missing
         if (!Array.isArray(clientDbCache.halaqoh) || clientDbCache.halaqoh.length === 0) {
           clientDbCache.halaqoh = (dbData as any).halaqoh || [];
           needsSave = true;
-        }
-        if (Array.isArray(clientDbCache.students) && !clientDbCache.students.some((s: any) => s.name.toLowerCase().includes('rayyan'))) {
-          const seedRayyan = (dbData as any).students?.find((s: any) => s.name.toLowerCase().includes('rayyan'));
-          if (seedRayyan) {
-            clientDbCache.students.unshift(seedRayyan);
-            needsSave = true;
-          }
         }
         if (needsSave) {
           localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
@@ -840,8 +833,8 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // 6.5 GET /api/settings
     if (path === '/api/settings' && method === 'GET') {
       const db = getDB();
-      const principalName = db.settings?.principalName || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
-      const principalNip = db.settings?.principalNip || "19780512 200501 1 002";
+      const principalName = db.settings?.principalName || "Ari Gunawan, S.Kom.";
+      const principalNip = db.settings?.principalNip || "";
       const format = db.settings?.format || {
         semesterName: "Ganjil",
         tahunPelajaran: "2026/2027",
@@ -852,23 +845,25 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         showAttendance: true,
         showCatatan: true,
         fontFamily: "Times New Roman",
+        descFontSize: "9pt",
         paperSize: "A4",
         tanggalRaport: "17 Juni 2026",
         principalSignaturePosition: "bottom_center",
         signatureCity: "Pangkal Pinang",
         principalTitle: "Kepala Sekolah",
-        showPrincipalNip: true,
+        showPrincipalNip: false,
         showParentSignature: true,
         watermarkSize: 440,
         watermarkOpacity: 0.05
       };
       // If format doesn't have defaults, set them
       if (format) {
+        if (!format.descFontSize) format.descFontSize = "9pt";
         if (!format.tanggalRaport) format.tanggalRaport = "17 Juni 2026";
         if (!format.principalSignaturePosition) format.principalSignaturePosition = "bottom_center";
         if (!format.signatureCity) format.signatureCity = "Pangkal Pinang";
         if (!format.principalTitle) format.principalTitle = "Kepala Sekolah";
-        if (format.showPrincipalNip === undefined) format.showPrincipalNip = true;
+        format.showPrincipalNip = false;
         if (format.showParentSignature === undefined) format.showParentSignature = true;
         if (format.watermarkSize === undefined) format.watermarkSize = 440;
         if (format.watermarkOpacity === undefined) format.watermarkOpacity = 0.05;
@@ -881,8 +876,8 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       const { principalName, principalNip, format } = body || {};
       const db = getDB();
       if (!db.settings) db.settings = {};
-      db.settings.principalName = principalName || "Ustadz H. Ir. Abdul Muhyi, M.Pd";
-      db.settings.principalNip = principalNip || "19780512 200501 1 002";
+      db.settings.principalName = principalName || "Ari Gunawan, S.Kom.";
+      db.settings.principalNip = principalNip || "";
       if (format) {
         db.settings.format = {
           semesterName: format.semesterName || "Ganjil",
@@ -894,12 +889,13 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           showAttendance: format.showAttendance !== undefined ? format.showAttendance : true,
           showCatatan: format.showCatatan !== undefined ? format.showCatatan : true,
           fontFamily: format.fontFamily || "Times New Roman",
+          descFontSize: format.descFontSize || "9pt",
           paperSize: format.paperSize || "A4",
           tanggalRaport: format.tanggalRaport || "17 Juni 2026",
           principalSignaturePosition: format.principalSignaturePosition || "bottom_center",
           signatureCity: format.signatureCity || "Pangkal Pinang",
           principalTitle: format.principalTitle || "Kepala Sekolah",
-          showPrincipalNip: format.showPrincipalNip !== undefined ? format.showPrincipalNip : true,
+          showPrincipalNip: false,
           showParentSignature: format.showParentSignature !== undefined ? format.showParentSignature : true,
           watermarkSize: format.watermarkSize !== undefined ? Number(format.watermarkSize) : 440,
           watermarkOpacity: format.watermarkOpacity !== undefined ? Number(format.watermarkOpacity) : 0.05
