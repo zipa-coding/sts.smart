@@ -242,7 +242,7 @@ export default function PrintRaportView({
 
     const name = student?.name ? student.name.trim() : "Siswa";
     const achieved = g.tps
-      .filter((tp) => tp.achieved)
+      .filter((tp) => Boolean(tp.achieved))
       .map((tp) => (tp.text || "").trim())
       .filter(Boolean);
     const needImprovement = g.tps

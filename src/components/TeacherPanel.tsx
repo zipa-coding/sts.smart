@@ -161,10 +161,25 @@ export default function TeacherPanel({
     return text;
   };
 
+  const normalizeSubject = (s: string | undefined | null) => {
+    if (!s) return "";
+    return s
+      .toLowerCase()
+      .replace(/[’'"`]/g, "'")
+      .replace(/[-_]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const normalizeTpText = (t: string | undefined | null) => {
+    if (!t) return "";
+    return t.toLowerCase().replace(/[^a-z0-9]/g, "");
+  };
+
   const handleStudentSelect = (
     student: Student,
     allGrades: Grade[] = grades,
-    templates: { id: string; text: string }[] = tpTemplates,
+    templates: { id: string; text: string; kelas?: string }[] = tpTemplates,
   ) => {
     try {
       setSelectedStudent(student);
@@ -172,11 +187,11 @@ export default function TeacherPanel({
       setError("");
 
       const safeGrades = Array.isArray(allGrades) ? allGrades : [];
-      const safeTemplates = Array.isArray(templates) ? templates : [];
+      let activeTemplates = Array.isArray(templates) ? [...templates] : [];
 
-      // Look up if this student already has a grade for this teacher's subject
+      // Look up if this student already has a grade for this teacher's subject (robust subject matching)
       const existingGrade = safeGrades.find(
-        (g) => g && g.studentId === student?.id && g.subject === user.subject,
+        (g) => g && g.studentId === student?.id && normalizeSubject(g.subject) === normalizeSubject(user.subject),
       );
 
       if (existingGrade) {
@@ -191,26 +206,108 @@ export default function TeacherPanel({
         setProses(existingGrade.proses || "B");
         setCapaian(existingGrade.capaian || "B");
 
-        // Build active checked states
+        const studentSavedTps = Array.isArray(existingGrade.tps) ? existingGrade.tps : [];
+
+        // If student has saved TPs, ensure any unique TPs from the student are present in active templates
+        if (studentSavedTps.length > 0) {
+          studentSavedTps.forEach((stTp) => {
+            if (!stTp || !stTp.text) return;
+            const normText = normalizeTpText(stTp.text);
+            const exists = activeTemplates.some(
+              (tmpl) =>
+                (tmpl.id && stTp.id && String(tmpl.id).trim() === String(stTp.id).trim()) ||
+                normalizeTpText(tmpl.text) === normText
+            );
+            if (!exists) {
+              activeTemplates.push({
+                id: stTp.id || `tp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                text: stTp.text,
+                kelas: student.kelas,
+              });
+            }
+          });
+          setTpTemplates(activeTemplates);
+        }
+
+        // Build active checked states with multi-level matching:
+        // Priority:
+        // 1. Direct ID match
+        // 2. Exact/normalized text match
+        // 3. Substring text match
+        // 4. Positional index fallback if length is identical
+        // GUARANTEE: An un-checked TP (achieved: false) will ALWAYS remain false!
         const achievedMap: { [tpId: string]: boolean } = {};
-        safeTemplates.forEach((tmpl) => {
-          if (tmpl && tmpl.id) {
-            const found = Array.isArray(existingGrade.tps)
-              ? existingGrade.tps.find((t: any) => t && t.id === tmpl.id)
-              : null;
-            achievedMap[tmpl.id] = found ? !!found.achieved : true; // Default to true mapped
+
+        activeTemplates.forEach((tmpl, tmplIdx) => {
+          if (!tmpl || !tmpl.id) return;
+          const normTmplText = normalizeTpText(tmpl.text);
+
+          let matchedItem: any = null;
+
+          // 1. Direct ID match
+          matchedItem = studentSavedTps.find(
+            (t) => t && t.id && String(t.id).trim() === String(tmpl.id).trim()
+          );
+
+          // 2. Normalized text match
+          if (!matchedItem && normTmplText) {
+            matchedItem = studentSavedTps.find(
+              (t) => t && t.text && normalizeTpText(t.text) === normTmplText
+            );
+          }
+
+          // 3. Substring text match
+          if (!matchedItem && normTmplText) {
+            matchedItem = studentSavedTps.find((t) => {
+              if (!t || !t.text) return false;
+              const normT = normalizeTpText(t.text);
+              return normT.includes(normTmplText) || normTmplText.includes(normT);
+            });
+          }
+
+          // 4. Fallback index match if same length
+          if (!matchedItem && studentSavedTps.length === activeTemplates.length && studentSavedTps[tmplIdx]) {
+            matchedItem = studentSavedTps[tmplIdx];
+          }
+
+          if (matchedItem) {
+            // Strictly check false values - never let false flip to true
+            const isAchieved =
+              matchedItem.achieved !== false &&
+              (matchedItem.achieved as any) !== "false" &&
+              (matchedItem.achieved as any) !== 0;
+            achievedMap[tmpl.id] = isAchieved;
+            if (matchedItem.id && matchedItem.id !== tmpl.id) {
+              achievedMap[matchedItem.id] = isAchieved;
+            }
+          } else {
+            achievedMap[tmpl.id] = true;
           }
         });
+
+        // Also record raw student saved TP IDs
+        studentSavedTps.forEach((stTp) => {
+          if (stTp && stTp.id) {
+            const isAchieved =
+              stTp.achieved !== false &&
+              (stTp.achieved as any) !== "false" &&
+              (stTp.achieved as any) !== 0;
+            if (achievedMap[stTp.id] === undefined) {
+              achievedMap[stTp.id] = isAchieved;
+            }
+          }
+        });
+
         setTpAchievements(achievedMap);
 
         if (existingGrade.deskripsi && existingGrade.deskripsi.trim() !== "") {
           setCustomDescription(existingGrade.deskripsi.trim());
           setIsCustomDescActive(true);
-        } else if (safeTemplates.length > 0) {
+        } else if (activeTemplates.length > 0) {
           const auto = generateNarrativeDescription(
             student,
             user.subject,
-            safeTemplates,
+            activeTemplates,
             achievedMap,
           );
           setCustomDescription(auto);
@@ -227,18 +324,18 @@ export default function TeacherPanel({
         setCapaian("B");
 
         const defaultMap: { [tpId: string]: boolean } = {};
-        safeTemplates.forEach((t) => {
+        activeTemplates.forEach((t) => {
           if (t && t.id) {
-            defaultMap[t.id] = true; // default achieved
+            defaultMap[t.id] = true; // default achieved for brand new grade
           }
         });
         setTpAchievements(defaultMap);
 
-        if (safeTemplates.length > 0) {
+        if (activeTemplates.length > 0) {
           const auto = generateNarrativeDescription(
             student,
             user.subject,
-            safeTemplates,
+            activeTemplates,
             defaultMap,
           );
           setCustomDescription(auto);
@@ -271,7 +368,9 @@ export default function TeacherPanel({
 
   // Switch achievement status of some TP and automatically synchronize description
   const toggleTp = (id: string) => {
-    const nextAchieved = !tpAchievements[id];
+    const currentVal = tpAchievements[id];
+    // If currently false -> true; if true or undefined -> false
+    const nextAchieved = currentVal === false ? true : false;
     const nextMap = {
       ...tpAchievements,
       [id]: nextAchieved,
@@ -358,11 +457,15 @@ export default function TeacherPanel({
 
     // Format TP list for post payload (supports empty TP list)
     const safeTemplates = Array.isArray(tpTemplates) ? tpTemplates : [];
-    const formattedTps: TPItem[] = safeTemplates.map((tp) => ({
-      id: tp.id,
-      text: tp.text,
-      achieved: tpAchievements[tp.id] ?? true,
-    }));
+    const formattedTps: TPItem[] = safeTemplates.map((tp) => {
+      const val = tpAchievements[tp.id];
+      const isAchieved = val === false || val === "false" || val === 0 ? false : (val ?? true);
+      return {
+        id: tp.id,
+        text: tp.text,
+        achieved: isAchieved,
+      };
+    });
 
     // Description is taken directly from the textarea (supports both auto from TP and purely manual)
     const finalDescription = customDescription.trim();
