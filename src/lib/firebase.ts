@@ -594,26 +594,30 @@ export const firebaseApi = {
 
   // 5. GET & POST /api/walikelas/notes
   getWaliKelasNotes: async () => {
-    if (!db) return {};
-    const noteCollections = ["walikelas_notes", "catatan_walikelas", "notes", "walikelas", "catatanWaliKelas"];
-    for (const colName of noteCollections) {
-      try {
-        const snap = await withTimeout(getDocs(collection(db, colName)), 3000).catch(() => null);
-        if (snap && !snap.empty) {
-          const notes: any = {};
-          snap.docs.forEach(docSnap => {
-            notes[docSnap.id] = docSnap.data();
-          });
-          return notes;
+    const localNotes = (dbDataAny && typeof dbDataAny === 'object' && dbDataAny.walikelas_notes) ? { ...dbDataAny.walikelas_notes } : {};
+    if (!db) return localNotes;
+    try {
+      const snap = await withTimeout(getDocs(collection(db, "walikelas_notes")), 6000).catch(() => null);
+      if (snap && !snap.empty) {
+        const notes: any = { ...localNotes };
+        snap.docs.forEach(docSnap => {
+          notes[docSnap.id] = { ...notes[docSnap.id], ...docSnap.data() };
+        });
+        if (dbDataAny) {
+          dbDataAny.walikelas_notes = notes;
         }
-      } catch {}
+        return notes;
+      }
+    } catch (e) {
+      console.warn("Failed to fetch walikelas_notes from firestore, using cached:", e);
     }
-    return {};
+    return localNotes;
   },
   postWaliKelasNotes: async (body: any) => {
-    if (!db) throw new Error("Database not connected");
-    const { studentId, sakit, izin, alpa, catatan, spiritualUsaha, spiritualProses, spiritualCapaian, spiritualDeskripsi, sosialUsaha, sosialProses, sosialCapaian, sosialDeskripsi, ekskul } = body;
+    const { studentId, sakit, izin, alpa, catatan, spiritualUsaha, spiritualProses, spiritualCapaian, spiritualDeskripsi, sosialUsaha, sosialProses, sosialCapaian, sosialDeskripsi, ekskul, updatedAt } = body;
+    if (!studentId) throw new Error("ID Siswa wajib diisi.");
     const note = {
+      studentId,
       sakit: Number(sakit || 0),
       izin: Number(izin || 0),
       alpa: Number(alpa || 0),
@@ -626,10 +630,21 @@ export const firebaseApi = {
       sosialProses: sosialProses || "B",
       sosialCapaian: sosialCapaian || "B",
       sosialDeskripsi: sosialDeskripsi || "",
-      ekskul: ekskul || []
+      ekskul: Array.isArray(ekskul) ? ekskul : [],
+      updatedAt: updatedAt || new Date().toISOString()
     };
-    await withTimeout(setDoc(doc(db, "walikelas_notes", studentId), note), 2500);
-    return { studentId, ...note };
+
+    if (dbDataAny) {
+      if (!dbDataAny.walikelas_notes) dbDataAny.walikelas_notes = {};
+      dbDataAny.walikelas_notes[studentId] = note;
+    }
+
+    if (db) {
+      await withTimeout(setDoc(doc(db, "walikelas_notes", studentId), note), 6000).catch(err => {
+        console.warn("Firestore setDoc walikelas_notes warning:", err);
+      });
+    }
+    return note;
   },
 
   // 6. GET, POST, PUT, DELETE /api/tps

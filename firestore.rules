@@ -113,9 +113,17 @@ service cloud.firestore {
         && isOptionalNumber(data, 'izin', 0, 365)
         && isOptionalNumber(data, 'alpa', 0, 365)
         && isOptionalString(data, 'catatan', 3000)
+        && isOptionalString(data, 'spiritualUsaha', 100)
+        && isOptionalString(data, 'spiritualProses', 100)
+        && isOptionalString(data, 'spiritualCapaian', 100)
         && isOptionalString(data, 'spiritualDeskripsi', 3000)
+        && isOptionalString(data, 'sosialUsaha', 100)
+        && isOptionalString(data, 'sosialProses', 100)
+        && isOptionalString(data, 'sosialCapaian', 100)
         && isOptionalString(data, 'sosialDeskripsi', 3000)
         && isOptionalList(data, 'ekskul')
+        && isOptionalString(data, 'studentId', 128)
+        && isOptionalString(data, 'updatedAt', 100)
       );
     }
 

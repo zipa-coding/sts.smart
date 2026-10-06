@@ -1,19 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Teacher, Student, Grade, WaliKelasNotesMap } from "../types";
 import {
   Printer,
   ChevronRight,
-  ClipboardCheck,
   Award,
   AlertTriangle,
-  UserCheck,
   Save,
-  CheckCircle,
-  Clock,
+  CheckCircle2,
   RefreshCw,
   UserPlus,
   X,
-  AlertCircle
+  AlertCircle,
+  Search,
+  Sparkles,
+  ChevronLeft,
+  BookOpen,
+  Heart,
+  Users,
+  ShieldCheck,
+  Check,
+  RotateCcw
 } from "lucide-react";
 import PrintRaportView from "./PrintRaportView";
 
@@ -29,9 +35,9 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     "Bahasa Arab", "Tahsin ABaTaTsa", "Tahfizh Al-Qur’an", "Do’a Harian dan Hadits", "Wudhu dan Sholat"
   ];
 
-  // If user is Wali Kelas, default to their assigned class. Otherwise fall back to a default like "7".
   const initialClass = user.kelas || "7";
   const [selectedClass, setSelectedClass] = useState(initialClass);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [students, setStudents] = useState<Student[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
@@ -39,7 +45,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  // Attendance Form
+  // Attendance Form (Kedisiplinan)
   const [sakit, setSakit] = useState<string>("0");
   const [izin, setIzin] = useState<string>("0");
   const [alpa, setAlpa] = useState<string>("0");
@@ -57,6 +63,11 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   const [sosialCapaian, setSosialCapaian] = useState<string>("B");
   const [sosialDeskripsi, setSosialDeskripsi] = useState<string>("");
 
+  // Form dirty tracking
+  const [isDirty, setIsDirty] = useState(false);
+  const isDirtyRef = useRef(false);
+  isDirtyRef.current = isDirty;
+
   // Sub-navigation view state
   const [raportPrintTarget, setRaportPrintTarget] = useState<Student | null>(null);
 
@@ -66,7 +77,6 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   const [success, setSuccess] = useState("");
 
   const [activeEkskulList, setActiveEkskulList] = useState<{ id: string; name: string; type: "Wajib" | "Pilihan" }[]>([]);
-  const [studentEkskulGrades, setStudentEkskulGrades] = useState<{ [ekskulName: string]: { predicate: string; description: string; selected: boolean } }>({});
 
   // Quick Add Student Modal State
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
@@ -75,6 +85,45 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   const [isAddingStudent, setIsAddingStudent] = useState(false);
   const [addStudentError, setAddStudentError] = useState("");
 
+  // Helper generators for professional religious & character descriptions
+  const generateSpiritualNarrative = (name: string, pred: string) => {
+    const sName = name || "ananda";
+    if (pred === "A") {
+      return `Alhamdulillah ananda ${sName} menunjukkan kesungguhan dan keteladanan yang sangat baik dalam seluruh ibadah wajib, tahsin, tahfizh, dan dzikir, serta senantiasa menjaga adab islami dengan istiqomah.`;
+    } else if (pred === "B") {
+      return `Alhamdulillah ananda ${sName} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban bersama teman.`;
+    } else if (pred === "C") {
+      return `Ananda ${sName} cukup baik dalam pelaksanaan ibadah dan adab harian. Perlu terus didampingi dan dimotivasi dalam kedisiplinan sholat berjamaah dan muroja'ah hafalan.`;
+    } else {
+      return `Ananda ${sName} memerlukan bimbingan dan pembiasaan lebih intensif dalam kedisiplinan ibadah harian serta penanaman adab dan akhlak islami.`;
+    }
+  };
+
+  const generateSosialNarrative = (name: string, pred: string) => {
+    const sName = name || "ananda";
+    if (pred === "A") {
+      return `Alhamdulillah ananda ${sName} memiliki kepribadian santun, empati tinggi, sangat disiplin, proaktif dalam gotong royong, serta menjadi teladan yang baik bagi teman-temannya.`;
+    } else if (pred === "B") {
+      return `Alhamdulillah ananda ${sName} mudah bergaul, memiliki rasa empati yang baik, serta sopan santun dalam berinteraksi kepada ustadz/ustadzah maupun sesama kawan.`;
+    } else if (pred === "C") {
+      return `Ananda ${sName} cukup kooperatif dan dapat berbaur dengan teman. Perlu ditingkatkan konsistensi kedisiplinan dan rasa tanggung jawab dalam tugas bersama.`;
+    } else {
+      return `Ananda ${sName} memerlukan perhatian dan pendampingan khusus dalam membina interaksi sosial, pengelolaan emosi, dan kedisiplinan tata tertib sekolah.`;
+    }
+  };
+
+  const generateCatatanWaliKelas = (name: string, avgScore: number) => {
+    const sName = name || "Ananda";
+    if (avgScore >= 85) {
+      return `Selamat atas pencapaian luar biasa ananda ${sName}. Prestasi akademik dan karakter ananda sangat membanggakan. Teruslah istiqomah dan rendah hati.`;
+    } else if (avgScore >= 75) {
+      return `Alhamdulillah ananda ${sName} menunjukkan perkembangan yang baik dan semangat belajar yang konsisten. Terus tingkatkan ikhtiar dan doa untuk hasil yang lebih gemilang.`;
+    } else {
+      return `Kami berharap ananda ${sName} terus meningkatkan fokus, ketekunan, dan manajemen waktu dalam belajar agar potensi yang dimiliki dapat berkembang optimal.`;
+    }
+  };
+
+  // Quick Add Student Handler
   const handleQuickAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddStudentError("");
@@ -148,12 +197,21 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       setAllClassNotes(notesObj);
       setActiveEkskulList(ekskulArray);
 
-      // Auto-select first student in this class
+      // Select student
       const classStudents = studentsArray
         .filter((s: Student) => String(s.kelas).trim() === String(selectedClass).trim())
         .sort((a: Student, b: Student) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
-      if (classStudents.length > 0 && !selectedStudent) {
-        handleStudentSelect(classStudents[0], notesObj, ekskulArray);
+
+      if (classStudents.length > 0) {
+        if (!selectedStudent || !classStudents.some(s => s.id === selectedStudent.id)) {
+          loadStudentData(classStudents[0], notesObj);
+        } else {
+          // Re-sync selected student data
+          const current = classStudents.find(s => s.id === selectedStudent.id) || classStudents[0];
+          loadStudentData(current, notesObj);
+        }
+      } else {
+        setSelectedStudent(null);
       }
     } catch (err) {
       console.error("Error loading data:", err);
@@ -167,30 +225,53 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     fetchData();
   }, [selectedClass]);
 
-  const handleStudentSelect = (student: Student, notesMap = allClassNotes, eksList = activeEkskulList) => {
+  // Keyboard shortcut Ctrl+S / Cmd+S
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (selectedStudent && !saveLoading) {
+          saveCurrentNotes();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
+
+  const loadStudentData = (student: Student, notesMap: WaliKelasNotesMap = allClassNotes) => {
     setSelectedStudent(student);
     setSuccess("");
     setError("");
+    setIsDirty(false);
 
     const safeNotesMap = notesMap && typeof notesMap === "object" && !Array.isArray(notesMap) ? notesMap : {};
-
-    // Load attendance & notes if written
     const note = safeNotesMap[student.id];
-    if (note) {
-      setSakit(String(note.sakit));
-      setIzin(String(note.izin));
-      setAlpa(String(note.alpa));
-      setCatatan(note.catatan);
 
-      setSpiritualUsaha(note.spiritualUsaha || "B");
-      setSpiritualProses(note.spiritualProses || "B");
-      setSpiritualCapaian(note.spiritualCapaian || "B");
-      setSpiritualDeskripsi(note.spiritualDeskripsi || "");
+    // Check local draft fallback
+    let draft = null;
+    try {
+      const rawDraft = localStorage.getItem(`walikelas_draft_${student.id}`);
+      if (rawDraft) draft = JSON.parse(rawDraft);
+    } catch {}
 
-      setSosialUsaha(note.sosialUsaha || "B");
-      setSosialProses(note.sosialProses || "B");
-      setSosialCapaian(note.sosialCapaian || "B");
-      setSosialDeskripsi(note.sosialDeskripsi || "");
+    const source = draft || note;
+
+    if (source) {
+      setSakit(String(source.sakit ?? "0"));
+      setIzin(String(source.izin ?? "0"));
+      setAlpa(String(source.alpa ?? "0"));
+      setCatatan(source.catatan || generateCatatanWaliKelas(student.name, 80));
+
+      setSpiritualUsaha(source.spiritualUsaha || "B");
+      setSpiritualProses(source.spiritualProses || "B");
+      setSpiritualCapaian(source.spiritualCapaian || "B");
+      setSpiritualDeskripsi(source.spiritualDeskripsi || generateSpiritualNarrative(student.name, source.spiritualCapaian || "B"));
+
+      setSosialUsaha(source.sosialUsaha || "B");
+      setSosialProses(source.sosialProses || "B");
+      setSosialCapaian(source.sosialCapaian || "B");
+      setSosialDeskripsi(source.sosialDeskripsi || generateSosialNarrative(student.name, source.sosialCapaian || "B"));
     } else {
       setSakit("0");
       setIzin("0");
@@ -200,90 +281,172 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       setSpiritualUsaha("B");
       setSpiritualProses("B");
       setSpiritualCapaian("B");
-      setSpiritualDeskripsi(`Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`);
+      setSpiritualDeskripsi(generateSpiritualNarrative(student.name, "B"));
 
       setSosialUsaha("B");
       setSosialProses("B");
       setSosialCapaian("B");
-      setSosialDeskripsi(`Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`);
+      setSosialDeskripsi(generateSosialNarrative(student.name, "B"));
     }
-
-    // Load student's ekskul grades
-    const initialGrades: { [ekskulName: string]: { predicate: string; description: string; selected: boolean } } = {};
-    
-    const safeEksList = Array.isArray(eksList) ? eksList : [];
-    safeEksList.forEach(e => {
-      initialGrades[e.name] = {
-        predicate: "Baik",
-        description: "",
-        selected: e.type === "Wajib"
-      };
-    });
-
-    const currentStudentNote = safeNotesMap[student.id];
-    const existingEkskuls = currentStudentNote && Array.isArray(currentStudentNote.ekskul)
-      ? currentStudentNote.ekskul
-      : [];
-    
-    setStudentEkskulGrades(initialGrades);
   };
 
-  const handleSaveNotes = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Auto-save draft before switching student
+  const handleStudentSelect = (student: Student) => {
+    if (selectedStudent && selectedStudent.id !== student.id && isDirtyRef.current) {
+      // Background auto-save previous student's edits so nothing is lost
+      saveNotesForStudent(selectedStudent.id, {
+        sakit: Number(sakit || 0),
+        izin: Number(izin || 0),
+        alpa: Number(alpa || 0),
+        catatan,
+        spiritualUsaha,
+        spiritualProses,
+        spiritualCapaian,
+        spiritualDeskripsi,
+        sosialUsaha,
+        sosialProses,
+        sosialCapaian,
+        sosialDeskripsi
+      });
+    }
+
+    loadStudentData(student, allClassNotes);
+  };
+
+  const saveNotesForStudent = async (studentId: string, data: any) => {
+    try {
+      const currentStudentNote = allClassNotes[studentId];
+      const existingEkskul = currentStudentNote && Array.isArray(currentStudentNote.ekskul)
+        ? currentStudentNote.ekskul
+        : [];
+
+      const payload = {
+        studentId,
+        sakit: Number(data.sakit || 0),
+        izin: Number(data.izin || 0),
+        alpa: Number(data.alpa || 0),
+        catatan: data.catatan || "",
+        spiritualUsaha: data.spiritualUsaha || "B",
+        spiritualProses: data.spiritualProses || "B",
+        spiritualCapaian: data.spiritualCapaian || "B",
+        spiritualDeskripsi: data.spiritualDeskripsi || "",
+        sosialUsaha: data.sosialUsaha || "B",
+        sosialProses: data.sosialProses || "B",
+        sosialCapaian: data.sosialCapaian || "B",
+        sosialDeskripsi: data.sosialDeskripsi || "",
+        ekskul: existingEkskul,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Update in-memory state immediately
+      setAllClassNotes(prev => ({
+        ...prev,
+        [studentId]: payload
+      }));
+
+      // Cache draft in localStorage
+      localStorage.setItem(`walikelas_draft_${studentId}`, JSON.stringify(payload));
+
+      await fetch("/api/walikelas/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.warn("Background auto-save failed:", e);
+    }
+  };
+
+  const saveCurrentNotes = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!selectedStudent) return;
     setError("");
     setSuccess("");
-
-    // Preserve the student's existing ekskul grades given by Pembina Ekskul
-    const currentStudentNote = allClassNotes[selectedStudent.id];
-    const existingEkskul = currentStudentNote && Array.isArray(currentStudentNote.ekskul)
-      ? currentStudentNote.ekskul
-      : [];
-
     setSaveLoading(true);
+
     try {
+      const currentStudentNote = allClassNotes[selectedStudent.id];
+      const existingEkskul = currentStudentNote && Array.isArray(currentStudentNote.ekskul)
+        ? currentStudentNote.ekskul
+        : [];
+
+      const payload = {
+        studentId: selectedStudent.id,
+        sakit: Number(sakit || 0),
+        izin: Number(izin || 0),
+        alpa: Number(alpa || 0),
+        catatan: catatan || "",
+        spiritualUsaha: spiritualUsaha || "B",
+        spiritualProses: spiritualProses || "B",
+        spiritualCapaian: spiritualCapaian || "B",
+        spiritualDeskripsi: spiritualDeskripsi || "",
+        sosialUsaha: sosialUsaha || "B",
+        sosialProses: sosialProses || "B",
+        sosialCapaian: sosialCapaian || "B",
+        sosialDeskripsi: sosialDeskripsi || "",
+        ekskul: existingEkskul,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Optimistic update
+      setAllClassNotes(prev => ({
+        ...prev,
+        [selectedStudent.id]: payload
+      }));
+      localStorage.setItem(`walikelas_draft_${selectedStudent.id}`, JSON.stringify(payload));
+
       const response = await fetch("/api/walikelas/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentId: selectedStudent.id,
-          sakit: Number(sakit || 0),
-          izin: Number(izin || 0),
-          alpa: Number(alpa || 0),
-          catatan,
-          spiritualUsaha,
-          spiritualProses,
-          spiritualCapaian,
-          spiritualDeskripsi,
-          sosialUsaha,
-          sosialProses,
-          sosialCapaian,
-          sosialDeskripsi,
-          ekskul: existingEkskul
-        })
+        body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Gagal menyimpan catatan.");
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.error || "Gagal menyimpan catatan.");
+      }
 
-      setSuccess(`Presensi, capaian karakter, dan catatan wali kelas untuk ${selectedStudent.name} berhasil disimpan!`);
-      onRefreshTrigger(); // trigger live summary recalculation in dashboard app
+      setIsDirty(false);
+      setSuccess(`Data Presensi, Evaluasi Sikap & Catatan Wali Kelas untuk ${selectedStudent.name} berhasil disimpan!`);
+      onRefreshTrigger();
 
-      const getNotes = await fetch("/api/walikelas/notes");
-      const updatedNotes = await getNotes.json();
-      setAllClassNotes(updatedNotes);
+      setTimeout(() => setSuccess(""), 4000);
     } catch (err: any) {
-      setError(err.message || "Gagal menyimpan.");
+      setError(err.message || "Gagal menyimpan catatan.");
     } finally {
       setSaveLoading(false);
     }
   };
 
-  // Helper getters
+  // Filtered students
   const currentClassStudents = students
     .filter((s) => String(s.kelas).trim() === String(selectedClass).trim())
+    .filter((s) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (s.name || "").toLowerCase().includes(q) || (s.nisn || "").toLowerCase().includes(q);
+    })
     .sort((a, b) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
-  const studentGrades = selectedStudent ? grades.filter((g) => String(g.studentId).trim() === String(selectedStudent.id).trim()) : [];
+
+  const currentStudentIndex = selectedStudent
+    ? currentClassStudents.findIndex(s => s.id === selectedStudent.id)
+    : -1;
+
+  const handlePrevStudent = () => {
+    if (currentStudentIndex > 0) {
+      handleStudentSelect(currentClassStudents[currentStudentIndex - 1]);
+    }
+  };
+
+  const handleNextStudent = () => {
+    if (currentStudentIndex >= 0 && currentStudentIndex < currentClassStudents.length - 1) {
+      handleStudentSelect(currentClassStudents[currentStudentIndex + 1]);
+    }
+  };
+
+  const studentGrades = selectedStudent
+    ? grades.filter((g) => String(g.studentId).trim() === String(selectedStudent.id).trim())
+    : [];
   const gradesCount = studentGrades.length;
 
   if (raportPrintTarget && selectedStudent) {
@@ -313,18 +476,23 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4" id="wali-kelas-panel">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5" id="wali-kelas-panel">
       {/* Sidebar: Student list in class */}
-      <div className="lg:col-span-4 bg-white rounded-lg border border-slate-200 shadow-sm p-3 h-fit space-y-3.5">
+      <div className="lg:col-span-4 bg-[#0f172a] rounded-2xl border-2 border-[#253e66] shadow-xl p-4.5 h-fit space-y-4">
         <div>
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-0.5">
-            Wali Kelas Mandat
-          </span>
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-800">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-black text-emerald-400 uppercase tracking-widest block">
+              ⭐ PANEL WALI KELAS
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+              Aktif
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-between gap-2 bg-[#142036] p-2.5 rounded-xl border border-[#2b446f]">
+            <h3 className="text-sm font-black text-white">
               Kelas {selectedClass} {user.kelas === selectedClass && "⭐ (Kelas Anda)"}
             </h3>
-            {/* If admin is viewing, let them switch class */}
             {user.subject === "Admin" && (
               <select
                 value={selectedClass}
@@ -332,7 +500,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                   setSelectedClass(e.target.value);
                   setSelectedStudent(null);
                 }}
-                className="text-xs bg-slate-50 border border-slate-200 rounded p-1 font-semibold text-slate-700 focus:outline-none"
+                className="text-xs bg-[#090f1d] border border-emerald-500 rounded-lg px-2.5 py-1 font-bold text-white focus:outline-none"
               >
                 <option value="7">Kelas 7</option>
                 <option value="8">Kelas 8</option>
@@ -342,37 +510,54 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-2.5 flex items-center justify-between">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-            Pilih Siswa ({currentClassStudents.length}):
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => {
-                setAddStudentError("");
-                setIsAddStudentOpen(true);
-              }}
-              title="Tambah Siswa Baru ke Kelas Ini"
-              className="p-1 hover:bg-emerald-50 text-emerald-750 border border-emerald-300 rounded transition cursor-pointer flex items-center gap-1 text-[10px] font-bold px-1.5"
-            >
-              <UserPlus className="w-3 h-3" />
-              <span>+ Siswa</span>
-            </button>
-            <button
-              onClick={fetchData}
-              title="Sinkronisasi"
-              className="p-1 hover:bg-slate-100 rounded transition cursor-pointer text-slate-400"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
+        {/* Student search & quick actions */}
+        <div className="space-y-2 pt-1 border-t border-[#203254]">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Cari siswa / NISN..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8.5 pr-3 py-1.5 text-xs bg-[#142036] text-white border border-[#2c4570] rounded-xl placeholder-slate-400 focus:outline-none focus:border-emerald-400"
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-slate-300 font-bold px-1">
+            <span>Siswa ({currentClassStudents.length})</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => {
+                  setAddStudentError("");
+                  setIsAddStudentOpen(true);
+                }}
+                title="Tambah Siswa Baru"
+                className="p-1 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/50 rounded-lg transition cursor-pointer flex items-center gap-1 text-[11px] font-black px-2"
+              >
+                <UserPlus className="w-3 h-3" />
+                <span>+ Siswa</span>
+              </button>
+              <button
+                onClick={fetchData}
+                title="Refresh & Sinkronisasi Data"
+                className="p-1.5 hover:bg-slate-700 rounded-lg transition cursor-pointer text-slate-300"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-400" : ""}`} />
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1" id="walikelas-student-scroll">
+        {/* Student list */}
+        <div className="space-y-1.5 max-h-[460px] overflow-y-auto pr-1" id="walikelas-student-scroll">
           {loading ? (
-            <div className="p-3 text-center text-xs text-slate-450 italic">Memuat data siswa...</div>
+            <div className="p-6 text-center text-xs text-slate-300 font-bold italic bg-[#142036] rounded-xl">
+              Memuat data siswa & nilai...
+            </div>
           ) : currentClassStudents.length === 0 ? (
-            <p className="text-xs text-slate-450 italic text-center py-3 text-slate-400">Belum ada siswa.</p>
+            <div className="text-xs text-slate-450 italic text-center py-6 bg-[#142036] rounded-xl text-slate-300 font-bold">
+              {searchQuery ? "Tidak ada siswa yang cocok." : "Belum ada siswa di kelas ini."}
+            </div>
           ) : (
             currentClassStudents.map((s) => {
               const sGrades = grades.filter((g) => g.studentId === s.id);
@@ -384,19 +569,29 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                 <button
                   key={s.id}
                   onClick={() => handleStudentSelect(s)}
-                  className={`w-full p-2 rounded text-left text-xs transition flex flex-col gap-1 border cursor-pointer ${isSelected ? "bg-emerald-50/70 border-emerald-400 font-bold text-emerald-950" : "bg-white border-slate-150 text-slate-750 hover:bg-slate-50"}`}
+                  className={`w-full p-2.5 rounded-xl text-left text-xs transition flex flex-col gap-1 border-2 cursor-pointer ${
+                    isSelected
+                      ? "bg-[#0b291d] border-emerald-400 font-black text-white shadow-lg ring-2 ring-emerald-400/40"
+                      : "bg-[#142036] border-[#253e66] text-white hover:bg-[#1a2c4a] hover:border-slate-300 font-bold"
+                  }`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="font-semibold block truncate leading-tight">{s.name}</span>
-                    <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isSelected ? "translate-x-0.5 text-emerald-800" : ""}`} />
+                    <span className="font-black block truncate leading-tight text-white">{s.name}</span>
+                    <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isSelected ? "translate-x-1 text-emerald-400" : ""}`} />
                   </div>
-                  <div className="flex items-center gap-1.5 text-[9px] font-mono">
-                    <span className={`px-1.5 py-0.5 rounded ${count === 15 ? "bg-green-100 text-green-700 font-bold" : count > 0 ? "bg-amber-100 text-amber-800 font-medium" : "bg-slate-100 text-slate-400"}`}>
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                    <span className={`px-2 py-0.5 rounded-md font-bold ${
+                      count === 15
+                        ? "bg-emerald-800 text-emerald-100 border border-emerald-400"
+                        : count > 0
+                        ? "bg-amber-900/80 text-amber-200 border border-amber-500"
+                        : "bg-slate-700 text-slate-300"
+                    }`}>
                       Mapel: {count}/15
                     </span>
                     {hasNotes && (
-                      <span className="bg-sky-50 border border-sky-100 text-sky-750 px-1 py-0.5 rounded font-semibold">
-                        Catatan ✔
+                      <span className="bg-sky-900/80 border border-sky-400 text-sky-200 px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1">
+                        <Check className="w-2.5 h-2.5" /> Catatan
                       </span>
                     )}
                   </div>
@@ -407,63 +602,105 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
         </div>
       </div>
 
-      {/* Main pane: Grade status and attendance form */}
+      {/* Main pane: Grade status, spiritual, social, attendance and homeroom note forms */}
       <div className="lg:col-span-8 space-y-4" id="walikelas-main-pane">
         {selectedStudent ? (
           <>
             {/* Student card header */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded bg-emerald-800 text-white flex items-center justify-center font-bold text-base shrink-0">
+            <div className="bg-[#0f172a] rounded-2xl border-2 border-[#253e66] shadow-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-800 text-white flex items-center justify-center font-black text-xl shrink-0 shadow-md">
                   {selectedStudent.name?.charAt(0) || "?"}
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-xs text-slate-800 uppercase">{selectedStudent.name || "N/A"}</h3>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">NISN: {selectedStudent.nisn || "-"} • Kelas {selectedStudent.kelas || "-"}</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-black text-sm text-white uppercase tracking-wide">
+                      {selectedStudent.name || "N/A"}
+                    </h3>
+                    {isDirty && (
+                      <span className="bg-amber-400 text-black text-[10px] font-black px-2 py-0.5 rounded-md animate-pulse">
+                        Ada Perubahan Belum Disimpan
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 font-mono mt-0.5 font-bold">
+                    NISN: <span className="text-emerald-300">{selectedStudent.nisn || "-"}</span> • Kelas: <span className="text-emerald-300">{selectedStudent.kelas || "-"}</span>
+                  </p>
                 </div>
               </div>
 
-              {/* PDF and Word print trigger */}
-              <button
-                onClick={() => setRaportPrintTarget(selectedStudent)}
-                className="flex items-center justify-center gap-1 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-950 text-white font-bold text-xs rounded transition shadow-xs cursor-pointer"
-                id="view-raport-trigger"
-              >
-                <Printer className="w-3.5 h-3.5" /> Pratinjau & Cetak Rapor
-              </button>
+              {/* Prev / Next & Raport Print triggers */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center bg-[#142036] border border-[#2c4570] rounded-xl p-1">
+                  <button
+                    onClick={handlePrevStudent}
+                    disabled={currentStudentIndex <= 0}
+                    className="p-1.5 hover:bg-slate-700 disabled:opacity-30 rounded-lg text-white font-bold cursor-pointer transition"
+                    title="Siswa Sebelumnya"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-[11px] font-mono px-2 text-slate-300 font-bold">
+                    {currentStudentIndex + 1}/{currentClassStudents.length}
+                  </span>
+                  <button
+                    onClick={handleNextStudent}
+                    disabled={currentStudentIndex >= currentClassStudents.length - 1}
+                    className="p-1.5 hover:bg-slate-700 disabled:opacity-30 rounded-lg text-white font-bold cursor-pointer transition"
+                    title="Siswa Berikutnya"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setRaportPrintTarget(selectedStudent)}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-lg border border-emerald-300 cursor-pointer"
+                  id="view-raport-trigger"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Cetak Rapor Siswa</span>
+                </button>
+              </div>
             </div>
 
             {/* Error and success messages */}
             {error && (
-              <div className="p-2.5 bg-red-50 text-red-700 text-xs rounded border border-red-250">
-                {error}
+              <div className="p-3 bg-red-950 border-2 border-red-500 text-red-100 text-xs font-bold rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>{error}</span>
               </div>
             )}
             {success && (
-              <div className="p-2.5 bg-green-50 text-green-800 text-xs font-bold rounded border border-green-200 flex items-center gap-1 animate-fade-in">
-                <CheckCircle className="w-4 h-4 text-green-600 mr-1 shrink-0" />
+              <div className="p-3 bg-[#0b291d] border-2 border-emerald-400 text-emerald-100 text-xs font-black rounded-xl flex items-center gap-2 shadow-lg">
+                <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />
                 <span>{success}</span>
               </div>
             )}
 
             {/* Sub-grid: 15 Subject completion rate checker */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-3.5 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="bg-[#0f172a] rounded-2xl border-2 border-[#253e66] shadow-xl p-4 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-[#203254]">
                 <div>
-                  <h4 className="font-extrabold text-[10px] uppercase tracking-wider text-slate-600">
+                  <h4 className="font-black text-xs uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4" />
                     Progres Kelengkapan Nilai Siswa (15 Mapel)
                   </h4>
-                  <p className="text-[10px] text-slate-400">
-                    Semua mata pelajaran wajib diisi nilainya oleh guru mapel agar rapor diterbitkan lengkap.
+                  <p className="text-[11px] text-slate-300 font-medium">
+                    Nilai dari 15 guru mata pelajaran otomatis ditarik untuk lembar Rapor Siswa.
                   </p>
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded font-extrabold ${gradesCount === 15 ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
-                  {gradesCount}/15 Terisi
+                <span className={`text-xs px-3 py-1 rounded-lg font-black border ${
+                  gradesCount === 15
+                    ? "bg-emerald-800 text-white border-emerald-300"
+                    : "bg-amber-900 text-amber-100 border-amber-400"
+                }`}>
+                  {gradesCount}/15 Mapel Terisi
                 </span>
               </div>
 
               {/* Visual mini circles representing 15 subjects */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2" id="subject-matrix-completion">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2" id="subject-matrix-completion">
                 {subjects_list.map((sub) => {
                   const xGrade = studentGrades.find((g) => g.subject === sub);
                   const isFilled = !!xGrade;
@@ -471,11 +708,15 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                   return (
                     <div
                       key={sub}
-                      className={`p-2 rounded border text-center transition ${isFilled ? "bg-emerald-50/40 border-emerald-250 text-emerald-900" : "bg-slate-50 border-slate-200 text-slate-400"}`}
+                      className={`p-2 rounded-xl border-2 text-center transition ${
+                        isFilled
+                          ? "bg-[#0b291d] border-emerald-400 text-white"
+                          : "bg-[#142036] border-[#253e66] text-slate-400"
+                      }`}
                     >
-                      <span className="text-[9px] font-bold block truncate" title={sub}>{sub}</span>
-                      <span className="text-sm font-extrabold block mt-0.5">
-                        {isFilled ? `${xGrade.score}` : "—"}
+                      <span className="text-[10px] font-black block truncate" title={sub}>{sub}</span>
+                      <span className="text-sm font-black block mt-0.5">
+                        {isFilled ? <span className="text-emerald-300">{xGrade.score}</span> : "—"}
                       </span>
                     </div>
                   );
@@ -483,64 +724,50 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
               </div>
 
               {gradesCount < 15 && (
-                <div className="p-2.5 bg-amber-50 text-amber-900 text-[10px] rounded border border-amber-200 flex items-start gap-2 italic leading-relaxed">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600 mt-0.5" />
+                <div className="p-2.5 bg-amber-950/80 border border-amber-500 text-amber-200 text-xs rounded-xl flex items-start gap-2 font-medium">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
                   <span>
-                    Perhatian: Terdapat {15 - gradesCount} mata pelajaran belum diisi oleh guru pengampu. Raport tetap bisa dipratinjau, namun nilai tidak lengkap.
+                    Catatan: Terdapat {15 - gradesCount} mata pelajaran belum diinput nilainya oleh guru pengampu.
                   </span>
                 </div>
               )}
             </div>
 
-            {/* Attendance & Homeroom Note forms */}
-            <form onSubmit={handleSaveNotes} className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 space-y-4">
-              <div>
-                <h4 className="font-extrabold text-[10px] uppercase tracking-wider text-slate-600 mb-2">
-                  Input Presensi & Absensi Tengah Semester
-                </h4>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[9px] font-extrabold text-slate-500 uppercase mb-1">Sakit (S) - Hari</label>
-                    <input
-                      type="text"
-                      value={sakit}
-                      onChange={(e) => setSakit(e.target.value.replace(/\D/g, ""))}
-                      className="w-full text-center px-2 py-1.5 border border-slate-350 rounded font-bold text-xs text-slate-800 bg-white focus:outline-none focus:border-emerald-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-extrabold text-slate-500 uppercase mb-1">Izin (I) - Hari</label>
-                    <input
-                      type="text"
-                      value={izin}
-                      onChange={(e) => setIzin(e.target.value.replace(/\D/g, ""))}
-                      className="w-full text-center px-2 py-1.5 border border-slate-350 rounded font-bold text-xs text-slate-800 bg-white focus:outline-none focus:border-emerald-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-extrabold text-slate-500 uppercase mb-1">Alpa (A) - Hari</label>
-                    <input
-                      type="text"
-                      value={alpa}
-                      onChange={(e) => setAlpa(e.target.value.replace(/\D/g, ""))}
-                      className="w-full text-center px-2 py-1.5 border border-slate-350 rounded font-bold text-xs text-slate-800 bg-white focus:outline-none focus:border-emerald-600"
-                    />
+            {/* Attendance & Character forms */}
+            <form onSubmit={saveCurrentNotes} className="space-y-4">
+              
+              {/* BAGIAN E: SIKAP SPIRITUAL */}
+              <div className="bg-[#0f172a] rounded-2xl border-2 border-[#253e66] shadow-xl p-4.5 space-y-3.5">
+                <div className="flex items-center justify-between border-b border-[#203254] pb-2.5">
+                  <h4 className="font-black text-xs uppercase tracking-wider text-white flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-rose-400" />
+                    <span>E. Evaluasi Sikap Spiritual (Wali Kelas)</span>
+                  </h4>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSpiritualDeskripsi(generateSpiritualNarrative(selectedStudent.name, spiritualCapaian));
+                        setIsDirty(true);
+                      }}
+                      className="px-2.5 py-1 bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 text-[10px] font-black rounded-lg border border-emerald-500/50 cursor-pointer flex items-center gap-1 transition"
+                    >
+                      <Sparkles className="w-3 h-3 text-emerald-300" />
+                      <span>Generate Narasi</span>
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              {/* SPIRITUAL ATTITUDE EVALUATION FORM */}
-              <div className="border-t border-slate-100 pt-3 space-y-3">
-                <h4 className="font-extrabold text-[10px] uppercase tracking-wider text-slate-600">
-                  Evaluasi Sikap Spiritual (Wali Kelas)
-                </h4>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Spiritual Usaha</label>
+                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-1">1. Usaha</label>
                     <select
                       value={spiritualUsaha}
-                      onChange={(e) => setSpiritualUsaha(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                      onChange={(e) => {
+                        setSpiritualUsaha(e.target.value);
+                        setIsDirty(true);
+                      }}
+                      className="w-full p-2 bg-[#142036] border-2 border-[#2b446f] rounded-xl text-xs font-black text-white focus:outline-none focus:border-emerald-400"
                     >
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
@@ -549,11 +776,14 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Spiritual Proses</label>
+                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-1">2. Proses</label>
                     <select
                       value={spiritualProses}
-                      onChange={(e) => setSpiritualProses(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                      onChange={(e) => {
+                        setSpiritualProses(e.target.value);
+                        setIsDirty(true);
+                      }}
+                      className="w-full p-2 bg-[#142036] border-2 border-[#2b446f] rounded-xl text-xs font-black text-white focus:outline-none focus:border-emerald-400"
                     >
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
@@ -562,11 +792,16 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Spiritual Capaian</label>
+                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-1">3. Capaian</label>
                     <select
                       value={spiritualCapaian}
-                      onChange={(e) => setSpiritualCapaian(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                      onChange={(e) => {
+                        const newCap = e.target.value;
+                        setSpiritualCapaian(newCap);
+                        setSpiritualDeskripsi(generateSpiritualNarrative(selectedStudent.name, newCap));
+                        setIsDirty(true);
+                      }}
+                      className="w-full p-2 bg-[#142036] border-2 border-[#2b446f] rounded-xl text-xs font-black text-white focus:outline-none focus:border-emerald-400"
                     >
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
@@ -575,30 +810,57 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                     </select>
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Deskripsi Sikap Spiritual</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-black text-slate-300 uppercase">Deskripsi Sikap Spiritual</label>
+                    <span className="text-[10px] text-slate-400">{spiritualDeskripsi.length} karakter</span>
+                  </div>
                   <textarea
                     value={spiritualDeskripsi}
-                    onChange={(e) => setSpiritualDeskripsi(e.target.value)}
+                    onChange={(e) => {
+                      setSpiritualDeskripsi(e.target.value);
+                      setIsDirty(true);
+                    }}
                     rows={2}
-                    placeholder="Deskripsi kemajuan sikap sosial dan kerohanian..."
-                    className="w-full p-2 border border-slate-200 rounded text-xs focus:outline-none text-slate-700 font-sans leading-relaxed"
+                    placeholder="Deskripsi kemajuan sikap kerohanian, sholat, tahsin, tahfizh dan adab islami..."
+                    className="w-full p-3 bg-[#142036] border-2 border-[#2b446f] rounded-xl text-xs text-white placeholder-slate-400 font-sans leading-relaxed focus:outline-none focus:border-emerald-400 font-medium"
                   />
                 </div>
               </div>
 
-              {/* SOCIAL ATTITUDE EVALUATION FORM */}
-              <div className="border-t border-slate-100 pt-3 space-y-3">
-                <h4 className="font-extrabold text-[10px] uppercase tracking-wider text-slate-600">
-                  Evaluasi Sikap Sosial (Wali Kelas)
-                </h4>
+              {/* BAGIAN F: SIKAP SOSIAL */}
+              <div className="bg-[#0f172a] rounded-2xl border-2 border-[#253e66] shadow-xl p-4.5 space-y-3.5">
+                <div className="flex items-center justify-between border-b border-[#203254] pb-2.5">
+                  <h4 className="font-black text-xs uppercase tracking-wider text-white flex items-center gap-2">
+                    <Users className="w-4 h-4 text-sky-400" />
+                    <span>F. Evaluasi Sikap Sosial (Wali Kelas)</span>
+                  </h4>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSosialDeskripsi(generateSosialNarrative(selectedStudent.name, sosialCapaian));
+                        setIsDirty(true);
+                      }}
+                      className="px-2.5 py-1 bg-sky-900/60 hover:bg-sky-800 text-sky-200 text-[10px] font-black rounded-lg border border-sky-500/50 cursor-pointer flex items-center gap-1 transition"
+                    >
+                      <Sparkles className="w-3 h-3 text-sky-300" />
+                      <span>Generate Narasi</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Sosial Usaha</label>
+                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-1">1. Usaha</label>
                     <select
                       value={sosialUsaha}
-                      onChange={(e) => setSosialUsaha(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                      onChange={(e) => {
+                        setSosialUsaha(e.target.value);
+                        setIsDirty(true);
+                      }}
+                      className="w-full p-2 bg-[#142036] border-2 border-[#2b446f] rounded-xl text-xs font-black text-white focus:outline-none focus:border-emerald-400"
                     >
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
@@ -607,11 +869,14 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Sosial Proses</label>
+                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-1">2. Proses</label>
                     <select
                       value={sosialProses}
-                      onChange={(e) => setSosialProses(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                      onChange={(e) => {
+                        setSosialProses(e.target.value);
+                        setIsDirty(true);
+                      }}
+                      className="w-full p-2 bg-[#142036] border-2 border-[#2b446f] rounded-xl text-xs font-black text-white focus:outline-none focus:border-emerald-400"
                     >
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
@@ -620,11 +885,16 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Sosial Capaian</label>
+                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-1">3. Capaian</label>
                     <select
                       value={sosialCapaian}
-                      onChange={(e) => setSosialCapaian(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                      onChange={(e) => {
+                        const newCap = e.target.value;
+                        setSosialCapaian(newCap);
+                        setSosialDeskripsi(generateSosialNarrative(selectedStudent.name, newCap));
+                        setIsDirty(true);
+                      }}
+                      className="w-full p-2 bg-[#142036] border-2 border-[#2b446f] rounded-xl text-xs font-black text-white focus:outline-none focus:border-emerald-400"
                     >
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
@@ -633,54 +903,146 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                     </select>
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Deskripsi Sikap Sosial</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-black text-slate-300 uppercase">Deskripsi Sikap Sosial</label>
+                    <span className="text-[10px] text-slate-400">{sosialDeskripsi.length} karakter</span>
+                  </div>
                   <textarea
                     value={sosialDeskripsi}
-                    onChange={(e) => setSosialDeskripsi(e.target.value)}
+                    onChange={(e) => {
+                      setSosialDeskripsi(e.target.value);
+                      setIsDirty(true);
+                    }}
                     rows={2}
                     placeholder="Deskripsi interaksi sosial, gotong-royong, empati dan kedisiplinan..."
-                    className="w-full p-2 border border-slate-200 rounded text-xs focus:outline-none text-slate-700 font-sans leading-relaxed"
+                    className="w-full p-3 bg-[#142036] border-2 border-[#2b446f] rounded-xl text-xs text-white placeholder-slate-400 font-sans leading-relaxed focus:outline-none focus:border-emerald-400 font-medium"
                   />
                 </div>
               </div>
 
-              {/* EXTRACURRICULAR EVALUATION DISPLAY (READ-ONLY FOR WALI KELAS, MANAGED BY PEMBINA EKSKUL) */}
-              <div className="border-t border-slate-100 pt-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-extrabold text-[10px] uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-emerald-600" />
-                    Penilaian Ekstrakurikuler (Oleh Guru Pembina)
+              {/* BAGIAN G: KEDISIPLINAN & PRESENSI */}
+              <div className="bg-[#0f172a] rounded-2xl border-2 border-[#253e66] shadow-xl p-4.5 space-y-3.5">
+                <div className="border-b border-[#203254] pb-2.5 flex items-center justify-between">
+                  <h4 className="font-black text-xs uppercase tracking-wider text-white flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>G. Kedisiplinan & Presensi Absensi (Hari)</span>
                   </h4>
-                  <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-bold">
+                  <span className="text-[10px] text-slate-300 font-bold">
+                    Dicetak pada Bagian G Rapor
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-[#142036] p-3 rounded-xl border border-[#2b446f]">
+                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-1.5">Sakit (S)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={sakit}
+                        onChange={(e) => {
+                          setSakit(e.target.value.replace(/\D/g, ""));
+                          setIsDirty(true);
+                        }}
+                        className="w-full text-center px-2 py-1.5 bg-[#090f1d] border-2 border-slate-600 rounded-lg font-black text-sm text-white focus:outline-none focus:border-emerald-400"
+                      />
+                      <span className="text-xs text-slate-300 font-bold">Hari</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#142036] p-3 rounded-xl border border-[#2b446f]">
+                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-1.5">Izin (I)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={izin}
+                        onChange={(e) => {
+                          setIzin(e.target.value.replace(/\D/g, ""));
+                          setIsDirty(true);
+                        }}
+                        className="w-full text-center px-2 py-1.5 bg-[#090f1d] border-2 border-slate-600 rounded-lg font-black text-sm text-white focus:outline-none focus:border-emerald-400"
+                      />
+                      <span className="text-xs text-slate-300 font-bold">Hari</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#142036] p-3 rounded-xl border border-[#2b446f]">
+                    <label className="block text-[10px] font-black text-slate-300 uppercase mb-1.5">Tanpa Keterangan (A)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={alpa}
+                        onChange={(e) => {
+                          setAlpa(e.target.value.replace(/\D/g, ""));
+                          setIsDirty(true);
+                        }}
+                        className="w-full text-center px-2 py-1.5 bg-[#090f1d] border-2 border-slate-600 rounded-lg font-black text-sm text-white focus:outline-none focus:border-emerald-400"
+                      />
+                      <span className="text-xs text-slate-300 font-bold">Hari</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BAGIAN H: CATATAN UMUM WALI KELAS */}
+              <div className="bg-[#0f172a] rounded-2xl border-2 border-[#253e66] shadow-xl p-4.5 space-y-3">
+                <div className="flex items-center justify-between border-b border-[#203254] pb-2.5">
+                  <h4 className="font-black text-xs uppercase tracking-wider text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>H. Catatan Umum Wali Kelas</span>
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCatatan(generateCatatanWaliKelas(selectedStudent.name, 85));
+                      setIsDirty(true);
+                    }}
+                    className="px-2.5 py-1 bg-amber-950/80 hover:bg-amber-900 text-amber-200 text-[10px] font-black rounded-lg border border-amber-500/50 cursor-pointer flex items-center gap-1 transition"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-300" />
+                    <span>Contoh Catatan</span>
+                  </button>
+                </div>
+
+                <textarea
+                  value={catatan}
+                  onChange={(e) => {
+                    setCatatan(e.target.value);
+                    setIsDirty(true);
+                  }}
+                  rows={2}
+                  placeholder={`Contoh: Ananda ${selectedStudent.name} menunjukkan kepribadian dan budi pekerti yang baik. Pertahankan terus semangat belajarmu.`}
+                  className="w-full p-3 bg-[#142036] border-2 border-[#2b446f] rounded-xl text-xs text-white placeholder-slate-400 font-sans leading-relaxed focus:outline-none focus:border-emerald-400 font-medium"
+                />
+              </div>
+
+              {/* EKSTRAKURIKULER (READ ONLY FOR WALI KELAS, AUTO DARI PEMBINA) */}
+              <div className="bg-[#0f172a] rounded-2xl border-2 border-[#253e66] shadow-xl p-4.5 space-y-3">
+                <div className="flex items-center justify-between border-b border-[#203254] pb-2">
+                  <h4 className="font-black text-xs uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-emerald-400" />
+                    <span>Penilaian Ekstrakurikuler (Oleh Guru Pembina)</span>
+                  </h4>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-[10px] font-black">
                     Otomatis dari Pembina Ekskul
                   </span>
                 </div>
 
-                <div className="bg-[#0b1f16] border-2 border-emerald-500 rounded-xl p-3.5 text-xs text-emerald-50 leading-relaxed flex items-start gap-3 shadow-md">
-                  <div className="p-1.5 bg-emerald-600/30 rounded-lg shrink-0 mt-0.5 border border-emerald-400/50">
-                    <Award className="w-4 h-4 text-emerald-300" />
-                  </div>
-                  <div>
-                    <span className="font-extrabold text-amber-300">Info Integrasi Penilaian:</span>{" "}
-                    Pengisian nilai ekstrakurikuler mencakup 3 aspek (<strong className="text-emerald-200 font-bold">Usaha</strong>, <strong className="text-emerald-200 font-bold">Proses</strong>, dan <strong className="text-emerald-200 font-bold">Capaian</strong>) serta deskripsi kegiatan dilakukan langsung oleh masing-masing <strong className="text-white font-bold underline decoration-emerald-400">Guru Pembina Ekskul</strong> melalui menu <em className="text-emerald-200 not-italic font-semibold">Nilai Ekstrakurikuler</em>. Data berikut otomatis tercetak pada lembar Rapor Siswa.
-                  </div>
-                </div>
-
                 {(() => {
-                  const studentNote = selectedStudent ? allClassNotes[selectedStudent.id] : null;
+                  const studentNote = allClassNotes[selectedStudent.id];
                   const studentEkskuls: any[] = studentNote && Array.isArray(studentNote.ekskul) ? studentNote.ekskul : [];
 
                   if (studentEkskuls.length === 0) {
                     return (
-                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-slate-400 text-xs italic">
-                        Belum ada kegiatan ekstrakurikuler yang dinilai oleh Pembina untuk santri ini.
+                      <div className="p-3.5 rounded-xl bg-[#142036] border border-[#253e66] text-center text-slate-300 text-xs italic font-medium">
+                        Belum ada penilaian ekstrakurikuler dari Pembina untuk siswa ini.
                       </div>
                     );
                   }
 
                   return (
-                    <div className="space-y-2.5">
+                    <div className="space-y-2">
                       {studentEkskuls.map((eks: any, idx: number) => {
                         const usahaVal = eks.usaha || eks.predicate || "B";
                         const prosesVal = eks.proses || eks.predicate || "B";
@@ -689,21 +1051,21 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                         return (
                           <div
                             key={idx}
-                            className="p-3 rounded-xl border border-slate-200 bg-white shadow-xs space-y-2"
+                            className="p-3 rounded-xl border border-[#2b446f] bg-[#142036] space-y-2"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold flex items-center justify-center">
+                                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center">
                                   {idx + 1}
                                 </span>
-                                <span className="font-bold text-xs text-slate-900">
+                                <span className="font-black text-xs text-white">
                                   {eks.name}
                                 </span>
                                 <span
-                                  className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase ${
+                                  className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
                                     eks.type === "Wajib"
-                                      ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                      : "bg-sky-100 text-sky-800 border border-sky-200"
+                                      ? "bg-amber-900 text-amber-200 border border-amber-500"
+                                      : "bg-sky-900 text-sky-200 border border-sky-500"
                                   }`}
                                 >
                                   {eks.type || "Pilihan"}
@@ -711,43 +1073,29 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                               </div>
 
                               {eks.pembinaName && (
-                                <span className="text-[10px] text-slate-500">
-                                  Pembina: <strong className="text-slate-700">{eks.pembinaName}</strong>
+                                <span className="text-[10px] text-slate-300">
+                                  Pembina: <strong className="text-emerald-300 font-black">{eks.pembinaName}</strong>
                                 </span>
                               )}
                             </div>
 
-                            {/* 3 Aspects Badges: Usaha, Proses, Capaian */}
-                            <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100">
-                              <div className="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
-                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
-                                  1. Usaha
-                                </div>
-                                <div className="font-extrabold text-sm text-emerald-700">
-                                  {usahaVal}
-                                </div>
+                            <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#203254]">
+                              <div className="bg-[#090f1d] p-1.5 rounded-lg text-center border border-[#203254]">
+                                <div className="text-[9px] font-black text-slate-400 uppercase">1. Usaha</div>
+                                <div className="font-black text-xs text-emerald-300">{usahaVal}</div>
                               </div>
-                              <div className="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
-                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
-                                  2. Proses
-                                </div>
-                                <div className="font-extrabold text-sm text-emerald-700">
-                                  {prosesVal}
-                                </div>
+                              <div className="bg-[#090f1d] p-1.5 rounded-lg text-center border border-[#203254]">
+                                <div className="text-[9px] font-black text-slate-400 uppercase">2. Proses</div>
+                                <div className="font-black text-xs text-emerald-300">{prosesVal}</div>
                               </div>
-                              <div className="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
-                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
-                                  3. Capaian
-                                </div>
-                                <div className="font-extrabold text-sm text-emerald-700">
-                                  {capaianVal}
-                                </div>
+                              <div className="bg-[#090f1d] p-1.5 rounded-lg text-center border border-[#203254]">
+                                <div className="text-[9px] font-black text-slate-400 uppercase">3. Capaian</div>
+                                <div className="font-black text-xs text-emerald-300">{capaianVal}</div>
                               </div>
                             </div>
 
-                            {/* Description */}
                             {(eks.description || eks.deskripsi) && (
-                              <div className="text-2xs text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 leading-relaxed italic">
+                              <div className="text-[11px] text-slate-200 bg-[#090f1d] p-2 rounded-lg border border-[#203254] leading-relaxed italic">
                                 "{eks.description || eks.deskripsi}"
                               </div>
                             )}
@@ -759,57 +1107,54 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                 })()}
               </div>
 
-              {/* CATATAN PERKEMBANGAN UMUM */}
-              <div className="border-t border-slate-100 pt-3">
-                <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wide mb-1">
-                  Catatan Umum Wali Kelas (Dicetak di Bawah)
-                </label>
-                <textarea
-                  value={catatan}
-                  onChange={(e) => setCatatan(e.target.value)}
-                  rows={2}
-                  placeholder={`Contoh: Ananda ${selectedStudent.name} merupakan siswa teladan dengan kepatuhan tinggi serta akhlak yang baik...`}
-                  className="w-full px-2.5 py-2 border border-slate-350 rounded text-[11px] focus:outline-none focus:border-emerald-600 focus:bg-white text-slate-800"
-                />
-              </div>
+              {/* SAVE BUTTON & CONTROLS */}
+              <div className="sticky bottom-4 z-20 bg-[#0f172a]/95 backdrop-blur-md p-3.5 rounded-2xl border-2 border-emerald-500/70 shadow-2xl flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${isDirty ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
+                  <span className="text-xs font-bold text-white">
+                    {isDirty ? "Perubahan belum disimpan (Tekan Simpan atau Ctrl+S)" : "Semua data tersimpan aman ✓"}
+                  </span>
+                </div>
 
-              <div className="text-right pt-2.5 border-t border-slate-100">
-                <button
-                  type="submit"
-                  disabled={saveLoading}
-                  className="px-4 py-2 bg-emerald-800 hover:bg-emerald-950 text-white font-bold text-xs rounded flex items-center gap-1.5 ml-auto shadow-xs transition disabled:opacity-50 cursor-pointer"
-                  id="submit-notes-button"
-                >
-                  {saveLoading ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <Save className="w-3.5 h-3.5" /> Simpan Presensi & Rilis Raport
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={saveLoading}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-lg transition cursor-pointer disabled:opacity-50 border border-emerald-300"
+                    id="submit-notes-button"
+                  >
+                    {saveLoading ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Simpan Evaluasi & Presensi</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </>
         ) : (
-          <div className="p-12 text-center text-slate-450 italic text-xs bg-white border border-slate-200 rounded-lg">
-            Pilihlah peserta didik pada panel sebelah kiri untuk melihat rincian progres nilai, presensi, dan mencetak raport.
+          <div className="p-16 text-center text-slate-300 italic text-sm bg-[#0f172a] border-2 border-[#253e66] rounded-2xl font-medium">
+            Pilihlah peserta didik pada daftar sebelah kiri untuk menginput data presensi, karakter, dan mencetak raport.
           </div>
         )}
       </div>
 
       {/* QUICK ADD STUDENT MODAL FOR WALI KELAS */}
       {isAddStudentOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-scale-up">
-            <div className="bg-emerald-800 px-6 py-4 text-white flex items-center justify-between">
-              <h3 className="font-bold text-sm uppercase tracking-wide flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0f172a] w-full max-w-md rounded-2xl border-2 border-[#253e66] shadow-2xl overflow-hidden animate-scale-up text-white">
+            <div className="bg-emerald-700 px-6 py-4 text-white flex items-center justify-between">
+              <h3 className="font-black text-sm uppercase tracking-wide flex items-center gap-2">
                 <UserPlus className="w-4 h-4" />
                 <span>Tambah Siswa ke Kelas {selectedClass}</span>
               </h3>
               <button
                 onClick={() => setIsAddStudentOpen(false)}
-                className="text-white/85 hover:text-white cursor-pointer"
+                className="text-white hover:text-red-200 cursor-pointer p-1"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -817,14 +1162,14 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
 
             <form onSubmit={handleQuickAddStudent} className="p-6 space-y-4">
               {addStudentError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex gap-2 items-start">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-                  <span className="font-semibold">{addStudentError}</span>
+                <div className="p-3 bg-red-950 border border-red-500 rounded-xl text-xs text-red-200 flex gap-2 items-start font-bold">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+                  <span>{addStudentError}</span>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                <label className="block text-xs font-black text-slate-200 mb-1.5 uppercase">
                   Nama Lengkap Siswa
                 </label>
                 <input
@@ -833,12 +1178,12 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                   value={newStudentName}
                   onChange={(e) => setNewStudentName(e.target.value)}
                   placeholder="Contoh: Ahmad Fadilah"
-                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 bg-[#142036] border border-[#2b446f] rounded-xl text-xs md:text-sm text-white focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-750 mb-1.5">
+                <label className="block text-xs font-black text-slate-200 mb-1.5 uppercase">
                   NISN Siswa (Nomor Induk Siswa Nasional)
                 </label>
                 <input
@@ -847,32 +1192,32 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                   value={newStudentNisn}
                   onChange={(e) => setNewStudentNisn(e.target.value)}
                   placeholder="Contoh: 0134988720"
-                  className="w-full px-3 py-2 border border-gray-250 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 bg-[#142036] border border-[#2b446f] rounded-xl text-xs md:text-sm text-white focus:outline-none focus:border-emerald-400"
                   id="quick-student-nisn-input"
                 />
               </div>
 
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
-                Siswa baru akan otomatis didaftarkan ke dalam <strong>Kelas {selectedClass}</strong> dan dapat langsung diinput nilainya.
+              <div className="p-3 bg-emerald-950/80 border border-emerald-500/60 rounded-xl text-xs text-emerald-200 font-medium">
+                Siswa baru akan otomatis terdaftar di <strong>Kelas {selectedClass}</strong> dan dapat langsung dinilai.
               </div>
 
-              <div className="flex gap-3 pt-3">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   disabled={isAddingStudent}
                   onClick={() => setIsAddStudentOpen(false)}
-                  className="w-1/2 py-2.5 border border-gray-250 text-gray-650 hover:bg-gray-50 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50"
+                  className="w-1/2 py-2.5 border border-slate-600 text-slate-300 hover:bg-slate-800 text-xs font-black rounded-xl cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isAddingStudent}
-                  className="w-1/2 py-2.5 bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60"
+                  className="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-black rounded-xl cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60 shadow-lg border border-emerald-300"
                 >
                   {isAddingStudent ? (
                     <>
-                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>Menyimpan...</span>
                     </>
                   ) : (

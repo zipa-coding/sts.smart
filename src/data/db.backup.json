@@ -3,47 +3,197 @@
     {
       "id": "t1",
       "name": "Admin",
-      "username": "admin",
-      "password": "123",
+      "isWaliKelas": false,
+      "kelas": "",
       "subject": "Admin",
+      "username": "admin",
+      "password": "123"
+    },
+    {
+      "id": "t_1782103714709",
+      "username": "zipa_tik",
+      "password": "smart123",
+      "isWaliKelas": true,
+      "name": "Hazipah Attirmidzi, A.Md.T",
+      "pembinaEkskulName": "Voli",
+      "pembinaEkskulId": "e_1790236880144",
+      "kelas": "8",
+      "isPembinaEkskul": true,
+      "subject": "Informatika"
+    },
+    {
+      "id": "t_1782104000106",
+      "username": "arya_ips",
+      "isPembinaEkskul": true,
+      "pembinaEkskulName": "Mentoring",
+      "password": "smart123",
+      "pembinaEkskulId": "e_1790236845120",
       "isWaliKelas": false,
+      "subject": "IPS",
+      "kelas": "",
+      "name": "Arya. S.H"
+    },
+    {
+      "id": "t_1782104245095",
+      "username": "intan_ppkn",
+      "password": "smart123",
+      "subject": "PPKN",
+      "kelas": "",
+      "isWaliKelas": false,
+      "name": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "id": "t_1783704176629",
+      "isWaliKelas": false,
+      "name": "Jurianti, S.I.Pust",
+      "subject": "Tahfizh Al-Qur’an",
+      "password": "smart123",
+      "kelas": "",
+      "username": "yanti_tahfizhalquran"
+    },
+    {
+      "id": "t_1783704233132",
+      "subject": "Do’a Harian dan Hadits",
+      "name": "Jurianti, S.I.Pust",
+      "isWaliKelas": false,
+      "password": "smart123",
+      "username": "yanti_doahariandanhadits",
       "kelas": ""
     },
     {
-      "id": "t2",
-      "name": "Pak Ahmad, S.Pd",
-      "username": "ahmad",
-      "password": "123",
-      "subject": "IPA",
-      "isWaliKelas": true,
-      "kelas": "7"
+      "id": "t_1783704282280",
+      "password": "smart123",
+      "subject": "Tahsin ABaTaTsa",
+      "username": "yanti_tahsinabatatsa",
+      "kelas": "",
+      "name": "Jurianti, S.I.Pust",
+      "isWaliKelas": false
     },
     {
-      "id": "t3",
-      "name": "Bu Fatimah, S.Pd",
-      "username": "fatimah",
-      "password": "123",
+      "id": "t_1783704303379",
+      "isWaliKelas": false,
+      "password": "smart123",
+      "kelas": "",
+      "username": "yanti_wudhudansholat",
+      "name": "Jurianti, S.I.Pust",
+      "subject": "Wudhu dan Sholat"
+    },
+    {
+      "id": "t_1783742850310",
+      "isWaliKelas": false,
+      "kelas": "",
+      "password": "smart123",
+      "pembinaEkskulName": "Study Club",
+      "pembinaEkskulId": "e_1790236870061",
+      "username": "lili_inggris",
+      "subject": "Bahasa Inggris",
+      "isPembinaEkskul": true,
+      "name": "Lili Nur indah sari, S.Pd."
+    },
+    {
+      "id": "t_1783752919957",
+      "kelas": "9",
+      "username": "intan_matematika",
+      "password": "smart123",
+      "isWaliKelas": true,
       "subject": "Matematika",
-      "isWaliKelas": true,
-      "kelas": "8"
+      "name": "Intan Isti Qoma, S.Pd., Gr"
     },
     {
-      "id": "t4",
-      "name": "Pak Lukman, S.Ag",
-      "username": "lukman",
-      "password": "123",
+      "id": "t_1783753026120",
+      "isWaliKelas": false,
+      "pembinaEkskulId": "e_1790236862856",
+      "name": "Arya, S.H.",
+      "password": "smart123",
+      "isPembinaEkskul": true,
+      "username": "arya_pai",
+      "pembinaEkskulName": "Pramuka",
+      "kelas": "",
+      "subject": "PAI"
+    },
+    {
+      "id": "t_1783753135495",
       "subject": "PAI",
+      "kelas": "7",
+      "isWaliKelas": true,
+      "pembinaEkskulName": "Futsal",
+      "pembinaEkskulId": "e_1790236823005",
+      "isPembinaEkskul": true,
+      "name": "Albadriyan, S.Pd.",
+      "username": "riyan_pai",
+      "password": "smart123"
+    },
+    {
+      "id": "t_1783753227267",
+      "kelas": "",
+      "isWaliKelas": false,
+      "name": "Hazipah Attirmidzi, A.Md.T",
+      "subject": "PJOK",
+      "password": "smart123",
+      "username": "zipa_pjok"
+    },
+    {
+      "id": "t_1783753267174",
+      "username": "riyan_pjok",
+      "password": "smart123",
+      "name": "Albadriyan, S.Pd.",
+      "subject": "PJOK",
       "isWaliKelas": false,
       "kelas": ""
     },
     {
-      "id": "t5",
-      "name": "Bu Khadijah, S.Pd",
-      "username": "khadijah",
-      "password": "123",
-      "subject": "Bahasa Indonesia",
+      "id": "t_1783753346655",
+      "isWaliKelas": false,
+      "kelas": "",
+      "subject": "Prakarya",
+      "username": "intan_prakarya",
+      "name": "Intan Isti Qoma, S.Pd., Gr",
+      "password": "smart123"
+    },
+    {
+      "id": "t_1783753446635",
+      "subject": "IPA",
+      "kelas": "",
+      "password": "smart123",
+      "username": "lia_ipa",
+      "name": "Riski Desi Amelia, S.Pd.",
+      "isWaliKelas": false
+    },
+    {
+      "id": "t_1783906987733",
+      "username": "riyan_b.arab",
+      "password": "smart123",
+      "subject": "Bahasa Arab",
+      "isWaliKelas": false,
+      "kelas": "",
+      "name": "Albadriyan, S.Pd."
+    },
+    {
+      "id": "t_1788168050450",
+      "name": "Ustadz Ahmad, S.Pd",
+      "kelas": "7",
+      "username": "ahmad_pai",
       "isWaliKelas": true,
-      "kelas": "9"
+      "subject": "PAI",
+      "password": "123"
+    },
+    {
+      "id": "t_1790223265869",
+      "subject": "Bahasa Indonesia",
+      "kelas": "",
+      "name": "Jauharotul Kamaliah, S.Pd.",
+      "password": "smart123",
+      "username": "jauha_b.indo",
+      "isWaliKelas": false
+    },
+    {
+      "id": "t_1790656546202",
+      "subject": "PAI",
+      "kelas": "",
+      "password": "smart123",
+      "username": "sarifah",
+      "name": "Sarifah, S.Ag.",
+      "isWaliKelas": false
     }
   ],
   "students": [
@@ -578,7 +728,7 @@
       "proses": "B",
       "capaian": "A",
       "deskripsi": "Alhamdulillah, pelajaran PAI ananda Aaisyah Nur Husnaa sudah tercapai dengan sangat baik. Selama usaha dan proses ananda sudah mampu memahami dan mempraktikkan Sholat Jenazah. Ananda harus selalu didampingi proses belajarnya agar pemahamannya utuh dan mampu mengaplikasikan ke dalam kehidupan sehari-hari. Tetap semangat ya.",
-      "lastUpdatedBy": "Pak Lukman, S.Ag",
+      "lastUpdatedBy": "Albadriyan, S.Pd.",
       "lastUpdatedAt": "2026-06-17T05:00:00.000Z"
     },
     {
@@ -606,7 +756,7 @@
       "proses": "B",
       "capaian": "B",
       "deskripsi": "Alhamdulillah ananda Aaisyah Nur Husnaa memahami dengan baik tentang memahami kedudukan Pancasila sebagai dasar negara, pandangan hidup bangsa dan ideologi negara, serta mengimplementasikan nilai-nilai Pancasila dalam kehidupan di lingkungan keluarga, sekolah dan masyarakat. Melalui Sumatif Tengah Semester yang berbasis proyek (membuat infografis dengan tema “Kedudukan Pancasila sebagai Dasar Negara, Pandangan Hidup Bangsa dan Ideologi Negara”), ananda Aaisyah Nur Husnaa menunjukkan sikap kerjasama dengan teman satu kelompoknya dan menunjukkan sikap menghargai perbedaan dan menyajikan infografis sesuai dengan tema yang diberikan.",
-      "lastUpdatedBy": "Bu Fatimah, S.Pd",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
       "lastUpdatedAt": "2026-06-17T05:05:00.000Z"
     },
     {
@@ -634,7 +784,7 @@
       "proses": "A",
       "capaian": "A",
       "deskripsi": "Alhamdulillah ananda Aaisyah Nur Husnaa dalam usaha, proses serta capaian untuk pelajaran Bahasa Indonesia Sudah Sangat Baik. Mampu mengidentifikasi unsur - unsur intrinsik dalam ulasan karya fiksi dan mengaplikasikan makna kata denotasi dan konotasi dalam teks karya fiksi dengan Sangat Aaik. Selalu semangat belajarnya dan kolaborasi kelompok perlu ditingkatkan lagi ya.",
-      "lastUpdatedBy": "Bu Khadijah, S.Pd",
+      "lastUpdatedBy": "Jauharotul Kamaliah, S.Pd.",
       "lastUpdatedAt": "2026-06-17T05:10:00.000Z"
     },
     {
@@ -662,7 +812,7 @@
       "proses": "B",
       "capaian": "B",
       "deskripsi": "Alhamdulillah ananda Shalihah Aaisyah Nur Husnaa memahami dengan baik mengenai menyelidiki dan memahami sifat-sifat berbagai bangun geometri serta memahami konsep relasi dan fungsi serta menggunakannya untuk menyajikan dan menganalisis hubungan antar dua himpunan secara tepat, logis, dan sistematis. Melalui Sumatif Tengah Semester yang berbasis proyek (kekongruenan bangun datar), ananda Shalihah Aaisyah Nur Husnaa menunjukkan sikap yang baik serta dapat mengerjakan proyek kekongruenan bangun datar dengan baik.",
-      "lastUpdatedBy": "Bu Fatimah, S.Pd",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
       "lastUpdatedAt": "2026-06-17T05:15:00.000Z"
     },
     {
@@ -690,7 +840,7 @@
       "proses": "B",
       "capaian": "A",
       "deskripsi": "Alhamdulillah ananda Shalihah Aaisyah dalam usaha, proses serta capaian untuk pelajaran IPA sudah baik. Mampu menerapkan Konsep ditiap materi dan penerapan rumus dengan baik, yang perlu ditingkatkan adalah fokus selama penjelasan materi, sehingga bisa mengikuti proses pembelajaran, terutama dalam penerapan rumus IPA yang memerlukan fokus dalam pengerjaan soal, sementara dalam capaian nya berupa produk makanan sehat yang telah dibuat dengan menerapkan kreatifitas dan menghasilkan makanan sehat mampu bekerja sama dengan tim dan berkontribusi aktif.",
-      "lastUpdatedBy": "Pak Ahmad, S.Pd",
+      "lastUpdatedBy": "Ustadz Ahmad, S.Pd",
       "lastUpdatedAt": "2026-06-17T05:20:00.000Z"
     },
     {
@@ -718,7 +868,7 @@
       "proses": "A",
       "capaian": "B",
       "deskripsi": "Alhamdulillah, ananda Aaisyah Nur Husnaa dalam pembelajaran Ilmu Pengetahuan Sosial (IPS) menunjukkan usaha, proses, serta capaian yang baik. Video digital tentang Sumpah Pemuda mampu menjelaskan makna persatuan dengan runtut. Ananda diharapkan dapat menambah ilustrasi agar lebih menarik.",
-      "lastUpdatedBy": "Bu Fatimah, S.Pd",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
       "lastUpdatedAt": "2026-06-17T05:25:00.000Z"
     },
     {
@@ -746,7 +896,7 @@
       "proses": "B",
       "capaian": "B",
       "deskripsi": "Deskripsi: Alhamdulillah ananda Aaisyah Nuur Husnaa dalam usaha, proses serta capaian untuk pelajaran Bahasa Inggris sudah Sangat Baik. Mampu memahami expression of permission, command dan invitation. serta mempraktekkan expression of permission, command, and invitation dalam dialog dengan Sangat Baik. Selalu semangat belajarnya ya.",
-      "lastUpdatedBy": "Bu Fatimah, S.Pd",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
       "lastUpdatedAt": "2026-06-17T05:30:00.000Z"
     },
     {
@@ -774,7 +924,7 @@
       "proses": "B",
       "capaian": "B",
       "deskripsi": "Peserta didik menunjukkan peningkatan kemampuan fisik dan keterampilan olahraga dengan semangat latihan yang tinggi.",
-      "lastUpdatedBy": "Pak Ahmad, S.Pd",
+      "lastUpdatedBy": "Ustadz Ahmad, S.Pd",
       "lastUpdatedAt": "2026-06-17T05:35:00.000Z"
     },
     {
@@ -1564,8 +1714,8 @@
     {
       "id": "hlq_2",
       "name": "Halaqoh 2",
-      "mentorName": "Bu Fatimah, S.Pd",
-      "mentorTeacherId": "t3",
+      "mentorName": "Jurianti, S.I.Pust",
+      "mentorTeacherId": "t_1783704176629",
       "studentIds": [
         "s7_1",
         "s7_2",
@@ -1585,8 +1735,8 @@
     {
       "id": "hlq_3",
       "name": "Halaqoh 3",
-      "mentorName": "Pak Lukman, S.Ag",
-      "mentorTeacherId": "t4",
+      "mentorName": "Albadriyan, S.Pd.",
+      "mentorTeacherId": "t_1783753135495",
       "studentIds": [
         "s9_1",
         "s9_2",

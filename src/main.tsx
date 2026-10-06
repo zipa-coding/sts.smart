@@ -58,6 +58,16 @@ function initializeLocalStorage() {
           clientDbCache.halaqoh = (dbData as any).halaqoh || [];
           needsSave = true;
         }
+        // Clean any old dummy placeholder teacher accounts (t2, t3, t4, t5)
+        if (Array.isArray(clientDbCache.teachers)) {
+          const prevLen = clientDbCache.teachers.length;
+          clientDbCache.teachers = clientDbCache.teachers.filter(
+            (t: any) => t && !["t2", "t3", "t4", "t5"].includes(t.id) && !["ahmad", "fatimah", "lukman", "khadijah"].includes(t.username)
+          );
+          if (clientDbCache.teachers.length !== prevLen) {
+            needsSave = true;
+          }
+        }
         if (needsSave) {
           localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
         }
@@ -265,12 +275,23 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         // 5. GET /api/walikelas/notes
         if (path === '/api/walikelas/notes' && method === 'GET') {
           const n = await firebaseApi.getWaliKelasNotes();
-          return new Response(JSON.stringify(n), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          const db = getDB();
+          if (n && typeof n === 'object' && Object.keys(n).length > 0) {
+            db.walikelas_notes = { ...(db.walikelas_notes || {}), ...n };
+            saveDB(db);
+          }
+          return new Response(JSON.stringify(db.walikelas_notes || n || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
         // POST /api/walikelas/notes
         if (path === '/api/walikelas/notes' && method === 'POST') {
           const n = await firebaseApi.postWaliKelasNotes(body);
+          const db = getDB();
+          if (!db.walikelas_notes) db.walikelas_notes = {};
+          if (n && n.studentId) {
+            db.walikelas_notes[n.studentId] = { ...(db.walikelas_notes[n.studentId] || {}), ...n };
+          }
+          saveDB(db);
           return new Response(JSON.stringify(n), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
