@@ -65,8 +65,9 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   const [halaqohClassFilter, setHalaqohClassFilter] = useState("all");
   const [halaqohGenderFilter, setHalaqohGenderFilter] = useState("all");
   const [tpsTemplates, setTpsTemplates] = useState<{
-    [subject: string]: { id: string; text: string }[];
+    [subject: string]: { id: string; text: string; kelas?: string }[];
   }>({});
+  const [editingAdminTp, setEditingAdminTp] = useState<{ id: string; subject: string; text: string; kelas: string } | null>(null);
   const [ekskuls, setEkskuls] = useState<
     { id: string; name: string; type: "Wajib" | "Pilihan" }[]
   >([]);
@@ -1553,17 +1554,35 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   };
 
   const deleteTpObjective = async (subject: string, tpId: string) => {
-    if (!confirm("Hapus Tujuan Pembelajaran (TP) template ini?")) return;
+    if (!confirm("Hapus Tujuan Pembelajaran (TP) template ini secara permanen?")) return;
     setError("");
 
     try {
-      const response = await fetch(`/api/tps/${subject}/${tpId}`, {
+      const response = await fetch(`/api/tps/${encodeURIComponent(subject)}/${encodeURIComponent(tpId)}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Gagal menghapus tujuan pembelajaran.");
 
       await fetchAllData();
       showSuccess("Tujuan Pembelajaran berhasil dihapus!");
+    } catch (err: any) {
+      setError(err.message || "Terjadi kesalahan.");
+    }
+  };
+
+  const updateTpObjective = async (subject: string, tpId: string, newText: string, kelas: string) => {
+    if (!newText.trim()) return;
+    setError("");
+    try {
+      const response = await fetch(`/api/tps/${encodeURIComponent(subject)}/${encodeURIComponent(tpId)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tpText: newText.trim(), kelas: kelas || "7" }),
+      });
+      if (!response.ok) throw new Error("Gagal memperbarui tujuan pembelajaran.");
+      await fetchAllData();
+      showSuccess("Tujuan Pembelajaran berhasil diperbarui/diganti!");
+      setEditingAdminTp(null);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan.");
     }
@@ -2432,6 +2451,58 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                               ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
                               : "bg-amber-500/20 text-amber-300 border-amber-500/40";
 
+                          const isEditingThis = editingAdminTp?.id === item.id && editingAdminTp?.subject === subject;
+
+                          if (isEditingThis) {
+                            return (
+                              <div key={item.id} className="p-3.5 bg-[#0c241b] rounded-lg border-2 border-emerald-500 space-y-2.5">
+                                <div className="flex items-center justify-between text-xs font-bold text-emerald-300">
+                                  <span>Edit / Ganti TP ({subject})</span>
+                                  <span className="text-[10px] text-slate-400 font-mono">ID: {item.id}</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                                  <div className="sm:col-span-3">
+                                    <input
+                                      type="text"
+                                      value={editingAdminTp.text}
+                                      onChange={(e) => setEditingAdminTp({ ...editingAdminTp, text: e.target.value })}
+                                      className="w-full p-2 bg-[#060b14] border border-[#2f4a7a] rounded text-white text-xs focus:border-emerald-400 focus:outline-none"
+                                      placeholder="Teks TP baru..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <select
+                                      value={editingAdminTp.kelas}
+                                      onChange={(e) => setEditingAdminTp({ ...editingAdminTp, kelas: e.target.value })}
+                                      className="w-full p-2 bg-[#060b14] border border-[#2f4a7a] rounded text-white text-xs focus:border-emerald-400 font-bold"
+                                    >
+                                      <option value="7">Kelas 7</option>
+                                      <option value="8">Kelas 8</option>
+                                      <option value="9">Kelas 9</option>
+                                      <option value="all">Semua Kelas</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-end gap-2 pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingAdminTp(null)}
+                                    className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition cursor-pointer"
+                                  >
+                                    Batal
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTpObjective(subject, item.id, editingAdminTp.text, editingAdminTp.kelas)}
+                                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold transition cursor-pointer shadow-xs border border-emerald-400"
+                                  >
+                                    Simpan Perubahan
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          }
+
                           return (
                             <div
                               key={item.id}
@@ -2447,13 +2518,22 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                                   {itemClass === "all" ? "Semua Kelas" : `Kelas ${itemClass}`}
                                 </span>
                               </div>
-                              <button
-                                onClick={() => deleteTpObjective(subject, item.id)}
-                                className="text-red-400 hover:text-red-300 p-1.5 rounded hover:bg-red-500/20 transition cursor-pointer shrink-0 mt-0.5"
-                                title="Hapus TP"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                                <button
+                                  onClick={() => setEditingAdminTp({ id: item.id, subject, text: item.text, kelas: itemClass })}
+                                  className="text-blue-300 hover:text-white p-1.5 rounded hover:bg-blue-600/30 transition cursor-pointer"
+                                  title="Ganti / Edit TP"
+                                >
+                                  <PenTool className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => deleteTpObjective(subject, item.id)}
+                                  className="text-red-400 hover:text-red-300 p-1.5 rounded hover:bg-red-500/20 transition cursor-pointer"
+                                  title="Hapus TP Permanen"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           );
                         })

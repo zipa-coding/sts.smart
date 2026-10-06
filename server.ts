@@ -641,6 +641,43 @@ app.post("/api/tps", async (req, res) => {
   res.status(201).json(newTP);
 });
 
+app.put("/api/tps/:subject/:tpId", async (req, res) => {
+  const { subject, tpId } = req.params;
+  const { tpText, kelas } = req.body;
+  if (!tpText) {
+    return res.status(400).json({ error: "Teks TP wajib diisi." });
+  }
+
+  const db = await readDB();
+  if (!db.tujuan_pembelajaran_templates) {
+    db.tujuan_pembelajaran_templates = {};
+  }
+  if (!db.tujuan_pembelajaran_templates[subject]) {
+    db.tujuan_pembelajaran_templates[subject] = [];
+  }
+
+  const cleanTpId = String(tpId).trim();
+  const list = db.tujuan_pembelajaran_templates[subject];
+  const index = list.findIndex((tp: any) => String(tp.id).trim() === cleanTpId);
+
+  if (index !== -1) {
+    list[index] = {
+      ...list[index],
+      text: tpText.trim(),
+      ...(kelas ? { kelas: String(kelas).trim() } : {}),
+    };
+  } else {
+    list.push({
+      id: cleanTpId,
+      text: tpText.trim(),
+      kelas: kelas ? String(kelas).trim() : "7",
+    });
+  }
+
+  await writeDB(db);
+  res.json(list[index !== -1 ? index : list.length - 1]);
+});
+
 app.delete("/api/tps/:subject/:tpId", async (req, res) => {
   const { subject, tpId } = req.params;
   const db = await readDB();
@@ -649,9 +686,10 @@ app.delete("/api/tps/:subject/:tpId", async (req, res) => {
     db.tujuan_pembelajaran_templates &&
     db.tujuan_pembelajaran_templates[subject]
   ) {
+    const cleanTpId = String(tpId).trim();
     db.tujuan_pembelajaran_templates[subject] =
       db.tujuan_pembelajaran_templates[subject].filter(
-        (tp: any) => tp.id !== tpId,
+        (tp: any) => String(tp.id).trim() !== cleanTpId,
       );
     await writeDB(db);
     res.json({ message: "TP berhasil dihapus." });

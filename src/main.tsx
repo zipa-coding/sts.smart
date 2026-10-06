@@ -39,23 +39,15 @@ function initializeLocalStorage() {
     if (raw) {
       try {
         clientDbCache = JSON.parse(raw);
-        // Ensure TP templates are strictly separated per class (Kelas 7, 8, 9)
         let needsSave = false;
         if (!clientDbCache.tujuan_pembelajaran_templates || typeof clientDbCache.tujuan_pembelajaran_templates !== 'object') {
-          clientDbCache.tujuan_pembelajaran_templates = dbData.tujuan_pembelajaran_templates;
+          clientDbCache.tujuan_pembelajaran_templates = dbData.tujuan_pembelajaran_templates || {};
           needsSave = true;
         } else {
-          // Check if any subject has TPs without distinct kelas 7, 8, and 9
-          const seedTemplates = dbData.tujuan_pembelajaran_templates as Record<string, any[]>;
+          // If a subject key is completely undefined in cache (not set yet), provide default seed
+          const seedTemplates = (dbData.tujuan_pembelajaran_templates || {}) as Record<string, any[]>;
           for (const sub of Object.keys(seedTemplates)) {
-            const currentList = clientDbCache.tujuan_pembelajaran_templates[sub];
-            if (
-              !Array.isArray(currentList) ||
-              currentList.length === 0 ||
-              currentList.some((t: any) => !t.kelas || t.kelas === "all") ||
-              !currentList.some((t: any) => String(t.kelas).trim() === "8") ||
-              !currentList.some((t: any) => String(t.kelas).trim() === "9")
-            ) {
+            if (clientDbCache.tujuan_pembelajaran_templates[sub] === undefined) {
               clientDbCache.tujuan_pembelajaran_templates[sub] = seedTemplates[sub];
               needsSave = true;
             }
@@ -247,12 +239,26 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         // 4. GET /api/grades
         if (path === '/api/grades' && method === 'GET') {
           const g = await firebaseApi.getGrades();
+          if (Array.isArray(g) && g.length > 0) {
+            const db = getDB();
+            db.grades = g;
+            saveDB(db);
+          }
           return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
         // POST /api/grades
         if (path === '/api/grades' && method === 'POST') {
           const g = await firebaseApi.postGrade(body);
+          const db = getDB();
+          if (!Array.isArray(db.grades)) db.grades = [];
+          const idx = db.grades.findIndex((x: any) => x.studentId === g.studentId && x.subject === g.subject);
+          if (idx !== -1) {
+            db.grades[idx] = g;
+          } else {
+            db.grades.push(g);
+          }
+          saveDB(db);
           return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
@@ -270,14 +276,68 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
 
         // 6. GET /api/tps
         if (path === '/api/tps' && method === 'GET') {
-          const tps = await firebaseApi.getTPs();
-          return new Response(JSON.stringify(tps), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          const urlObj = new URL(urlStr, 'http://localhost');
+          const kelas = urlObj.searchParams.get('kelas') || undefined;
+          const subject = urlObj.searchParams.get('subject') || undefined;
+
+          const allTps = await firebaseApi.getTPs();
+          if (allTps && typeof allTps === 'object') {
+            const db = getDB();
+            if (!db.tujuan_pembelajaran_templates) db.tujuan_pembelajaran_templates = {};
+            Object.assign(db.tujuan_pembelajaran_templates, allTps);
+            saveDB(db);
+          }
+
+          if (subject) {
+            let items = (allTps && allTps[subject]) || [];
+            if (kelas) {
+              items = items.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
+            }
+            return new Response(JSON.stringify(items), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          }
+
+          if (kelas) {
+            const filtered: Record<string, any[]> = {};
+            for (const [sub, list] of Object.entries(allTps || {})) {
+              if (Array.isArray(list)) {
+                filtered[sub] = list.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
+              }
+            }
+            return new Response(JSON.stringify(filtered), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          }
+
+          return new Response(JSON.stringify(allTps), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
         // POST /api/tps
         if (path === '/api/tps' && method === 'POST') {
           const tp = await firebaseApi.postTP(body);
+          const db = getDB();
+          if (!db.tujuan_pembelajaran_templates) db.tujuan_pembelajaran_templates = {};
+          if (!db.tujuan_pembelajaran_templates[body.subject]) db.tujuan_pembelajaran_templates[body.subject] = [];
+          db.tujuan_pembelajaran_templates[body.subject].push(tp);
+          saveDB(db);
           return new Response(JSON.stringify(tp), { status: 201, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // PUT /api/tps/:subject/:tpId
+        if (path.startsWith('/api/tps/') && method === 'PUT') {
+          const parts = path.split('/');
+          const tpId = parts.pop() || "";
+          const subject = decodeURIComponent(parts.pop() || '');
+          const res = await firebaseApi.putTP(subject, tpId, body);
+          const db = getDB();
+          if (db.tujuan_pembelajaran_templates && db.tujuan_pembelajaran_templates[subject]) {
+            const cleanTpId = String(tpId).trim();
+            const idx = db.tujuan_pembelajaran_templates[subject].findIndex((t: any) => String(t.id).trim() === cleanTpId);
+            if (idx !== -1) {
+              db.tujuan_pembelajaran_templates[subject][idx] = { ...db.tujuan_pembelajaran_templates[subject][idx], ...body, id: tpId };
+            } else {
+              db.tujuan_pembelajaran_templates[subject].push({ id: tpId, text: body.tpText, kelas: body.kelas || "7" });
+            }
+            saveDB(db);
+          }
+          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
         // DELETE /api/tps/:subject/:tpId
@@ -286,6 +346,12 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           const tpId = parts.pop() || "";
           const subject = decodeURIComponent(parts.pop() || '');
           const res = await firebaseApi.deleteTP(subject, tpId);
+          const db = getDB();
+          if (db.tujuan_pembelajaran_templates && db.tujuan_pembelajaran_templates[subject]) {
+            const cleanTpId = String(tpId).trim();
+            db.tujuan_pembelajaran_templates[subject] = db.tujuan_pembelajaran_templates[subject].filter((t: any) => String(t.id).trim() !== cleanTpId);
+            saveDB(db);
+          }
           return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
@@ -816,14 +882,43 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       return new Response(JSON.stringify(newTP), { status: 201, headers: { 'Content-Type': 'application/json' } });
     }
 
+    // PUT /api/tps/:subject/:tpId
+    if (path.startsWith('/api/tps/') && method === 'PUT') {
+      const parts = path.split('/');
+      const tpId = parts.pop() || "";
+      const subject = decodeURIComponent(parts.pop() || '');
+      const { tpText, kelas } = body || {};
+      const db = getDB();
+      if (!db.tujuan_pembelajaran_templates) db.tujuan_pembelajaran_templates = {};
+      if (!db.tujuan_pembelajaran_templates[subject]) db.tujuan_pembelajaran_templates[subject] = [];
+      const cleanTpId = String(tpId).trim();
+      const idx = db.tujuan_pembelajaran_templates[subject].findIndex((t: any) => String(t.id).trim() === cleanTpId);
+      if (idx !== -1) {
+        db.tujuan_pembelajaran_templates[subject][idx] = {
+          ...db.tujuan_pembelajaran_templates[subject][idx],
+          text: tpText ? tpText.trim() : db.tujuan_pembelajaran_templates[subject][idx].text,
+          ...(kelas ? { kelas: String(kelas).trim() } : {})
+        };
+      } else {
+        db.tujuan_pembelajaran_templates[subject].push({
+          id: cleanTpId,
+          text: tpText ? tpText.trim() : "",
+          kelas: kelas ? String(kelas).trim() : "7"
+        });
+      }
+      saveDB(db);
+      return new Response(JSON.stringify(db.tujuan_pembelajaran_templates[subject][idx !== -1 ? idx : db.tujuan_pembelajaran_templates[subject].length - 1]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
     // DELETE /api/tps/:subject/:tpId
     if (path.startsWith('/api/tps/') && method === 'DELETE') {
       const parts = path.split('/');
-      const tpId = parts.pop();
+      const tpId = parts.pop() || "";
       const subject = decodeURIComponent(parts.pop() || '');
       const db = getDB();
       if (db.tujuan_pembelajaran_templates && db.tujuan_pembelajaran_templates[subject]) {
-        db.tujuan_pembelajaran_templates[subject] = db.tujuan_pembelajaran_templates[subject].filter((tp: any) => tp.id !== tpId);
+        const cleanTpId = String(tpId).trim();
+        db.tujuan_pembelajaran_templates[subject] = db.tujuan_pembelajaran_templates[subject].filter((tp: any) => String(tp.id).trim() !== cleanTpId);
         saveDB(db);
         return new Response(JSON.stringify({ message: "TP berhasil dihapus." }), { status: 200, headers: { 'Content-Type': 'application/json' } });
       }

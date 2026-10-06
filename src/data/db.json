@@ -584,30 +584,35 @@
     {
       "studentId": "s9_1",
       "subject": "PPKN",
-      "score": 85,
+      "score": 90,
       "tps": [
         {
-          "id": "ppkn1",
-          "text": "Menghayati sejarah perumusan dan penetapan Pancasila sebagai dasar negara",
-          "achieved": true
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "id": "tp_1790305358066",
+          "achieved": false
         },
         {
-          "id": "ppkn2",
-          "text": "Menerapkan nilai-nilai Pancasila dalam kehidupan sehari-hari",
-          "achieved": true
+          "id": "tp_1790305377969",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
         },
         {
-          "id": "ppkn3",
-          "text": "Memahami norma-norma yang berlaku dalam kehidupan bermasyarakat",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "achieved": true,
+          "id": "tp_1790305403760"
+        },
+        {
+          "id": "tp_1790305567461",
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
           "achieved": true
         }
       ],
       "usaha": "B",
       "proses": "B",
       "capaian": "B",
-      "deskripsi": "Alhamdulillah ananda Aaisyah Nur Husnaa memahami dengan baik tentang memahami kedudukan Pancasila sebagai dasar negara, pandangan hidup bangsa dan ideologi negara, serta mengimplementasikan nilai-nilai Pancasila dalam kehidupan di lingkungan keluarga, sekolah dan masyarakat. Melalui Sumatif Tengah Semester yang berbasis proyek (membuat infografis dengan tema “Kedudukan Pancasila sebagai Dasar Negara, Pandangan Hidup Bangsa dan Ideologi Negara”), ananda Aaisyah Nur Husnaa menunjukkan sikap kerjasama dengan teman satu kelompoknya dan menunjukkan sikap menghargai perbedaan dan menyajikan infografis sesuai dengan tema yang diberikan.",
-      "lastUpdatedBy": "Bu Fatimah, S.Pd",
-      "lastUpdatedAt": "2026-06-17T05:05:00.000Z"
+      "deskripsi": "Alhamdulillah, ananda Afiqah Sholiha dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:14:34.053Z"
     },
     {
       "studentId": "s9_1",
@@ -3185,6 +3190,2088 @@
       "description": "Alhamdulillah, ananda Siti Awaliyah Bahmim dalam pembelajaran Bahasa Arab menunjukkan penguasaan yang optimal dalam menulis (imla) kosakata dan kalimat Bahasa Arab yang didiktekan oleh guru dengan memperhatikan ketepatan huruf, harakat, dan tanda baca, menerjemahkan teks Duruusul Lughah halaman 55–56 dari Bahasa Arab ke Bahasa Indonesia dengan memahami makna kosakata dan susunan kalimatnya, dan mengkreasikan dan mempresentasikan video percakapan secara berkelompok dalam bentuk berita atau wawancara berbahasa Arab dengan memperhatikan ketepatan bahasa, pelafalan, intonasi, kreativitas, kerja sama, dan kepercayaan diri. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
       "lastUpdatedBy": "Albadriyan, S.Pd.",
       "lastUpdatedAt": "2026-10-05T08:05:33.504Z"
+    },
+    {
+      "lastUpdatedAt": "2026-10-03T05:55:09.503Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "capaian": "B",
+      "tps": [
+        {
+          "id": "tp_1790305942524",
+          "achieved": false,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790306014327",
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        }
+      ],
+      "usaha": "B",
+      "studentId": "7onA77t1r5W3dWpSTrQr",
+      "subject": "PPKN",
+      "proses": "B",
+      "score": 85,
+      "deskripsi": "Alhamdulillah, ananda Abi Fatih Assyauqy dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga."
+    },
+    {
+      "proses": "B",
+      "subject": "PPKN",
+      "score": 90,
+      "studentId": "s7_10",
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790306014327",
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        }
+      ],
+      "capaian": "B",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T05:55:44.528Z",
+      "usaha": "B",
+      "deskripsi": "Alhamdulillah, ananda Aisyah Afiqah Effendy dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara) dan mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah."
+    },
+    {
+      "studentId": "s7_11",
+      "deskripsi": "Alhamdulillah, ananda Akifa Naila Septiani dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 87,
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T05:56:01.883Z",
+      "tps": [
+        {
+          "id": "tp_1790305942524",
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "achieved": false
+        },
+        {
+          "id": "tp_1790306014327",
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "achieved": true
+        }
+      ],
+      "proses": "B",
+      "subject": "PPKN",
+      "capaian": "B",
+      "usaha": "B"
+    },
+    {
+      "proses": "A",
+      "studentId": "s7_12",
+      "usaha": "A",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Alice Jasmeen Sampurno dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara) dan mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "score": 92,
+      "capaian": "A",
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790306014327",
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        }
+      ],
+      "lastUpdatedAt": "2026-10-03T05:56:13.049Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "usaha": "B",
+      "proses": "B",
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524",
+          "achieved": false
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790306014327"
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Alif Naurul Alfikri dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "subject": "PPKN",
+      "studentId": "s7_13",
+      "score": 82,
+      "lastUpdatedAt": "2026-10-03T05:56:26.149Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "capaian": "B"
+    },
+    {
+      "lastUpdatedAt": "2026-10-03T05:56:41.307Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Alya Putri Zulaika dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "studentId": "s7_14",
+      "score": 85,
+      "capaian": "B",
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327"
+        }
+      ],
+      "usaha": "B",
+      "proses": "B"
+    },
+    {
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T05:56:52.752Z",
+      "score": 92,
+      "proses": "A",
+      "capaian": "A",
+      "usaha": "A",
+      "deskripsi": "Alhamdulillah, ananda Anindya Rahmah Putri dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara) dan mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "tps": [
+        {
+          "id": "tp_1790305942524",
+          "achieved": true,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)"
+        },
+        {
+          "id": "tp_1790306014327",
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        }
+      ],
+      "studentId": "s7_15",
+      "subject": "PPKN"
+    },
+    {
+      "capaian": "B",
+      "studentId": "s7_16",
+      "deskripsi": "Alhamdulillah, ananda Arkan Harith Putra dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 86,
+      "subject": "PPKN",
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "achieved": false,
+          "id": "tp_1790305942524"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327"
+        }
+      ],
+      "proses": "B",
+      "usaha": "B",
+      "lastUpdatedAt": "2026-10-03T05:57:10.387Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "usaha": "B",
+      "deskripsi": "Alhamdulillah, ananda Ataya Sangmane Muhani dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "capaian": "B",
+      "tps": [
+        {
+          "id": "tp_1790305942524",
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "achieved": false
+        },
+        {
+          "id": "tp_1790306014327",
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        }
+      ],
+      "studentId": "s7_17",
+      "subject": "PPKN",
+      "score": 85,
+      "proses": "B",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T05:57:36.486Z"
+    },
+    {
+      "proses": "B",
+      "tps": [
+        {
+          "id": "tp_1790305942524",
+          "achieved": false,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327"
+        }
+      ],
+      "subject": "PPKN",
+      "usaha": "B",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T05:57:49.382Z",
+      "studentId": "s7_18",
+      "deskripsi": "Alhamdulillah, ananda Athiyah Raihanah Qonita dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 87,
+      "capaian": "B"
+    },
+    {
+      "usaha": "B",
+      "proses": "B",
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524",
+          "achieved": false
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327",
+          "achieved": true
+        }
+      ],
+      "studentId": "s7_19",
+      "deskripsi": "Alhamdulillah, ananda Azra Syakira dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "capaian": "B",
+      "score": 87,
+      "subject": "PPKN",
+      "lastUpdatedAt": "2026-10-03T05:58:02.162Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "score": 92,
+      "tps": [
+        {
+          "achieved": true,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327"
+        }
+      ],
+      "proses": "A",
+      "capaian": "A",
+      "deskripsi": "Alhamdulillah, ananda Adibyo Nararya Gustian dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara) dan mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "usaha": "A",
+      "subject": "PPKN",
+      "studentId": "s7_1",
+      "lastUpdatedAt": "2026-10-03T05:55:24.844Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "score": 84,
+      "capaian": "B",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T05:58:17.252Z",
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "achieved": false,
+          "id": "tp_1790305942524"
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327",
+          "achieved": true
+        }
+      ],
+      "usaha": "B",
+      "deskripsi": "Alhamdulillah, ananda Azzam Fawwaz dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "subject": "PPKN",
+      "proses": "B",
+      "studentId": "s7_20"
+    },
+    {
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524"
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327",
+          "achieved": true
+        }
+      ],
+      "capaian": "B",
+      "studentId": "s7_21",
+      "score": 85,
+      "deskripsi": "Alhamdulillah, ananda Danish Izzatul Mirza dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T05:58:33.739Z",
+      "subject": "PPKN",
+      "usaha": "B",
+      "proses": "B"
+    },
+    {
+      "deskripsi": "Alhamdulillah, ananda Dzakira Talita Sakhiy dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 87,
+      "studentId": "s7_22",
+      "proses": "B",
+      "subject": "PPKN",
+      "usaha": "A",
+      "tps": [
+        {
+          "achieved": false,
+          "id": "tp_1790305942524",
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327"
+        }
+      ],
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T05:58:57.706Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "usaha": "B",
+      "subject": "PPKN",
+      "studentId": "s7_23",
+      "lastUpdatedAt": "2026-10-03T05:59:47.521Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524"
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790306014327"
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Fakhrie Zhafran Khairy dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 83,
+      "proses": "B",
+      "capaian": "B"
+    },
+    {
+      "score": 90,
+      "proses": "B",
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T06:00:05.782Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524",
+          "achieved": true
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790306014327"
+        }
+      ],
+      "usaha": "A",
+      "deskripsi": "Alhamdulillah, ananda Farhan Azzam dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara) dan mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "studentId": "s7_24",
+      "subject": "PPKN"
+    },
+    {
+      "tps": [
+        {
+          "id": "tp_1790305942524",
+          "achieved": false,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)"
+        },
+        {
+          "id": "tp_1790306014327",
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        }
+      ],
+      "score": 84,
+      "subject": "PPKN",
+      "proses": "B",
+      "studentId": "s7_25",
+      "capaian": "B",
+      "usaha": "B",
+      "deskripsi": "Alhamdulillah, ananda Kemas Muhammad Arkan dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:00:32.109Z"
+    },
+    {
+      "subject": "PPKN",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:00:46.127Z",
+      "studentId": "s7_26",
+      "usaha": "A",
+      "deskripsi": "Alhamdulillah, ananda Khalilah Fauziyah dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara) dan mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "proses": "B",
+      "capaian": "B",
+      "score": 88,
+      "tps": [
+        {
+          "achieved": true,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790306014327",
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        }
+      ]
+    },
+    {
+      "deskripsi": "Alhamdulillah, ananda Khanza Hasna Bilqis dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara) dan mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "score": 89,
+      "subject": "PPKN",
+      "tps": [
+        {
+          "id": "tp_1790305942524",
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "achieved": true
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790306014327"
+        }
+      ],
+      "studentId": "s7_27",
+      "lastUpdatedAt": "2026-10-03T06:01:03.700Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "usaha": "A",
+      "capaian": "B",
+      "proses": "B"
+    },
+    {
+      "proses": "B",
+      "score": 87,
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Khayra Adhiyah Nasyamah dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524"
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327",
+          "achieved": true
+        }
+      ],
+      "capaian": "B",
+      "studentId": "s7_28",
+      "usaha": "A",
+      "lastUpdatedAt": "2026-10-03T06:01:18.698Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "score": 85,
+      "proses": "B",
+      "subject": "PPKN",
+      "lastUpdatedAt": "2026-10-03T06:01:39.765Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "achieved": false,
+          "id": "tp_1790305942524"
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327",
+          "achieved": true
+        }
+      ],
+      "studentId": "s7_29",
+      "usaha": "B",
+      "capaian": "B",
+      "deskripsi": "Alhamdulillah, ananda Matahari Habibillah dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga."
+    },
+    {
+      "capaian": "B",
+      "score": 86,
+      "lastUpdatedAt": "2026-10-03T06:01:56.639Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "tps": [
+        {
+          "achieved": false,
+          "id": "tp_1790305942524",
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327"
+        }
+      ],
+      "subject": "PPKN",
+      "studentId": "s7_3",
+      "deskripsi": "Alhamdulillah, ananda Muhammad Althaf Saddad dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "proses": "B",
+      "usaha": "A"
+    },
+    {
+      "score": 85,
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:02:12.509Z",
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524",
+          "achieved": false
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790306014327",
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        }
+      ],
+      "proses": "B",
+      "capaian": "B",
+      "usaha": "B",
+      "studentId": "s7_4",
+      "deskripsi": "Alhamdulillah, ananda Muhammad Arsyil Al Fatih dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "subject": "PPKN"
+    },
+    {
+      "score": 90,
+      "tps": [
+        {
+          "achieved": true,
+          "id": "tp_1790305942524",
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)"
+        },
+        {
+          "id": "tp_1790306014327",
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        }
+      ],
+      "proses": "B",
+      "subject": "PPKN",
+      "usaha": "A",
+      "studentId": "s7_5",
+      "capaian": "B",
+      "deskripsi": "Alhamdulillah, ananda Muhammad Syafiq Zhafran dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara) dan mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:02:31.760Z"
+    },
+    {
+      "usaha": "A",
+      "studentId": "s7_6",
+      "tps": [
+        {
+          "id": "tp_1790305942524",
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "achieved": false
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327"
+        }
+      ],
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T06:02:45.814Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "deskripsi": "Alhamdulillah, ananda Rifki Rahmad Gilang Ramadan dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 88,
+      "subject": "PPKN",
+      "proses": "B"
+    },
+    {
+      "proses": "B",
+      "usaha": "A",
+      "lastUpdatedAt": "2026-10-03T06:02:58.732Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "capaian": "B",
+      "tps": [
+        {
+          "id": "tp_1790305942524",
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "achieved": false
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790306014327"
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Sezha Nayla Adeeva dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara). Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 86,
+      "subject": "PPKN",
+      "studentId": "s7_7"
+    },
+    {
+      "tps": [
+        {
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)",
+          "id": "tp_1790305942524",
+          "achieved": false
+        },
+        {
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek",
+          "id": "tp_1790306014327",
+          "achieved": false
+        }
+      ],
+      "score": 81,
+      "subject": "PPKN",
+      "usaha": "C",
+      "studentId": "s7_8",
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T06:03:23.576Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "proses": "B",
+      "deskripsi": "Ananda Shaza Qurratu Ain dalam pembelajaran PPKN masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara) dan mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek. Jangan berkecil hati, percayalah pada kemampuan dirimu; dengan kesabaran, doa, dan usaha yang tekun, ananda pasti mampu meraih hal yang lebih baik."
+    },
+    {
+      "proses": "B",
+      "usaha": "B",
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T06:05:42.479Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "tps": [
+        {
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": false,
+          "id": "tp_1790305713230"
+        },
+        {
+          "id": "tp_1790305794687",
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "achieved": true
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Audrey Arsyifa Putri dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "studentId": "s8_10",
+      "score": 83,
+      "subject": "PPKN"
+    },
+    {
+      "studentId": "s8_11",
+      "score": 92,
+      "proses": "A",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Cinta Delisha dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "lastUpdatedAt": "2026-10-03T06:05:56.229Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "tps": [
+        {
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": true,
+          "id": "tp_1790305713230"
+        },
+        {
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687",
+          "achieved": true
+        }
+      ],
+      "usaha": "A",
+      "capaian": "A"
+    },
+    {
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Dafiya Martha Caberta dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "usaha": "A",
+      "studentId": "s8_12",
+      "tps": [
+        {
+          "id": "tp_1790305713230",
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": true
+        },
+        {
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687",
+          "achieved": true
+        }
+      ],
+      "proses": "B",
+      "score": 90,
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T06:06:29.568Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "lastUpdatedAt": "2026-10-03T06:06:38.618Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "score": 90,
+      "proses": "B",
+      "subject": "PPKN",
+      "studentId": "s8_13",
+      "tps": [
+        {
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "id": "tp_1790305713230",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305794687",
+          "achieved": true,
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek"
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Davina Loveianova Sampurno dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "capaian": "B",
+      "usaha": "A"
+    },
+    {
+      "studentId": "s8_14",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Deris Adha dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "tps": [
+        {
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "id": "tp_1790305713230",
+          "achieved": true
+        },
+        {
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687",
+          "achieved": true
+        }
+      ],
+      "score": 84,
+      "capaian": "B",
+      "usaha": "B",
+      "lastUpdatedAt": "2026-10-03T06:06:55.267Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "proses": "B"
+    },
+    {
+      "tps": [
+        {
+          "achieved": true,
+          "id": "tp_1790305713230",
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara"
+        },
+        {
+          "id": "tp_1790305794687",
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "achieved": true
+        }
+      ],
+      "proses": "B",
+      "usaha": "A",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Dzaka Pratama Wansah dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "lastUpdatedAt": "2026-10-03T06:07:09.741Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "score": 87,
+      "studentId": "s8_15",
+      "capaian": "B"
+    },
+    {
+      "deskripsi": "Alhamdulillah, ananda Encik Irham Kafabihi dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "proses": "B",
+      "tps": [
+        {
+          "achieved": true,
+          "id": "tp_1790305713230",
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687"
+        }
+      ],
+      "usaha": "B",
+      "subject": "PPKN",
+      "studentId": "s8_16",
+      "lastUpdatedAt": "2026-10-03T06:08:21.140Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "score": 84,
+      "capaian": "B"
+    },
+    {
+      "subject": "PPKN",
+      "score": 87,
+      "capaian": "B",
+      "deskripsi": "Alhamdulillah, ananda Fadia Shidqi dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "studentId": "s8_17",
+      "tps": [
+        {
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "id": "tp_1790305713230",
+          "achieved": false
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305794687",
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek"
+        }
+      ],
+      "proses": "B",
+      "usaha": "A",
+      "lastUpdatedAt": "2026-10-03T06:08:40.689Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "deskripsi": "Alhamdulillah, ananda Faqih Al Azzam dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "proses": "B",
+      "subject": "PPKN",
+      "usaha": "A",
+      "studentId": "s8_18",
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "id": "tp_1790305713230"
+        },
+        {
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790305794687"
+        }
+      ],
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:08:59.278Z",
+      "score": 88,
+      "capaian": "B"
+    },
+    {
+      "score": 85,
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "id": "tp_1790305713230"
+        },
+        {
+          "id": "tp_1790305794687",
+          "achieved": true,
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek"
+        }
+      ],
+      "capaian": "B",
+      "deskripsi": "Alhamdulillah, ananda Habi Azzam Al Fatih dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "studentId": "s8_19",
+      "usaha": "B",
+      "subject": "PPKN",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:09:42.390Z",
+      "proses": "B"
+    },
+    {
+      "studentId": "s8_1",
+      "score": 85,
+      "proses": "B",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah ananda Aaisyah Nur Husnaa memahami dengan baik tentang memahami kedudukan Pancasila sebagai dasar negara, pandangan hidup bangsa dan ideologi negara, serta mengimplementasikan nilai-nilai Pancasila dalam kehidupan di lingkungan keluarga, sekolah dan masyarakat. Melalui Sumatif Tengah Semester yang berbasis proyek (membuat infografis dengan tema “Kedudukan Pancasila sebagai Dasar Negara, Pandangan Hidup Bangsa dan Ideologi Negara”), ananda Aaisyah Nur Husnaa menunjukkan sikap kerjasama dengan teman satu kelompoknya dan menunjukkan sikap menghargai perbedaan dan menyajikan infografis sesuai dengan tema yang diberikan.",
+      "lastUpdatedBy": "Bu Fatimah, S.Pd",
+      "lastUpdatedAt": "2026-06-17T05:05:00.000Z",
+      "usaha": "B",
+      "capaian": "B",
+      "tps": [
+        {
+          "id": "ppkn1",
+          "text": "Menghayati sejarah perumusan dan penetapan Pancasila sebagai dasar negara",
+          "achieved": true
+        },
+        {
+          "id": "ppkn2",
+          "achieved": true,
+          "text": "Menerapkan nilai-nilai Pancasila dalam kehidupan sehari-hari"
+        },
+        {
+          "text": "Memahami norma-norma yang berlaku dalam kehidupan bermasyarakat",
+          "id": "ppkn3",
+          "achieved": true
+        }
+      ]
+    },
+    {
+      "subject": "PPKN",
+      "lastUpdatedAt": "2026-10-03T06:09:52.885Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "deskripsi": "Alhamdulillah, ananda M. Althair Atha Dinata dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "studentId": "s8_20",
+      "usaha": "A",
+      "tps": [
+        {
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": true,
+          "id": "tp_1790305713230"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687"
+        }
+      ],
+      "capaian": "A",
+      "proses": "A",
+      "score": 92
+    },
+    {
+      "score": 86,
+      "proses": "B",
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "id": "tp_1790305713230"
+        },
+        {
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687",
+          "achieved": true
+        }
+      ],
+      "lastUpdatedAt": "2026-10-03T06:10:08.966Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "subject": "PPKN",
+      "usaha": "A",
+      "studentId": "s8_21",
+      "capaian": "B",
+      "deskripsi": "Alhamdulillah, ananda Muhammad Dzaky Zain dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga."
+    },
+    {
+      "proses": "B",
+      "usaha": "A",
+      "deskripsi": "Alhamdulillah, ananda Muhammad Fariz Al Khalifi dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "lastUpdatedAt": "2026-10-03T06:10:21.749Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "studentId": "s8_22",
+      "capaian": "B",
+      "tps": [
+        {
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": false,
+          "id": "tp_1790305713230"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687"
+        }
+      ],
+      "score": 89,
+      "subject": "PPKN"
+    },
+    {
+      "deskripsi": "Alhamdulillah, ananda Muhammad Hisyam Khalfani dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "proses": "A",
+      "lastUpdatedAt": "2026-10-03T06:10:33.515Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "usaha": "A",
+      "studentId": "s8_23",
+      "capaian": "A",
+      "tps": [
+        {
+          "id": "tp_1790305713230",
+          "achieved": true,
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara"
+        },
+        {
+          "id": "tp_1790305794687",
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "achieved": true
+        }
+      ],
+      "subject": "PPKN",
+      "score": 92
+    },
+    {
+      "lastUpdatedAt": "2026-10-03T06:10:53.860Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "score": 89,
+      "proses": "B",
+      "subject": "PPKN",
+      "tps": [
+        {
+          "id": "tp_1790305713230",
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": false
+        },
+        {
+          "id": "tp_1790305794687",
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "achieved": true
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Muhammad Syahmi dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "capaian": "B",
+      "usaha": "A",
+      "studentId": "s8_24"
+    },
+    {
+      "capaian": "B",
+      "score": 83,
+      "studentId": "s8_25",
+      "subject": "PPKN",
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "id": "tp_1790305713230"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305794687",
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek"
+        }
+      ],
+      "proses": "B",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:11:16.223Z",
+      "deskripsi": "Alhamdulillah, ananda Muharrar Adly dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "usaha": "B"
+    },
+    {
+      "score": 92,
+      "subject": "PPKN",
+      "tps": [
+        {
+          "id": "tp_1790305713230",
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305794687",
+          "achieved": true,
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek"
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Nazifa Marsha Triyanti dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "usaha": "A",
+      "capaian": "A",
+      "lastUpdatedAt": "2026-10-03T06:11:29.391Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "proses": "A",
+      "studentId": "s8_26"
+    },
+    {
+      "capaian": "B",
+      "tps": [
+        {
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": false,
+          "id": "tp_1790305713230"
+        },
+        {
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790305794687"
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Rafa Abiela Alfar dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 83,
+      "studentId": "s8_27",
+      "subject": "PPKN",
+      "usaha": "B",
+      "lastUpdatedAt": "2026-10-03T06:11:45.373Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "proses": "B"
+    },
+    {
+      "capaian": "A",
+      "score": 92,
+      "tps": [
+        {
+          "achieved": true,
+          "id": "tp_1790305713230",
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara"
+        },
+        {
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687",
+          "achieved": true
+        }
+      ],
+      "proses": "A",
+      "studentId": "s8_28",
+      "lastUpdatedAt": "2026-10-03T06:12:08.047Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "usaha": "A",
+      "deskripsi": "Alhamdulillah, ananda Rafifa Inara Wijaya dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "subject": "PPKN"
+    },
+    {
+      "tps": [
+        {
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": true,
+          "id": "tp_1790305713230"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687"
+        }
+      ],
+      "capaian": "A",
+      "usaha": "A",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:12:31.035Z",
+      "subject": "PPKN",
+      "studentId": "s8_29",
+      "proses": "A",
+      "score": 92,
+      "deskripsi": "Alhamdulillah, ananda Raniah Imtiyaz dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah."
+    },
+    {
+      "deskripsi": "Alhamdulillah, ananda Kholish Khoirullah dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "capaian": "B",
+      "score": 83,
+      "tps": [
+        {
+          "achieved": false,
+          "id": "tp_1790305713230",
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara"
+        },
+        {
+          "id": "tp_1790305794687",
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "achieved": true
+        }
+      ],
+      "studentId": "s8_2",
+      "proses": "B",
+      "usaha": "B",
+      "subject": "PPKN",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:09:35.861Z"
+    },
+    {
+      "studentId": "s8_3",
+      "proses": "B",
+      "usaha": "B",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:12:43.831Z",
+      "deskripsi": "Alhamdulillah, ananda Resti Azura dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "capaian": "B",
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "id": "tp_1790305713230"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305794687",
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek"
+        }
+      ],
+      "score": 83,
+      "subject": "PPKN"
+    },
+    {
+      "proses": "B",
+      "deskripsi": "Alhamdulillah, ananda Syaqilla Nur Afiqah dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "studentId": "s8_5",
+      "subject": "PPKN",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:13:04.232Z",
+      "usaha": "A",
+      "tps": [
+        {
+          "id": "tp_1790305713230",
+          "achieved": false,
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara"
+        },
+        {
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790305794687"
+        }
+      ],
+      "score": 84,
+      "capaian": "B"
+    },
+    {
+      "score": 92,
+      "capaian": "A",
+      "tps": [
+        {
+          "id": "tp_1790305713230",
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara",
+          "achieved": true
+        },
+        {
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek",
+          "id": "tp_1790305794687",
+          "achieved": true
+        }
+      ],
+      "studentId": "s8_6",
+      "deskripsi": "Alhamdulillah, ananda Vhania Anezka dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara dan mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "usaha": "A",
+      "subject": "PPKN",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:13:15.563Z",
+      "proses": "A"
+    },
+    {
+      "studentId": "s9_10",
+      "score": 85,
+      "deskripsi": "Alhamdulillah, ananda Akbar Al Khedira Maryadi dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945 dan menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "proses": "B",
+      "capaian": "B",
+      "usaha": "B",
+      "lastUpdatedAt": "2026-10-03T06:14:55.241Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": false
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969",
+          "achieved": false
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "id": "tp_1790305567461",
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "subject": "PPKN"
+    },
+    {
+      "subject": "PPKN",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:15:35.953Z",
+      "deskripsi": "Alhamdulillah, ananda Alesha Nazeera Sakhi dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "studentId": "s9_11",
+      "usaha": "A",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969"
+        },
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "id": "tp_1790305403760"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305567461",
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "proses": "A",
+      "capaian": "A",
+      "score": 92
+    },
+    {
+      "capaian": "B",
+      "score": 86,
+      "lastUpdatedAt": "2026-10-03T06:16:01.020Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "studentId": "s9_12",
+      "deskripsi": "Alhamdulillah, ananda Aqila Bagasditya Kesuma dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305377969",
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "achieved": true
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "id": "tp_1790305403760",
+          "achieved": false
+        },
+        {
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "id": "tp_1790305567461",
+          "achieved": true
+        }
+      ],
+      "usaha": "A",
+      "subject": "PPKN",
+      "proses": "B"
+    },
+    {
+      "capaian": "B",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": false
+        },
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969"
+        },
+        {
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "achieved": false
+        },
+        {
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "id": "tp_1790305567461",
+          "achieved": true
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Bregy Naufal Vialen dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945 dan menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 82,
+      "studentId": "s9_13",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:16:22.203Z",
+      "subject": "PPKN",
+      "usaha": "B",
+      "proses": "B"
+    },
+    {
+      "subject": "PPKN",
+      "usaha": "A",
+      "studentId": "s9_14",
+      "deskripsi": "Alhamdulillah, ananda Chalisa Nadifa dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "proses": "A",
+      "tps": [
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "id": "tp_1790305358066"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "id": "tp_1790305567461"
+        }
+      ],
+      "score": 92,
+      "capaian": "A",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:16:35.254Z"
+    },
+    {
+      "capaian": "A",
+      "score": 92,
+      "lastUpdatedAt": "2026-10-03T06:16:47.678Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "subject": "PPKN",
+      "studentId": "s9_15",
+      "deskripsi": "Alhamdulillah, ananda Daania Ashika Bahri dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "proses": "A",
+      "usaha": "A",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
+        },
+        {
+          "id": "tp_1790305377969",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "achieved": true,
+          "id": "tp_1790305403760"
+        },
+        {
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790305567461"
+        }
+      ]
+    },
+    {
+      "score": 92,
+      "studentId": "s9_16",
+      "deskripsi": "Alhamdulillah, ananda Eryna Nabila dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:17:01.193Z",
+      "proses": "A",
+      "tps": [
+        {
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": true,
+          "id": "tp_1790305358066"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305377969",
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "id": "tp_1790305403760",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305567461",
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "subject": "PPKN",
+      "usaha": "A",
+      "capaian": "A"
+    },
+    {
+      "usaha": "A",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "achieved": false,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305567461",
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "proses": "B",
+      "capaian": "B",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:17:15.383Z",
+      "score": 88,
+      "deskripsi": "Alhamdulillah, ananda Fadhlan Evandi dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "subject": "PPKN",
+      "studentId": "s9_17"
+    },
+    {
+      "studentId": "s9_18",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "achieved": false,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
+        },
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969"
+        },
+        {
+          "achieved": false,
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "id": "tp_1790305403760"
+        },
+        {
+          "id": "tp_1790305567461",
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "score": 82,
+      "deskripsi": "Alhamdulillah, ananda Fairuz Zilzyan dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945 dan menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "capaian": "B",
+      "proses": "B",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:17:30.808Z",
+      "usaha": "B",
+      "subject": "PPKN"
+    },
+    {
+      "usaha": "A",
+      "proses": "A",
+      "deskripsi": "Alhamdulillah, ananda Falih Sakhiy Denisko dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "tps": [
+        {
+          "achieved": true,
+          "id": "tp_1790305358066",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
+        },
+        {
+          "id": "tp_1790305377969",
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305567461",
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "subject": "PPKN",
+      "studentId": "s9_19",
+      "score": 93,
+      "lastUpdatedAt": "2026-10-03T06:17:41.014Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "capaian": "A"
+    },
+    {
+      "proses": "B",
+      "capaian": "B",
+      "usaha": "B",
+      "studentId": "s9_20",
+      "lastUpdatedAt": "2026-10-03T06:18:05.596Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "tps": [
+        {
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": false,
+          "id": "tp_1790305358066"
+        },
+        {
+          "id": "tp_1790305377969",
+          "achieved": false,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790305567461"
+        }
+      ],
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Hakiki dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945 dan menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 82
+    },
+    {
+      "proses": "B",
+      "lastUpdatedAt": "2026-10-03T06:18:24.141Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "usaha": "A",
+      "studentId": "s9_21",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Hudzaifah Adly Zaidan dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 87,
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305377969",
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
+        },
+        {
+          "achieved": false,
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "id": "tp_1790305567461",
+          "achieved": true
+        }
+      ],
+      "capaian": "B"
+    },
+    {
+      "studentId": "s9_22",
+      "subject": "PPKN",
+      "score": 92,
+      "deskripsi": "Alhamdulillah, ananda Kenzo Alvaro Shaquell dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "capaian": "A",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:18:37.496Z",
+      "usaha": "A",
+      "proses": "A",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
+        },
+        {
+          "id": "tp_1790305377969",
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "achieved": true
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "achieved": true,
+          "id": "tp_1790305403760"
+        },
+        {
+          "id": "tp_1790305567461",
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ]
+    },
+    {
+      "proses": "A",
+      "studentId": "s9_23",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:18:47.970Z",
+      "usaha": "A",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Kirei Adania Fauri dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "score": 92,
+      "tps": [
+        {
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": true,
+          "id": "tp_1790305358066"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "achieved": true,
+          "id": "tp_1790305377969"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305567461",
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "capaian": "A"
+    },
+    {
+      "capaian": "A",
+      "score": 92,
+      "proses": "A",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:19:04.764Z",
+      "tps": [
+        {
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "id": "tp_1790305358066",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305377969",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "achieved": true,
+          "id": "tp_1790305403760"
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305567461",
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Mahira Aika Salma dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "studentId": "s9_24",
+      "usaha": "A",
+      "subject": "PPKN"
+    },
+    {
+      "subject": "PPKN",
+      "usaha": "A",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "achieved": false,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
+        },
+        {
+          "id": "tp_1790305377969",
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305403760",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "id": "tp_1790305567461",
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "studentId": "s9_25",
+      "deskripsi": "Alhamdulillah, ananda Muhammad Dzaki Aqil dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 87,
+      "proses": "B",
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T06:19:18.820Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr"
+    },
+    {
+      "studentId": "s9_26",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Muhammad Rifqi Sumiarto dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "score": 86,
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
+        },
+        {
+          "id": "tp_1790305377969",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
+        },
+        {
+          "id": "tp_1790305403760",
+          "achieved": false,
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790305567461"
+        }
+      ],
+      "capaian": "B",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:19:58.313Z",
+      "usaha": "A",
+      "proses": "B"
+    },
+    {
+      "lastUpdatedAt": "2026-10-03T06:20:18.543Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "capaian": "B",
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "id": "tp_1790305358066"
+        },
+        {
+          "id": "tp_1790305377969",
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "achieved": false
+        },
+        {
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "id": "tp_1790305567461",
+          "achieved": true
+        }
+      ],
+      "usaha": "B",
+      "subject": "PPKN",
+      "deskripsi": "Alhamdulillah, ananda Muhammad Tsaqif Al Kindi dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945 dan menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "proses": "B",
+      "score": 82,
+      "studentId": "s9_27"
+    },
+    {
+      "studentId": "s9_28",
+      "capaian": "B",
+      "score": 88,
+      "deskripsi": "Alhamdulillah, ananda Ninta Neemonsia Muhani dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "usaha": "A",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:20:36.898Z",
+      "subject": "PPKN",
+      "tps": [
+        {
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "id": "tp_1790305358066",
+          "achieved": false
+        },
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "id": "tp_1790305403760",
+          "achieved": true
+        },
+        {
+          "id": "tp_1790305567461",
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "proses": "B"
+    },
+    {
+      "subject": "PPKN",
+      "studentId": "s9_29",
+      "score": 89,
+      "deskripsi": "Alhamdulillah, ananda Rafi Faizullah Nugraha dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "tps": [
+        {
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "id": "tp_1790305358066",
+          "achieved": false
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "id": "tp_1790305403760"
+        },
+        {
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "id": "tp_1790305567461"
+        }
+      ],
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T06:20:55.654Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "usaha": "A",
+      "proses": "B"
+    },
+    {
+      "deskripsi": "Alhamdulillah, ananda Ghina Aniqah Batrisyia dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:17:47.748Z",
+      "capaian": "A",
+      "studentId": "s9_2",
+      "proses": "A",
+      "score": 93,
+      "tps": [
+        {
+          "achieved": true,
+          "id": "tp_1790305358066",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
+        },
+        {
+          "id": "tp_1790305377969",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
+        },
+        {
+          "id": "tp_1790305403760",
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790305567461"
+        }
+      ],
+      "usaha": "A",
+      "subject": "PPKN"
+    },
+    {
+      "deskripsi": "Alhamdulillah, ananda Richael Aulia Aicha dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T06:21:15.697Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "usaha": "A",
+      "studentId": "s9_3",
+      "tps": [
+        {
+          "achieved": false,
+          "id": "tp_1790305358066",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
+        },
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969"
+        },
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "id": "tp_1790305403760"
+        },
+        {
+          "id": "tp_1790305567461",
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "subject": "PPKN",
+      "proses": "B",
+      "score": 86
+    },
+    {
+      "capaian": "B",
+      "score": 87,
+      "studentId": "s_1790223947462",
+      "subject": "PPKN",
+      "proses": "B",
+      "tps": [
+        {
+          "achieved": true,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "id": "tp_1790305358066"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "achieved": true,
+          "id": "tp_1790305377969"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "id": "tp_1790305403760",
+          "achieved": false
+        },
+        {
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek",
+          "achieved": true,
+          "id": "tp_1790305567461"
+        }
+      ],
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "lastUpdatedAt": "2026-10-03T06:21:33.704Z",
+      "usaha": "A",
+      "deskripsi": "Alhamdulillah, ananda Rizky Ashar Al Majid dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga."
+    },
+    {
+      "deskripsi": "Alhamdulillah, ananda Roihan Fathullah Budiman dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga.",
+      "proses": "B",
+      "studentId": "s_1790223960090",
+      "capaian": "B",
+      "usaha": "B",
+      "tps": [
+        {
+          "achieved": false,
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "id": "tp_1790305358066"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "achieved": true,
+          "id": "tp_1790305377969"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "id": "tp_1790305403760",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305567461",
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "lastUpdatedAt": "2026-10-03T06:21:46.779Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "subject": "PPKN",
+      "score": 88
+    },
+    {
+      "subject": "PPKN",
+      "score": 88,
+      "studentId": "s_1790223975380",
+      "capaian": "B",
+      "lastUpdatedAt": "2026-10-03T06:22:04.127Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "usaha": "A",
+      "proses": "B",
+      "tps": [
+        {
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": false,
+          "id": "tp_1790305358066"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika",
+          "id": "tp_1790305377969",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305403760",
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "id": "tp_1790305567461",
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "deskripsi": "Alhamdulillah, ananda Said Abdurrasyid dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Namun masih memerlukan bimbingan dan pendampingan lebih lanjut dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945. Tetaplah bersemangat, jangan pernah lelah untuk mencoba karena setiap proses belajarmu sangatlah berharga."
+    },
+    {
+      "studentId": "s_1790223989538",
+      "tps": [
+        {
+          "id": "tp_1790305358066",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945",
+          "achieved": true
+        },
+        {
+          "achieved": true,
+          "id": "tp_1790305377969",
+          "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
+        },
+        {
+          "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia",
+          "achieved": true,
+          "id": "tp_1790305403760"
+        },
+        {
+          "id": "tp_1790305567461",
+          "achieved": true,
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ],
+      "score": 92,
+      "lastUpdatedAt": "2026-10-03T06:22:15.199Z",
+      "lastUpdatedBy": "Intan Isti Qoma, S.Pd., Gr",
+      "deskripsi": "Alhamdulillah, ananda Siti Awaliyah Bahmim dalam pembelajaran PPKN menunjukkan penguasaan yang optimal dalam menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika, menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia, dan mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek. Pertahankan prestasimu, teruslah bertumbuh dengan rendah hati, dan yakinlah setiap ikhtiar baikmu hari ini akan membuka pintu masa depan yang indah.",
+      "proses": "A",
+      "subject": "PPKN",
+      "usaha": "A",
+      "capaian": "A"
     }
   ],
   "walikelas_notes": {
@@ -3253,49 +5340,44 @@
     ],
     "PPKN": [
       {
-        "id": "ppkn_7_1",
+        "id": "tp_1790305942524",
         "kelas": "7",
-        "text": "Menghayati sejarah proses perumusan dan penetapan Pancasila sebagai dasar negara"
+        "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)"
       },
       {
-        "id": "ppkn_7_2",
+        "id": "tp_1790306014327",
         "kelas": "7",
-        "text": "Memahami norma-norma yang berlaku dan kedudukan UUD Negara Republik Indonesia 1945"
+        "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
       },
       {
-        "id": "ppkn_7_3",
-        "kelas": "7",
-        "text": "Menghargai keberagaman suku, agama, ras, dan antargolongan dalam bingkai Bhinneka Tunggal Ika"
-      },
-      {
-        "id": "ppkn_8_1",
+        "id": "tp_1790305713230",
         "kelas": "8",
-        "text": "Memahami kedudukan, fungsi, dan nilai-nilai luhur Pancasila dalam kehidupan berbangsa"
+        "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara"
       },
       {
-        "id": "ppkn_8_2",
+        "id": "tp_1790305794687",
         "kelas": "8",
-        "text": "Menganalisis tata urutan peraturan perundang-undangan nasional dalam sistem hukum Indonesia"
+        "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek"
       },
       {
-        "id": "ppkn_8_3",
-        "kelas": "8",
-        "text": "Meneladani semangat Kebangkitan Nasional 1908 dan nilai persatuan Sumpah Pemuda 1928"
-      },
-      {
-        "id": "ppkn_9_1",
+        "id": "tp_1790305358066",
         "kelas": "9",
-        "text": "Menganalisis dinamika penerapan Pancasila dari masa ke masa dan tantangan era modern"
+        "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945"
       },
       {
-        "id": "ppkn_9_2",
+        "id": "tp_1790305377969",
         "kelas": "9",
-        "text": "Memahami pokok-pokok pikiran dalam Pembukaan UUD Negara Republik Indonesia 1945"
+        "text": "menganalisis hubungan Pancasila dengan Bhineka Tunggal Ika"
       },
       {
-        "id": "ppkn_9_3",
+        "id": "tp_1790305403760",
         "kelas": "9",
-        "text": "Menunjukkan komitmen kedaulatan NKRI, persatuan bangsa, serta partisipasi upaya bela negara"
+        "text": "menganalisis hubungan Pancasila dengan Negara Kesatuan Republik Indonesia"
+      },
+      {
+        "id": "tp_1790305567461",
+        "kelas": "9",
+        "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
       }
     ],
     "Bahasa Indonesia": [

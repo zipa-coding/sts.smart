@@ -10,6 +10,8 @@ import {
   RefreshCw,
   Plus,
   Trash2,
+  Pencil,
+  X,
 } from "lucide-react";
 
 interface TeacherPanelProps {
@@ -49,9 +51,12 @@ export default function TeacherPanel({
   const [customDescription, setCustomDescription] = useState<string>("");
   const [isCustomDescActive, setIsCustomDescActive] = useState<boolean>(false);
 
-  // Manage TP template state for teacher
+  // Manage TP template state for teacher (Add & Edit)
   const [newTpText, setNewTpText] = useState("");
   const [tpSubmitLoading, setTpSubmitLoading] = useState(false);
+  const [editingTpId, setEditingTpId] = useState<string | null>(null);
+  const [editingTpText, setEditingTpText] = useState("");
+  const [editTpLoading, setEditTpLoading] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -208,34 +213,13 @@ export default function TeacherPanel({
 
         const studentSavedTps = Array.isArray(existingGrade.tps) ? existingGrade.tps : [];
 
-        // If student has saved TPs, ensure any unique TPs from the student are present in active templates
-        if (studentSavedTps.length > 0) {
-          studentSavedTps.forEach((stTp) => {
-            if (!stTp || !stTp.text) return;
-            const normText = normalizeTpText(stTp.text);
-            const exists = activeTemplates.some(
-              (tmpl) =>
-                (tmpl.id && stTp.id && String(tmpl.id).trim() === String(stTp.id).trim()) ||
-                normalizeTpText(tmpl.text) === normText
-            );
-            if (!exists) {
-              activeTemplates.push({
-                id: stTp.id || `tp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-                text: stTp.text,
-                kelas: student.kelas,
-              });
-            }
-          });
-          setTpTemplates(activeTemplates);
-        }
-
         // Build active checked states with multi-level matching:
         // Priority:
         // 1. Direct ID match
         // 2. Exact/normalized text match
         // 3. Substring text match
         // 4. Positional index fallback if length is identical
-        // GUARANTEE: An un-checked TP (achieved: false) will ALWAYS remain false!
+        // ABSOLUTE GUARANTEE: An un-checked TP (achieved: false) will ALWAYS remain false!
         const achievedMap: { [tpId: string]: boolean } = {};
 
         activeTemplates.forEach((tmpl, tmplIdx) => {
@@ -281,20 +265,23 @@ export default function TeacherPanel({
               achievedMap[matchedItem.id] = isAchieved;
             }
           } else {
-            achievedMap[tmpl.id] = true;
+            // If student already has saved TPs, check if this position in saved TPs was marked false
+            if (studentSavedTps.length > 0 && tmplIdx < studentSavedTps.length && studentSavedTps[tmplIdx]?.achieved === false) {
+              achievedMap[tmpl.id] = false;
+            } else {
+              achievedMap[tmpl.id] = true;
+            }
           }
         });
 
-        // Also record raw student saved TP IDs
+        // Also record raw student saved TP IDs so any direct lookups work
         studentSavedTps.forEach((stTp) => {
           if (stTp && stTp.id) {
             const isAchieved =
               stTp.achieved !== false &&
               (stTp.achieved as any) !== "false" &&
               (stTp.achieved as any) !== 0;
-            if (achievedMap[stTp.id] === undefined) {
-              achievedMap[stTp.id] = isAchieved;
-            }
+            achievedMap[stTp.id] = isAchieved;
           }
         });
 
@@ -490,15 +477,35 @@ export default function TeacherPanel({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal menyimpan nilai.");
 
+      // Immediately synchronize local state so un-checked TPs stay strictly intact
+      const updatedGradeItem = {
+        studentId: selectedStudent.id,
+        subject: user.subject,
+        score: parsedScore,
+        tps: formattedTps,
+        usaha,
+        proses,
+        capaian,
+        deskripsi: finalDescription,
+        teacherName: user.name,
+        lastUpdatedBy: user.name,
+        lastUpdatedAt: new Date().toISOString(),
+      };
+
+      setGrades((prev) => {
+        const copy = [...prev];
+        const idx = copy.findIndex(
+          (g) => g && g.studentId === selectedStudent.id && normalizeSubject(g.subject) === normalizeSubject(user.subject),
+        );
+        if (idx !== -1) copy[idx] = updatedGradeItem;
+        else copy.push(updatedGradeItem);
+        return copy;
+      });
+
       setSuccess(
         `Nilai ${user.subject} untuk ${selectedStudent.name} berhasil disimpan!`,
       );
       onRefreshTrigger(); // trigger live stats update in index
-
-      // Refresh grades silently
-      const getGrades = await fetch("/api/grades");
-      const updatedGrades = await getGrades.json();
-      setGrades(updatedGrades);
     } catch (err: any) {
       setError(err.message || "Gagal menyimpan.");
     } finally {
@@ -556,11 +563,62 @@ export default function TeacherPanel({
     }
   };
 
-  // Delete TP template by teacher
+  // Edit TP template by teacher
+  const startEditTp = (tp: { id: string; text: string }) => {
+    setEditingTpId(tp.id);
+    setEditingTpText(tp.text);
+    setError("");
+    setSuccess("");
+  };
+
+  const cancelEditTp = () => {
+    setEditingTpId(null);
+    setEditingTpText("");
+  };
+
+  const handleSaveEditTp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTpId || !editingTpText.trim()) return;
+    setEditTpLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(
+        `/api/tps/${encodeURIComponent(user.subject)}/${encodeURIComponent(editingTpId)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tpText: editingTpText.trim(),
+            kelas: selectedClass,
+          }),
+        },
+      );
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Gagal memperbarui TP.");
+
+      setTpTemplates((prev) =>
+        prev.map((t) =>
+          t.id === editingTpId ? { ...t, text: editingTpText.trim() } : t,
+        ),
+      );
+      setSuccess("Tujuan Pembelajaran berhasil diperbarui/diganti!");
+      setEditingTpId(null);
+      setEditingTpText("");
+    } catch (err: any) {
+      setError(err.message || "Gagal memperbarui TP.");
+    } finally {
+      setEditTpLoading(false);
+    }
+  };
+
+  // Delete TP template permanently (with cloud and cache synchronization)
   const handleDeleteLocalTp = async (tpId: string) => {
     if (
       !confirm(
-        "Apakah Anda yakin ingin menghapus Tujuan Pembelajaran (TP) ini?",
+        "Apakah Anda yakin ingin menghapus Tujuan Pembelajaran (TP) ini secara permanen?",
       )
     )
       return;
@@ -568,17 +626,28 @@ export default function TeacherPanel({
     setSuccess("");
 
     try {
-      const response = await fetch(`/api/tps/${user.subject}/${tpId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/tps/${encodeURIComponent(user.subject)}/${encodeURIComponent(tpId)}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal menghapus TP.");
 
-      setSuccess("Tujuan Pembelajaran berhasil dihapus.");
+      // Immediately filter out from active state so it is gone permanently
+      setTpTemplates((prev) => prev.filter((t) => t.id !== tpId));
+      setTpAchievements((prev) => {
+        const next = { ...prev };
+        delete next[tpId];
+        return next;
+      });
 
-      // Reload TP templates for selected class
-      const resTp = await fetch(`/api/tps?kelas=${selectedClass}`);
+      setSuccess("Tujuan Pembelajaran berhasil dihapus permanen.");
+
+      // Also reload in background to stay synced
+      const resTp = await fetch("/api/tps");
       const tpData = await resTp.json();
       const allSubjectTps = Array.isArray(tpData[user.subject])
         ? tpData[user.subject]
@@ -586,7 +655,7 @@ export default function TeacherPanel({
         ? tpData
         : [];
       const classTps = allSubjectTps.filter(
-        (t: any) => String(t.kelas || "").trim() === String(selectedClass).trim()
+        (t: any) => String(t.kelas || "").trim() === String(selectedClass).trim(),
       );
       setTpTemplates(classTps);
     } catch (err: any) {
@@ -610,17 +679,21 @@ export default function TeacherPanel({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" id="teacher-panel">
       {/* Selector sidebar (Classes and Students list) */}
-      <div className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm p-3 h-fit space-y-3.5">
+      <div className="lg:col-span-1 bg-[#0f172a] rounded-xl border-2 border-[#253e66] shadow-md p-4 h-fit space-y-4">
         <div>
-          <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
-            Pilih Kelas:
+          <label className="block text-xs font-black text-white uppercase tracking-wider mb-2">
+            PILIH KELAS:
           </label>
-          <div className="grid grid-cols-3 gap-1.5" id="class-button-selectors">
+          <div className="grid grid-cols-3 gap-2" id="class-button-selectors">
             {["7", "8", "9"].map((cls) => (
               <button
                 key={cls}
                 onClick={() => setSelectedClass(cls)}
-                className={`py-1 px-1.5 rounded text-xs font-bold transition cursor-pointer text-center ${selectedClass === cls ? "bg-emerald-800 text-white shadow-2xs" : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"}`}
+                className={`py-2 px-3 rounded-lg text-xs font-black transition cursor-pointer text-center ${
+                  selectedClass === cls
+                    ? "bg-emerald-600 text-white border-2 border-emerald-300 shadow-md ring-2 ring-emerald-500/30"
+                    : "bg-[#142036] text-white hover:bg-[#1c2e4e] hover:text-white border-2 border-[#2c4570]"
+                }`}
               >
                 Kelas {cls}
               </button>
@@ -628,25 +701,25 @@ export default function TeacherPanel({
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-2.5 flex items-center justify-between">
-          <h3 className="font-extrabold text-[10px] uppercase tracking-wider text-slate-500">
-            Daftar Siswa ({classStudents.length})
+        <div className="border-t-2 border-[#203254] pt-3.5 flex items-center justify-between">
+          <h3 className="font-black text-xs uppercase tracking-wider text-white">
+            DAFTAR SISWA ({classStudents.length})
           </h3>
-          <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-100">
+          <span className="text-xs font-black bg-emerald-900 text-emerald-100 px-3 py-1 rounded-lg border-2 border-emerald-400 shadow-xs">
             Terisi: {filledCount}/{classStudents.length}
           </span>
         </div>
 
         <div
-          className="space-y-1 max-h-[350px] overflow-y-auto pr-1"
+          className="space-y-2 max-h-[380px] overflow-y-auto pr-1"
           id="student-vertical-list"
         >
           {loading ? (
-            <div className="p-3 text-center text-xs text-slate-400 italic">
+            <div className="p-6 text-center text-xs text-white font-bold italic bg-[#142036] rounded-xl border border-[#203254]">
               Memuat daftar siswa...
             </div>
           ) : classStudents.length === 0 ? (
-            <p className="text-xs text-slate-450 italic text-center py-3">
+            <p className="text-xs text-slate-300 font-bold italic text-center py-6 bg-[#142036] rounded-xl border border-[#203254]">
               Belum ada siswa di kelas ini.
             </p>
           ) : (
@@ -655,22 +728,26 @@ export default function TeacherPanel({
                 Array.isArray(grades) &&
                 grades.some(
                   (g) =>
-                    g && g.studentId === s.id && g.subject === user.subject,
+                    g && g.studentId === s.id && normalizeSubject(g.subject) === normalizeSubject(user.subject),
                 );
               const isSelected = selectedStudent?.id === s.id;
               return (
                 <button
                   key={s.id}
                   onClick={() => handleStudentSelect(s)}
-                  className={`w-full p-2 rounded text-left text-xs transition flex items-center justify-between gap-2 border cursor-pointer ${isSelected ? "bg-emerald-50/70 border-emerald-400 font-bold text-emerald-900" : "bg-white border-slate-150 text-slate-700 hover:bg-slate-50"}`}
+                  className={`w-full p-3 rounded-xl text-left text-xs transition flex items-center justify-between gap-2 border-2 cursor-pointer ${
+                    isSelected
+                      ? "bg-[#0b291d] border-emerald-400 font-black text-white shadow-md ring-2 ring-emerald-400/40"
+                      : "bg-[#142036] border-[#294269] text-white hover:bg-[#1a2d4b] hover:border-slate-300 font-bold"
+                  }`}
                 >
-                  <span className="truncate">{s.name || "N/A"}</span>
+                  <span className="truncate text-white font-bold">{s.name || "N/A"}</span>
                   {isFilled ? (
-                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0">
+                    <span className="bg-emerald-600 text-white text-[11px] font-black px-2.5 py-1 rounded shadow-xs shrink-0 border border-emerald-300">
                       Selesai ✓
                     </span>
                   ) : (
-                    <span className="bg-slate-100 text-slate-400 text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0">
+                    <span className="bg-slate-700 text-slate-100 text-[11px] font-extrabold px-2.5 py-1 rounded border border-slate-500 shrink-0">
                       Kosong
                     </span>
                   )}
@@ -682,54 +759,61 @@ export default function TeacherPanel({
       </div>
 
       {/* Main interactive panel */}
-      <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+      <div className="lg:col-span-2 bg-[#0f172a] rounded-xl border-2 border-[#253e66] shadow-lg p-5 sm:p-6 space-y-5">
         {/* Navigation Tab Headers */}
         <div
-          className="flex border-b border-slate-200 gap-1 mb-4"
+          className="flex border-b-2 border-[#203254] gap-2 pb-1"
           id="teacher-view-tabs"
         >
           <button
             onClick={() => setActiveViewTab("grades")}
-            className={`py-1.5 px-3 uppercase tracking-wider text-[10px] font-extrabold border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeViewTab === "grades" ? "border-emerald-800 text-emerald-850 bg-emerald-50/40" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+            className={`py-2.5 px-4 uppercase tracking-wider text-xs font-black transition flex items-center gap-2 cursor-pointer rounded-t-lg ${
+              activeViewTab === "grades"
+                ? "bg-emerald-600 text-white border-b-4 border-emerald-300 shadow-md"
+                : "bg-[#142036] text-white hover:text-white hover:bg-[#1c2e4e] border-2 border-[#2b4168]"
+            }`}
           >
-            <ClipboardPlus className="w-3.5 h-3.5" /> Pengisian Nilai &
-            Deskripsi
+            <ClipboardPlus className="w-4 h-4 text-white" /> Pengisian Nilai & Deskripsi
           </button>
           <button
             onClick={() => setActiveViewTab("tps")}
-            className={`py-1.5 px-3 uppercase tracking-wider text-[10px] font-extrabold border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeViewTab === "tps" ? "border-emerald-800 text-emerald-850 bg-emerald-50/40" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+            className={`py-2.5 px-4 uppercase tracking-wider text-xs font-black transition flex items-center gap-2 cursor-pointer rounded-t-lg ${
+              activeViewTab === "tps"
+                ? "bg-emerald-600 text-white border-b-4 border-emerald-300 shadow-md"
+                : "bg-[#142036] text-white hover:text-white hover:bg-[#1c2e4e] border-2 border-[#2b4168]"
+            }`}
           >
-            <BookOpen className="w-3.5 h-3.5" /> Kelola TP ({user.subject})
+            <BookOpen className="w-4 h-4 text-white" /> Kelola TP ({user.subject})
           </button>
         </div>
 
-        <div className="pb-2.5 mb-4 flex items-center justify-between">
-          <div>
-            <span className="px-2 py-0.5 bg-emerald-800 text-white rounded text-[10px] uppercase tracking-wider font-extrabold mr-2">
+        <div className="pb-3 border-b-2 border-[#203254] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="px-3.5 py-1.5 bg-emerald-600 text-white rounded-lg text-xs uppercase tracking-wider font-black shadow-xs border border-emerald-300">
               Mapel {user.subject}
             </span>
-            <span className="text-[11px] text-slate-400 italic">
-              Pengampu: {user.name}
+            <span className="text-xs text-slate-200 font-bold">
+              Pengampu: <span className="text-white font-black">{user.name}</span>
             </span>
           </div>
           <button
             onClick={fetchData}
-            className="p-1 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[10px] font-bold rounded transition text-slate-600 cursor-pointer flex items-center gap-1"
+            className="p-2 px-3.5 bg-[#142036] hover:bg-[#1c2e4e] border-2 border-[#2b4168] text-xs font-black rounded-lg transition text-white cursor-pointer flex items-center gap-2 shadow-xs self-start sm:self-auto"
           >
-            <RefreshCw className="w-3 h-3" /> Sinkronkan DB
+            <RefreshCw className="w-3.5 h-3.5 text-emerald-400" /> Sinkronkan DB
           </button>
         </div>
 
         {error && (
-          <div className="p-2.5 bg-red-50 text-red-700 text-xs rounded border border-red-250 flex items-start gap-2 mb-3">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="p-3.5 bg-red-950/90 text-white text-xs font-black rounded-xl border-2 border-red-500 flex items-start gap-2.5 shadow-md">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="p-2.5 bg-green-50 text-green-800 text-xs font-bold rounded border border-green-200 flex items-center gap-1.5 animate-fade-in mb-3">
-            <CheckCircle className="w-4 h-4 text-green-600" />
+          <div className="p-3.5 bg-emerald-950/90 text-white text-xs font-black rounded-xl border-2 border-emerald-400 flex items-center gap-2.5 animate-fade-in shadow-md">
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{success}</span>
           </div>
         )}
@@ -737,55 +821,58 @@ export default function TeacherPanel({
         {/* INPUT GRADING TAB */}
         {activeViewTab === "grades" &&
           (selectedStudent ? (
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-emerald-800 text-white flex items-center justify-center font-bold text-sm shrink-0">
+            <form onSubmit={handleSave} className="space-y-5">
+              <div className="p-4 bg-[#142036] border-2 border-[#294269] rounded-xl flex items-center gap-4 shadow-sm">
+                <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg border-2 border-emerald-300 shadow-md shrink-0">
                   {selectedStudent.name?.charAt(0) || "?"}
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-xs text-slate-800 uppercase">
+                  <h3 className="font-black text-base text-white uppercase tracking-wide">
                     {selectedStudent.name || "N/A"}
                   </h3>
-                  <p className="text-[10px] text-slate-400">
-                    NISN: {selectedStudent.nisn || "-"} • Kelas{" "}
-                    {selectedStudent.kelas || "-"}
+                  <p className="text-xs text-slate-200 font-bold mt-0.5 flex items-center gap-2 flex-wrap">
+                    <span>NISN: <span className="font-mono text-emerald-300 font-black">{selectedStudent.nisn || "-"}</span></span>
+                    <span>•</span>
+                    <span>Kelas: <span className="font-mono text-amber-300 font-black">{selectedStudent.kelas || "-"}</span></span>
                   </p>
                 </div>
               </div>
 
               {/* THREE-GRADE EVALUATION CRITERIA + NUMERIC SCORE */}
-              <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200">
+              <div className="bg-[#142036] border-2 border-[#294269] p-4.5 rounded-xl space-y-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b-2 border-[#203254]">
                   <div>
-                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block mb-0.5">
+                    <span className="text-xs font-black text-white uppercase tracking-wider block mb-1.5">
                       Input Nilai & Kriteria Evaluasi
                     </span>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-black px-3 py-1 rounded-lg bg-emerald-950 border-2 border-emerald-400 text-emerald-200 shadow-xs">
                         &gt; 91 = A (Sangat Baik)
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded bg-cyan-100 text-cyan-800 border border-cyan-300">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-black px-3 py-1 rounded-lg bg-blue-950 border-2 border-blue-400 text-blue-200 shadow-xs">
                         80 - 91 = B (Baik)
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-black px-3 py-1 rounded-lg bg-amber-950 border-2 border-amber-400 text-amber-200 shadow-xs">
                         &le; 79 = C (Cukup)
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                  <div className="flex items-center gap-3.5 self-end sm:self-auto">
                     <div className="text-right">
-                      <label className="text-[11px] font-bold text-slate-700 block">
+                      <label className="text-xs font-black text-white block">
                         Nilai Akhir:
                       </label>
-                      <span className={`text-[10px] font-extrabold font-mono block ${
-                        score !== ""
-                          ? Number(score) > 91
-                            ? "text-emerald-600"
-                            : Number(score) >= 80
-                            ? "text-cyan-600"
-                            : "text-amber-600"
-                          : "text-slate-400"
-                      }`}>
+                      <span
+                        className={`text-xs font-black font-mono block ${
+                          score !== ""
+                            ? Number(score) > 91
+                              ? "text-emerald-300"
+                              : Number(score) >= 80
+                              ? "text-blue-300"
+                              : "text-amber-300"
+                            : "text-slate-300"
+                        }`}
+                      >
                         {score !== "" ? (
                           Number(score) > 91
                             ? "Predikat A"
@@ -806,21 +893,21 @@ export default function TeacherPanel({
                         handleScoreChange(e.target.value.replace(/\D/g, ""))
                       }
                       placeholder="0"
-                      className="w-16 p-1 border-2 border-emerald-500 rounded text-center text-base font-bold bg-white text-emerald-950 focus:outline-none shadow-xs"
+                      className="w-24 p-2.5 bg-[#050a12] border-3 border-emerald-400 rounded-xl text-center text-2xl font-black text-emerald-300 focus:outline-none focus:ring-4 focus:ring-emerald-400/50 shadow-inner"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-black text-white uppercase tracking-wider mb-1.5">
                       Grade Usaha
                     </label>
                     <select
                       value={usaha}
                       onChange={(e) => setUsaha(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                      className="w-full p-2.5 bg-[#060b14] border-2 border-[#3d5a8a] rounded-xl text-xs sm:text-sm font-black text-white focus:outline-none focus:border-emerald-400 shadow-xs"
                     >
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
@@ -829,13 +916,13 @@ export default function TeacherPanel({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-black text-white uppercase tracking-wider mb-1.5">
                       Grade Proses
                     </label>
                     <select
                       value={proses}
                       onChange={(e) => setProses(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                      className="w-full p-2.5 bg-[#060b14] border-2 border-[#3d5a8a] rounded-xl text-xs sm:text-sm font-black text-white focus:outline-none focus:border-emerald-400 shadow-xs"
                     >
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
@@ -844,13 +931,13 @@ export default function TeacherPanel({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-black text-white uppercase tracking-wider mb-1.5">
                       Grade Capaian
                     </label>
                     <select
                       value={capaian}
                       onChange={(e) => setCapaian(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none"
+                      className="w-full p-2.5 bg-[#060b14] border-2 border-[#3d5a8a] rounded-xl text-xs sm:text-sm font-black text-white focus:outline-none focus:border-emerald-400 shadow-xs"
                     >
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
@@ -862,29 +949,29 @@ export default function TeacherPanel({
               </div>
 
               {/* TP Objectives Checklist (Tujuan Pembelajaran) */}
-              <div className="border-t border-[#1e2e4a] pt-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
+              <div className="border-t-2 border-[#203254] pt-4.5 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h4 className="font-extrabold text-[11px] text-white uppercase tracking-wider">
+                    <h4 className="font-black text-xs sm:text-sm text-white uppercase tracking-wider">
                       Tujuan Pembelajaran (TP) untuk Anak Ini
                     </h4>
-                    <p className="text-[10px] text-slate-300 leading-tight">
+                    <p className="text-xs text-slate-200 font-bold mt-0.5 leading-relaxed">
                       Centang jika anak sudah optimal (Sangat Baik). Un-centang jika masih butuh bimbingan.
                     </p>
                   </div>
                   {Array.isArray(tpTemplates) && tpTemplates.length > 0 && (
-                    <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
                       <button
                         type="button"
                         onClick={() => setAllTpStatus(true)}
-                        className="px-2 py-0.5 text-[9px] font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded transition cursor-pointer"
+                        className="px-3.5 py-2 text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white border-2 border-emerald-300 rounded-lg transition cursor-pointer shadow-md"
                       >
                         Semua Optimal ✓
                       </button>
                       <button
                         type="button"
                         onClick={() => setAllTpStatus(false)}
-                        className="px-2 py-0.5 text-[9px] font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded transition cursor-pointer"
+                        className="px-3.5 py-2 text-xs font-black bg-rose-600 hover:bg-rose-500 text-white border-2 border-rose-300 rounded-lg transition cursor-pointer shadow-md"
                       >
                         Semua Butuh Bimbingan ⚠️
                       </button>
@@ -893,16 +980,16 @@ export default function TeacherPanel({
                 </div>
 
                 <div
-                  className="space-y-2 max-h-56 overflow-y-auto pr-1"
+                  className="space-y-3 max-h-72 overflow-y-auto pr-1"
                   id="tp-grading-list"
                 >
                   {!Array.isArray(tpTemplates) || tpTemplates.length === 0 ? (
-                    <div className="p-3 bg-[#0b1222] text-slate-300 text-xs rounded-lg border border-dashed border-[#1e2e4a] text-center">
-                      <p className="font-bold text-white mb-0.5">
+                    <div className="p-6 bg-[#142036] text-white text-xs rounded-xl border-2 border-dashed border-[#294269] text-center space-y-2">
+                      <p className="font-black text-white text-sm">
                         Belum ada template Tujuan Pembelajaran (TP) Kelas {selectedClass}
                       </p>
-                      <p className="text-[11px] text-slate-400">
-                        Anda tetap dapat menyimpan nilai serta menuliskan narasi deskripsi raport secara manual pada kolom di bawah.
+                      <p className="text-xs text-slate-200 font-bold">
+                        Anda dapat menambahkan TP melalui tab <strong>Kelola TP</strong> di atas, atau mengetikkan narasi deskripsi raport secara manual di bawah.
                       </p>
                     </div>
                   ) : (
@@ -915,10 +1002,10 @@ export default function TeacherPanel({
                           <div
                             key={tp.id}
                             onClick={() => toggleTp(tp.id)}
-                            className={`p-2.5 rounded-lg border text-xs transition cursor-pointer select-none flex items-start gap-3 ${
+                            className={`p-3.5 rounded-xl border-2 text-xs transition cursor-pointer select-none flex items-start gap-3.5 shadow-sm ${
                               isChecked
-                                ? "bg-[#0d2820] border-[#059669] text-white hover:bg-[#11352a]"
-                                : "bg-[#241a0e] border-[#d97706] text-white hover:bg-[#302313]"
+                                ? "bg-[#0b291d] border-emerald-400 text-white hover:bg-[#0f3426]"
+                                : "bg-[#330f16] border-rose-400 text-white hover:bg-[#42141d]"
                             }`}
                           >
                             <input
@@ -926,23 +1013,25 @@ export default function TeacherPanel({
                               checked={isChecked}
                               onChange={() => toggleTp(tp.id)}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 cursor-pointer mt-0.5"
+                              className="w-5 h-5 rounded text-emerald-500 focus:ring-emerald-400 cursor-pointer mt-0.5 accent-emerald-500 shrink-0"
                             />
-                            <div className="flex-1 space-y-1">
-                              <p className="text-white leading-relaxed font-semibold">
+                            <div className="flex-1 space-y-2">
+                              <p className="text-white leading-relaxed font-black text-xs sm:text-sm">
                                 {tp.text}
                               </p>
-                              <span
-                                className={`text-[9px] font-extrabold tracking-wide inline-flex items-center gap-1 uppercase px-2 py-0.5 rounded border ${
-                                  isChecked
-                                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                                    : "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                                }`}
-                              >
-                                {isChecked
-                                  ? "Sudah Optimal ✓"
-                                  : "Butuh Bimbingan ⚠️"}
-                              </span>
+                              <div>
+                                <span
+                                  className={`text-[11px] font-black tracking-wide inline-flex items-center gap-1 uppercase px-3 py-1 rounded-md shadow-xs ${
+                                    isChecked
+                                      ? "bg-emerald-600 text-white border border-emerald-300"
+                                      : "bg-rose-600 text-white border border-rose-300"
+                                  }`}
+                                >
+                                  {isChecked
+                                    ? "Sudah Optimal ✓"
+                                    : "Perlu Bimbingan / Belum Optimal ⚠️"}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -952,20 +1041,20 @@ export default function TeacherPanel({
               </div>
 
               {/* NARRATIVE DESCRIPTION PREVIEW / MANUAL INPUT */}
-              <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+              <div className="border-t-2 border-[#203254] pt-4.5 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <h4 className="font-extrabold text-[10px] text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <h4 className="font-black text-xs sm:text-sm text-white uppercase tracking-wider flex items-center gap-2">
                       <span>Narasi Deskripsi Raport</span>
                       {tpTemplates.length > 0 && (
-                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded text-[9px] font-semibold lowercase">
+                        <span className="px-2.5 py-0.5 bg-emerald-900 text-emerald-200 border border-emerald-400 rounded text-[10px] font-black">
                           otomatis memuat nama siswa
                         </span>
                       )}
                     </h4>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-slate-200 font-bold mt-0.5 leading-relaxed">
                       {tpTemplates.length > 0
-                        ? `Deskripsi otomatis langsung diperbarui saat ceklist TP diubah (termasuk nama ananda ${selectedStudent.name}). Tetap bisa diedit manual langsung di kolom ini.`
+                        ? `Deskripsi otomatis langsung disesuaikan saat ceklist TP diubah (termasuk nama ananda ${selectedStudent.name}). Tetap bisa diedit manual langsung di kolom ini.`
                         : `Ketik narasi deskripsi capaian raport ananda ${selectedStudent.name} secara manual di bawah (dapat disimpan tanpa TP).`}
                     </p>
                   </div>
@@ -974,9 +1063,9 @@ export default function TeacherPanel({
                       type="button"
                       onClick={handleRegenerateFromTp}
                       title="Klik untuk menyinkronkan atau menghasilkan ulang narasi deskripsi dari ceklist TP saat ini"
-                      className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition self-start sm:self-auto cursor-pointer shadow-xs"
+                      className="px-3.5 py-1.5 text-xs font-black bg-[#142036] hover:bg-[#1c2e4e] text-emerald-300 rounded-lg border-2 border-emerald-400 flex items-center gap-1.5 transition self-start sm:self-auto cursor-pointer shadow-xs"
                     >
-                      <RefreshCw className="w-3 h-3 text-emerald-600" />
+                      <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
                       <span>Sinkronkan dari TP</span>
                     </button>
                   )}
@@ -991,51 +1080,50 @@ export default function TeacherPanel({
                       ? `Ketik deskripsi capaian rapor untuk ananda ${selectedStudent.name} di sini...`
                       : "Ketik deskripsi capaian nilai rapor secara manual di sini..."
                   }
-                  className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 leading-relaxed font-sans focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  className="w-full p-4 border-2 border-[#3d5a8a] rounded-xl text-xs sm:text-sm bg-[#060b14] text-white font-bold leading-relaxed placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 shadow-inner"
                 />
               </div>
 
               {/* Save trigger */}
-              <div className="border-t border-slate-150 pt-3 text-right">
+              <div className="border-t-2 border-[#203254] pt-4.5 text-right">
                 <button
                   type="submit"
                   disabled={saveLoading}
-                  className="px-4 py-2 bg-emerald-800 hover:bg-emerald-950 text-white rounded text-xs font-bold flex items-center gap-1.5 ml-auto shadow-xs transition disabled:opacity-50 cursor-pointer"
+                  className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-sm font-black flex items-center gap-2 ml-auto shadow-lg border-2 border-emerald-300 transition cursor-pointer disabled:opacity-50"
                   id="submit-grades-button"
                 >
                   {saveLoading ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   ) : (
                     <>
-                      <Save className="w-3.5 h-3.5" /> Simpan Nilai & Deskripsi
+                      <Save className="w-4 h-4" /> Simpan Nilai & Deskripsi
                     </>
                   )}
                 </button>
               </div>
             </form>
           ) : (
-            <div className="p-12 text-center text-slate-400 italic text-xs">
-              Pilihlah salah satu siswa di bar sebelah kiri untuk memulai
-              pengisian rapor.
+            <div className="p-16 text-center text-white font-black text-xs bg-[#142036] rounded-xl border-2 border-dashed border-[#294269]">
+              Pilihlah salah satu siswa di bar sebelah kiri untuk memulai pengisian rapor.
             </div>
           ))}
 
         {/* LOCAL TP MANAGEMENT TAB */}
         {activeViewTab === "tps" && (
           <div
-            className="space-y-4 animate-fade-in"
+            className="space-y-5 animate-fade-in"
             id="teacher-tplocal-management"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#1e2e4a] pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b-2 border-[#203254] pb-3.5">
               <div>
-                <h3 className="font-bold text-xs text-white uppercase flex items-center gap-2">
+                <h3 className="font-black text-sm text-white uppercase flex items-center gap-2">
                   <span>Kelola Tujuan Pembelajaran (TP) - {user.subject}</span>
-                  <span className="px-2 py-0.5 bg-emerald-700 text-white rounded text-[10px] font-bold shadow-2xs border border-emerald-500/40">
+                  <span className="px-3 py-1 bg-emerald-600 text-white rounded-md text-xs font-black shadow-xs border border-emerald-300">
                     Kelas {selectedClass}
                   </span>
                 </h3>
-                <p className="text-[11px] text-slate-300 mt-0.5">
-                  Tujuan pembelajaran otomatis disesuaikan secara spesifik untuk tingkat Kelas {selectedClass}. Anda dapat menambah atau memperbarui sesuai kebutuhan materi.
+                <p className="text-xs text-slate-200 font-bold mt-1 leading-relaxed">
+                  Tujuan pembelajaran disesuaikan spesifik untuk tingkat Kelas {selectedClass}. Anda dapat <strong>mengganti / mengedit</strong> teks TP atau <strong>menambah</strong> TP baru di bawah.
                 </p>
               </div>
             </div>
@@ -1043,12 +1131,12 @@ export default function TeacherPanel({
             {/* Form to add custom learning objective directly by the teacher */}
             <form
               onSubmit={handleAddLocalTp}
-              className="p-3.5 bg-[#142036] rounded-xl border border-[#253e66] flex gap-2.5 items-end shadow-2xs"
+              className="p-4.5 bg-[#142036] rounded-xl border-2 border-[#294269] flex flex-col sm:flex-row gap-3 items-end shadow-sm"
             >
-              <div className="flex-1">
-                <label className="block text-[10px] font-bold text-white uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+              <div className="flex-1 w-full">
+                <label className="block text-xs font-black text-white uppercase tracking-wider mb-2 flex items-center gap-2">
                   <span>Tambah Tujuan Pembelajaran Baru:</span>
-                  <span className="text-emerald-300 font-extrabold">(Tingkat Kelas {selectedClass})</span>
+                  <span className="text-emerald-300 font-black">(Tingkat Kelas {selectedClass})</span>
                 </label>
                 <input
                   type="text"
@@ -1056,39 +1144,42 @@ export default function TeacherPanel({
                   value={newTpText}
                   onChange={(e) => setNewTpText(e.target.value)}
                   placeholder={`Contoh: Menguasai kompetensi dasar materi kelas ${selectedClass}...`}
-                  className="w-full p-2 bg-[#0b1222] border border-[#293e66] rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full p-3 bg-[#060b14] border-2 border-[#3d5a8a] rounded-lg text-xs sm:text-sm text-white placeholder-slate-400 font-bold focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
                 />
               </div>
               <button
                 type="submit"
                 disabled={tpSubmitLoading || !newTpText.trim()}
-                className="bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 text-white p-2 rounded-lg cursor-pointer transition flex items-center justify-center h-[36px] w-[40px] border border-emerald-500/40 shrink-0"
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-5 py-3 rounded-lg cursor-pointer transition flex items-center justify-center gap-2 text-xs font-black shadow-md border-2 border-emerald-300 shrink-0 w-full sm:w-auto h-[46px]"
                 title="Tambahkan TP"
               >
                 {tpSubmitLoading ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 ) : (
-                  <Plus className="w-4 h-4" />
+                  <>
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah TP</span>
+                  </>
                 )}
               </button>
             </form>
 
-            {/* List of current objectives for this subject with delete buttons */}
-            <div className="border border-[#1e2e4a] rounded-xl overflow-hidden bg-[#0f172a]">
-              <div className="bg-[#131f38] px-3.5 py-2.5 border-b border-[#223554] flex items-center justify-between">
-                <span className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
+            {/* List of current objectives for this subject with edit and delete buttons */}
+            <div className="border-2 border-[#203254] rounded-xl overflow-hidden bg-[#0f172a] shadow-sm">
+              <div className="bg-[#142036] px-4.5 py-3 border-b-2 border-[#203254] flex items-center justify-between">
+                <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
                   <span>Daftar TP Kelas {selectedClass}</span>
-                  <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold">
+                  <span className="bg-emerald-600 text-white px-2.5 py-0.5 rounded text-xs font-mono font-black border border-emerald-300">
                     {!Array.isArray(tpTemplates) ? 0 : tpTemplates.length} TP
                   </span>
                 </span>
-                <span className="text-[10px] text-slate-300 italic font-medium">
+                <span className="text-xs text-slate-200 font-bold">
                   Khusus Rombel {selectedClass}
                 </span>
               </div>
-              <div className="divide-y divide-[#1e2e4a] max-h-[320px] overflow-y-auto">
+              <div className="divide-y-2 border-[#203254] max-h-[380px] overflow-y-auto">
                 {!Array.isArray(tpTemplates) || tpTemplates.length === 0 ? (
-                  <p className="p-6 text-center text-xs text-slate-400 italic bg-[#0b1222]">
+                  <p className="p-8 text-center text-xs text-white font-black italic bg-[#142036]">
                     Belum ada Tujuan Pembelajaran untuk Kelas {selectedClass}. Silakan tambahkan pada form di atas.
                   </p>
                 ) : (
@@ -1097,28 +1188,90 @@ export default function TeacherPanel({
                     .map((tp, idx) => (
                       <div
                         key={tp.id}
-                        className="p-3 flex items-start justify-between gap-3 bg-[#0f172a] hover:bg-[#16233c] transition"
+                        className="p-4 flex flex-col gap-3 bg-[#142036] hover:bg-[#1a2d4b] transition border-b border-[#203254] last:border-b-0"
                       >
-                        <div className="flex gap-2.5">
-                          <span className="text-xs font-mono font-bold text-slate-400 mt-0.5">
-                            {idx + 1}.
-                          </span>
-                          <div className="space-y-1">
-                            <p className="text-xs text-white font-semibold leading-relaxed">
-                              {tp.text}
-                            </p>
-                            <span className="inline-block text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                              Kelas {tp.kelas || selectedClass}
-                            </span>
+                        {editingTpId === tp.id ? (
+                          /* INLINE EDIT / REPLACE FORM */
+                          <form onSubmit={handleSaveEditTp} className="space-y-3 bg-[#0b291d] p-3.5 rounded-xl border-2 border-emerald-400">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-emerald-200 uppercase">
+                                Ganti / Edit Teks TP #{idx + 1}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-300 font-mono">
+                                ID: {tp.id}
+                              </span>
+                            </div>
+                            <textarea
+                              rows={2}
+                              required
+                              value={editingTpText}
+                              onChange={(e) => setEditingTpText(e.target.value)}
+                              className="w-full p-2.5 border-2 border-emerald-400 rounded-lg text-xs sm:text-sm bg-[#060b14] text-white font-bold leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                              placeholder="Masukkan teks tujuan pembelajaran yang baru..."
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={cancelEditTp}
+                                className="px-3.5 py-2 bg-slate-700 hover:bg-slate-600 text-white font-black text-xs rounded-lg transition cursor-pointer flex items-center gap-1 border border-slate-500"
+                              >
+                                <X className="w-3.5 h-3.5" /> Batal
+                              </button>
+                              <button
+                                type="submit"
+                                disabled={editTpLoading || !editingTpText.trim()}
+                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-lg transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shadow-xs border-2 border-emerald-300"
+                              >
+                                {editTpLoading ? (
+                                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                ) : (
+                                  <>
+                                    <Save className="w-3.5 h-3.5" /> Simpan Perubahan TP
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          /* STANDARD TP DISPLAY ROW */
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex gap-3">
+                              <span className="text-xs font-mono font-black text-emerald-400 mt-0.5">
+                                {idx + 1}.
+                              </span>
+                              <div className="space-y-1.5">
+                                <p className="text-xs sm:text-sm text-white font-black leading-relaxed">
+                                  {tp.text}
+                                </p>
+                                <div>
+                                  <span className="inline-block text-[10px] font-black px-2.5 py-0.5 rounded bg-emerald-950 text-emerald-200 border border-emerald-400 font-mono">
+                                    Kelas {tp.kelas || selectedClass}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => startEditTp(tp)}
+                                className="text-white bg-blue-600 hover:bg-blue-500 border-2 border-blue-300 px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-xs"
+                                title="Ganti / Edit Teks TP"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                                <span>Ganti</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteLocalTp(tp.id)}
+                                className="text-white bg-rose-600 hover:bg-rose-500 border-2 border-rose-300 px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-xs"
+                                title="Hapus TP Permanen"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Hapus</span>
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteLocalTp(tp.id)}
-                          className="text-red-400 hover:text-red-300 p-1.5 rounded hover:bg-red-500/20 transition cursor-pointer shrink-0"
-                          title="Hapus TP"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        )}
                       </div>
                     ))
                 )}

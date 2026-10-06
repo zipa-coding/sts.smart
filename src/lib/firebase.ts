@@ -632,11 +632,11 @@ export const firebaseApi = {
     return { studentId, ...note };
   },
 
-  // 6. GET, POST, DELETE /api/tps
+  // 6. GET, POST, PUT, DELETE /api/tps
   getTPs: async (kelas?: string) => {
     if (!db) return dbDataAny.tujuan_pembelajaran_templates || {};
     try {
-      const snap = await withTimeout(getDocs(collection(db, "tujuan_pembelajaran_templates")), 2500).catch(() => null);
+      const snap = await withTimeout(getDocs(collection(db, "tujuan_pembelajaran_templates")), 6000).catch(() => null);
       if (snap && !snap.empty) {
         const templates: any = {};
         snap.docs.forEach(docSnap => {
@@ -656,24 +656,71 @@ export const firebaseApi = {
     if (!db) throw new Error("Database not connected");
     const { subject, tpText, kelas } = body;
     const ref = doc(db, "tujuan_pembelajaran_templates", subject);
-    const docSnap = await withTimeout(getDoc(ref), 2500);
+    const docSnap = await withTimeout(getDoc(ref), 5000).catch(() => null);
     let tpsList = [];
-    if (docSnap.exists()) {
+    if (docSnap && docSnap.exists()) {
       tpsList = docSnap.data().tps || [];
+    } else if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
+      tpsList = [...dbDataAny.tujuan_pembelajaran_templates[subject]];
     }
     const newTP = { id: "tp_" + Date.now(), text: tpText, kelas: kelas ? String(kelas).trim() : "7" };
     tpsList.push(newTP);
-    await withTimeout(setDoc(ref, { tps: tpsList }), 2500);
+    await withTimeout(setDoc(ref, { tps: tpsList }), 5000);
+    if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
+      dbDataAny.tujuan_pembelajaran_templates[subject] = tpsList;
+    }
     return newTP;
   },
+
+  putTP: async (subject: string, tpId: string, body: any) => {
+    if (!db) throw new Error("Database not connected");
+    const { tpText, kelas } = body || {};
+    const ref = doc(db, "tujuan_pembelajaran_templates", subject);
+    const docSnap = await withTimeout(getDoc(ref), 5000).catch(() => null);
+    let tpsList: any[] = [];
+    if (docSnap && docSnap.exists()) {
+      tpsList = docSnap.data().tps || [];
+    } else if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
+      tpsList = [...dbDataAny.tujuan_pembelajaran_templates[subject]];
+    }
+    const cleanTpId = String(tpId).trim();
+    const index = tpsList.findIndex((tp: any) => String(tp.id).trim() === cleanTpId);
+    if (index !== -1) {
+      tpsList[index] = {
+        ...tpsList[index],
+        text: tpText,
+        ...(kelas ? { kelas: String(kelas).trim() } : {}),
+      };
+    } else {
+      tpsList.push({
+        id: cleanTpId,
+        text: tpText,
+        kelas: kelas ? String(kelas).trim() : "7",
+      });
+    }
+    await withTimeout(setDoc(ref, { tps: tpsList }), 5000);
+    if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
+      dbDataAny.tujuan_pembelajaran_templates[subject] = tpsList;
+    }
+    return tpsList[index !== -1 ? index : tpsList.length - 1];
+  },
+
   deleteTP: async (subject: string, tpId: string) => {
     if (!db) throw new Error("Database not connected");
     const ref = doc(db, "tujuan_pembelajaran_templates", subject);
-    const docSnap = await withTimeout(getDoc(ref), 2500);
-    if (!docSnap.exists()) throw new Error("TP tidak ditemukan.");
-    const tpsList = docSnap.data().tps || [];
-    const filtered = tpsList.filter((tp: any) => tp.id !== tpId);
-    await withTimeout(setDoc(ref, { tps: filtered }), 2500);
+    const docSnap = await withTimeout(getDoc(ref), 5000).catch(() => null);
+    let tpsList: any[] = [];
+    if (docSnap && docSnap.exists()) {
+      tpsList = docSnap.data().tps || [];
+    } else if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
+      tpsList = [...dbDataAny.tujuan_pembelajaran_templates[subject]];
+    }
+    const cleanTpId = String(tpId).trim();
+    const filtered = tpsList.filter((tp: any) => String(tp.id).trim() !== cleanTpId);
+    await withTimeout(setDoc(ref, { tps: filtered }), 5000);
+    if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
+      dbDataAny.tujuan_pembelajaran_templates[subject] = filtered;
+    }
     return { message: "TP berhasil dihapus." };
   },
 
