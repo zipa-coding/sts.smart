@@ -707,23 +707,7 @@
       "studentId": "s9_1",
       "subject": "PAI",
       "score": 92,
-      "tps": [
-        {
-          "id": "pai1",
-          "text": "Membaca, menulis, mendemonstrasikan hafalan QS Al-Baqarah/Qisash",
-          "achieved": true
-        },
-        {
-          "id": "pai2",
-          "text": "Meyakini rukun iman serta mencerminkannya dalam perilaku sosial",
-          "achieved": true
-        },
-        {
-          "id": "pai3",
-          "text": "Memahami rukun islam dan tata cara bersuci secara sahih",
-          "achieved": true
-        }
-      ],
+      "tps": [],
       "usaha": "A",
       "proses": "B",
       "capaian": "A",
@@ -735,23 +719,7 @@
       "studentId": "s9_1",
       "subject": "PPKN",
       "score": 85,
-      "tps": [
-        {
-          "id": "ppkn1",
-          "text": "Menghayati sejarah perumusan dan penetapan Pancasila sebagai dasar negara",
-          "achieved": true
-        },
-        {
-          "id": "ppkn2",
-          "text": "Menerapkan nilai-nilai Pancasila dalam kehidupan sehari-hari",
-          "achieved": true
-        },
-        {
-          "id": "ppkn3",
-          "text": "Memahami norma-norma yang berlaku dalam kehidupan bermasyarakat",
-          "achieved": true
-        }
-      ],
+      "tps": [],
       "usaha": "B",
       "proses": "B",
       "capaian": "B",
@@ -763,23 +731,7 @@
       "studentId": "s9_1",
       "subject": "Bahasa Indonesia",
       "score": 95,
-      "tps": [
-        {
-          "id": "indo1",
-          "text": "Mengidentifikasi informasi dan struktur teks deskripsi",
-          "achieved": true
-        },
-        {
-          "id": "indo2",
-          "text": "Menganalisis unsur intrinsik cerita fantasi",
-          "achieved": true
-        },
-        {
-          "id": "indo3",
-          "text": "Menulis teks prosedur dengan memperhatikan kaidah kebahasaan",
-          "achieved": true
-        }
-      ],
+      "tps": [],
       "usaha": "A",
       "proses": "A",
       "capaian": "A",
@@ -791,23 +743,7 @@
       "studentId": "s9_1",
       "subject": "Matematika",
       "score": 80,
-      "tps": [
-        {
-          "id": "mtk1",
-          "text": "Menyelesaikan operasi hitung bilangan bulat dan pecahan",
-          "achieved": true
-        },
-        {
-          "id": "mtk2",
-          "text": "Menyederhanakan bentuk aljabar linear",
-          "achieved": true
-        },
-        {
-          "id": "mtk3",
-          "text": "Memecahkan persamaan dan pertidaksamaan linear satu variabel",
-          "achieved": true
-        }
-      ],
+      "tps": [],
       "usaha": "B",
       "proses": "B",
       "capaian": "B",
@@ -819,23 +755,7 @@
       "studentId": "s9_1",
       "subject": "IPA",
       "score": 88,
-      "tps": [
-        {
-          "id": "ipa1",
-          "text": "Memahami konsep metode ilmiah dan pengukuran besaran fisika",
-          "achieved": true
-        },
-        {
-          "id": "ipa2",
-          "text": "Mengidentifikasi sifat zat dan pemisahan campuran",
-          "achieved": true
-        },
-        {
-          "id": "ipa3",
-          "text": "Menganalisis interaksi komponen ekosistem lingkungan",
-          "achieved": true
-        }
-      ],
+      "tps": [],
       "usaha": "B",
       "proses": "B",
       "capaian": "A",
@@ -847,23 +767,7 @@
       "studentId": "s9_1",
       "subject": "IPS",
       "score": 82,
-      "tps": [
-        {
-          "id": "ips1",
-          "text": "Memahami interaksi antara manusia dengan ruang dalam lingkup lokal",
-          "achieved": true
-        },
-        {
-          "id": "ips2",
-          "text": "Menganalisis proses sosialisasi dan pengaruhnya terhadap kepribadian",
-          "achieved": true
-        },
-        {
-          "id": "ips3",
-          "text": "Mengidentifikasi jenis-jenis kegiatan ekonomi masyarakat",
-          "achieved": true
-        }
-      ],
+      "tps": [],
       "usaha": "A",
       "proses": "A",
       "capaian": "B",
@@ -875,23 +779,7 @@
       "studentId": "s9_1",
       "subject": "Bahasa Inggris",
       "score": 84,
-      "tps": [
-        {
-          "id": "ing1",
-          "text": "To greet and introduce myself and others in English",
-          "achieved": true
-        },
-        {
-          "id": "ing2",
-          "text": "To describe people, animals and objects around me",
-          "achieved": true
-        },
-        {
-          "id": "ing3",
-          "text": "To express daily routines and general simple actions",
-          "achieved": true
-        }
-      ],
+      "tps": [],
       "usaha": "B",
       "proses": "B",
       "capaian": "B",
@@ -903,23 +791,7 @@
       "studentId": "s9_1",
       "subject": "PJOK",
       "score": 88,
-      "tps": [
-        {
-          "id": "pjok1",
-          "text": "Mempraktikkan variasi pola gerak dasar permainan bola besar",
-          "achieved": true
-        },
-        {
-          "id": "pjok2",
-          "text": "Menganalisis prinsip kebugaran jasmani yang berdampak pada kesehatan",
-          "achieved": true
-        },
-        {
-          "id": "pjok3",
-          "text": "Memelihara kebersihan diri dan pencegahan bahaya zat berbahaya",
-          "achieved": true
-        }
-      ],
+      "tps": [],
       "usaha": "A",
       "proses": "B",
       "capaian": "B",
@@ -954,711 +826,642 @@
     }
   },
   "tujuan_pembelajaran_templates": {
-    "PAI": [
-      {
-        "id": "pai_7_1",
-        "kelas": "7",
-        "text": "Membaca dan memahami QS An-Nisa/An-Nahl tentang kewajiban dan keutamaan menuntut ilmu"
-      },
-      {
-        "id": "pai_7_2",
-        "kelas": "7",
-        "text": "Meyakini rukun iman kepada Allah SWT dan malaikat-malaikat-Nya dengan ketaatan"
-      },
-      {
-        "id": "pai_7_3",
-        "kelas": "7",
-        "text": "Mempraktikkan tata cara bersuci (thaharah) dan sholat fardhu berjamaah secara benar"
-      },
-      {
-        "id": "pai_8_1",
-        "kelas": "8",
-        "text": "Menganalisis QS Al-Furqan tentang sikap rendah hati (tawadhu) dan hidup sederhana"
-      },
-      {
-        "id": "pai_8_2",
-        "kelas": "8",
-        "text": "Meyakini kitab-kitab suci Allah dan meneladani keteladanan para Nabi serta Rasul"
-      },
-      {
-        "id": "pai_8_3",
-        "kelas": "8",
-        "text": "Memahami ketentuan ibadah puasa wajib dan sunnah serta sejarah peradaban Islam daulah Abbasiyah"
-      },
-      {
-        "id": "pai_9_1",
-        "kelas": "9",
-        "text": "Menghayati QS Al-Hujurat tentang prinsip toleransi, menghargai keberagaman dan perdamaian"
-      },
-      {
-        "id": "pai_9_2",
-        "kelas": "9",
-        "text": "Meyakini peristiwa Hari Akhir serta kepasrahan atas Qadha dan Qadar Allah SWT"
-      },
-      {
-        "id": "pai_9_3",
-        "kelas": "9",
-        "text": "Memahami tata cara pelaksanaan ibadah haji, umrah, dan sejarah perkembangan Islam di Nusantara"
-      }
-    ],
-    "PPKN": [
-      {
-        "id": "ppkn_7_1",
-        "kelas": "7",
-        "text": "Menghayati sejarah proses perumusan dan penetapan Pancasila sebagai dasar negara"
-      },
-      {
-        "id": "ppkn_7_2",
-        "kelas": "7",
-        "text": "Memahami norma-norma yang berlaku dan kedudukan UUD Negara Republik Indonesia 1945"
-      },
-      {
-        "id": "ppkn_7_3",
-        "kelas": "7",
-        "text": "Menghargai keberagaman suku, agama, ras, dan antargolongan dalam bingkai Bhinneka Tunggal Ika"
-      },
-      {
-        "id": "ppkn_8_1",
-        "kelas": "8",
-        "text": "Memahami kedudukan, fungsi, dan nilai-nilai luhur Pancasila dalam kehidupan berbangsa"
-      },
-      {
-        "id": "ppkn_8_2",
-        "kelas": "8",
-        "text": "Menganalisis tata urutan peraturan perundang-undangan nasional dalam sistem hukum Indonesia"
-      },
-      {
-        "id": "ppkn_8_3",
-        "kelas": "8",
-        "text": "Meneladani semangat Kebangkitan Nasional 1908 dan nilai persatuan Sumpah Pemuda 1928"
-      },
-      {
-        "id": "ppkn_9_1",
-        "kelas": "9",
-        "text": "Menganalisis dinamika penerapan Pancasila dari masa ke masa dan tantangan era modern"
-      },
-      {
-        "id": "ppkn_9_2",
-        "kelas": "9",
-        "text": "Memahami pokok-pokok pikiran dalam Pembukaan UUD Negara Republik Indonesia 1945"
-      },
-      {
-        "id": "ppkn_9_3",
-        "kelas": "9",
-        "text": "Menunjukkan komitmen kedaulatan NKRI, persatuan bangsa, serta partisipasi upaya bela negara"
-      }
-    ],
-    "Bahasa Indonesia": [
-      {
-        "id": "indo_7_1",
-        "kelas": "7",
-        "text": "Mengidentifikasi informasi rinci dan menelaah struktur serta kebahasaan teks deskripsi"
-      },
-      {
-        "id": "indo_7_2",
-        "kelas": "7",
-        "text": "Menganalisis unsur intrinsik dan daya imajinasi dalam cerita narasi fantasi"
-      },
-      {
-        "id": "indo_7_3",
-        "kelas": "7",
-        "text": "Menyusun dan menyajikan teks prosedur langkah kegiatan secara urut dan komunikatif"
-      },
-      {
-        "id": "indo_8_1",
-        "kelas": "8",
-        "text": "Mengidentifikasi gagasan dan struktur teks laporan hasil observasi (LHO) lingkungan"
-      },
-      {
-        "id": "indo_8_2",
-        "kelas": "8",
-        "text": "Menelaah pola penyajian, pesan persuasi, dan kebahasaan iklan, slogan, dan poster"
-      },
-      {
-        "id": "indo_8_3",
-        "kelas": "8",
-        "text": "Menulis teks eksposisi dan artikel ilmiah populer dengan argumen yang logis dan faktual"
-      },
-      {
-        "id": "indo_9_1",
-        "kelas": "9",
-        "text": "Menyimpulkan tujuan, metode, dan hasil pengujian dalam teks laporan percobaan"
-      },
-      {
-        "id": "indo_9_2",
-        "kelas": "9",
-        "text": "Menyusun gagasan oratoris dan menyajikan naskah pidato persuasif secara runtut"
-      },
-      {
-        "id": "indo_9_3",
-        "kelas": "9",
-        "text": "Menganalisis struktur dan nilai-nilai kehidupan dalam cerita pendek bermakna sosial"
-      }
-    ],
-    "Matematika": [
-      {
-        "id": "mtk_7_1",
-        "kelas": "7",
-        "text": "Menyelesaikan operasi hitung aritmetika bilangan bulat, pecahan, dan faktor prima"
-      },
-      {
-        "id": "mtk_7_2",
-        "kelas": "7",
-        "text": "Menyederhanakan bentuk aljabar linear dan menyelesaikan persamaan linear satu variabel (PLSV)"
-      },
-      {
-        "id": "mtk_7_3",
-        "kelas": "7",
-        "text": "Menganalisis perbandingan senilai, berbalik nilai, dan konsep aritmetika sosial perniagaan"
-      },
-      {
-        "id": "mtk_8_1",
-        "kelas": "8",
-        "text": "Menemukan pola bilangan barisan serta menerapkan teorema Pythagoras pada segitiga"
-      },
-      {
-        "id": "mtk_8_2",
-        "kelas": "8",
-        "text": "Memahami konsep relasi, fungsi, persamaan garis lurus, dan SPLDV"
-      },
-      {
-        "id": "mtk_8_3",
-        "kelas": "8",
-        "text": "Menghitung luas permukaan dan volume bangun ruang sisi datar serta ukuran pemusatan statistika"
-      },
-      {
-        "id": "mtk_9_1",
-        "kelas": "9",
-        "text": "Menerapkan sifat bilangan berpangkat (eksponen) dan bentuk akar dalam masalah matematis"
-      },
-      {
-        "id": "mtk_9_2",
-        "kelas": "9",
-        "text": "Menentukan akar-akar persamaan kuadrat dan menganalisis karakteristik fungsi kuadrat"
-      },
-      {
-        "id": "mtk_9_3",
-        "kelas": "9",
-        "text": "Menganalisis transformasi geometri (refleksi, translasi, rotasi, dilatasi) dan bangun ruang sisi lengkung"
-      }
-    ],
-    "IPA": [
-      {
-        "id": "ipa_7_1",
-        "kelas": "7",
-        "text": "Menerapkan konsep pengukuran besaran fisika, metode ilmiah, dan keselamatan kerja laboratorium"
-      },
-      {
-        "id": "ipa_7_2",
-        "kelas": "7",
-        "text": "Mengidentifikasi wujud zat, sifat fisika-kimia, serta konsep suhu dan kalor"
-      },
-      {
-        "id": "ipa_7_3",
-        "kelas": "7",
-        "text": "Menganalisis interaksi komponen biotik-abiotik dalam ekosistem dan upaya pelestarian lingkungan"
-      },
-      {
-        "id": "ipa_8_1",
-        "kelas": "8",
-        "text": "Menganalisis struktur dan fungsi sistem organ tubuh manusia (pencernaan, pernapasan, peredaran darah)"
-      },
-      {
-        "id": "ipa_8_2",
-        "kelas": "8",
-        "text": "Memahami konsep gerak lurus, gaya, Hukum Newton, dan prinsip kerja pesawat sederhana"
-      },
-      {
-        "id": "ipa_8_3",
-        "kelas": "8",
-        "text": "Menganalisis konsep getaran, gelombang bunyi, serta sifat-sifat cahaya dan alat optik"
-      },
-      {
-        "id": "ipa_9_1",
-        "kelas": "9",
-        "text": "Menganalisis sistem reproduksi manusia serta prinsip pewarisan sifat (genetika Mendel)"
-      },
-      {
-        "id": "ipa_9_2",
-        "kelas": "9",
-        "text": "Memahami gejala listrik statis, rangkaian listrik dinamis, dan konsep kemagnetan elektromagnetik"
-      },
-      {
-        "id": "ipa_9_3",
-        "kelas": "9",
-        "text": "Menganalisis penerapan bioteknologi konvensional-modern serta peranan tanah bagi keberlanjutan hidup"
-      }
-    ],
-    "IPS": [
-      {
-        "id": "ips_7_1",
-        "kelas": "7",
-        "text": "Memahami konektivitas antarruang, letak geografis Indonesia, dan peta rupa bumi"
-      },
-      {
-        "id": "ips_7_2",
-        "kelas": "7",
-        "text": "Menganalisis peran keluarga dan lembaga sosial dalam proses pembentukan kepribadian individu"
-      },
-      {
-        "id": "ips_7_3",
-        "kelas": "7",
-        "text": "Mengidentifikasi motif, prinsip, dan jenis-jenis tindakan ekonomi masyarakat dalam memenuhi kebutuhan"
-      },
-      {
-        "id": "ips_8_1",
-        "kelas": "8",
-        "text": "Menganalisis kondisi geografis dan interaksi antarnegara anggota kawasan ASEAN"
-      },
-      {
-        "id": "ips_8_2",
-        "kelas": "8",
-        "text": "Memahami faktor pendorong dan penghambat mobilitas sosial serta integrasi sosial-budaya"
-      },
-      {
-        "id": "ips_8_3",
-        "kelas": "8",
-        "text": "Menganalisis keunggulan dan keterbatasan ruang serta pengaruhnya terhadap perdagangan antardaerah"
-      },
-      {
-        "id": "ips_9_1",
-        "kelas": "9",
-        "text": "Menganalisis karakteristik benua-benua di dunia dan potensi sumber daya alamnya"
-      },
-      {
-        "id": "ips_9_2",
-        "kelas": "9",
-        "text": "Menganalisis pengaruh perubahan sosial budaya dan era globalisasi terhadap peradaban masyarakat"
-      },
-      {
-        "id": "ips_9_3",
-        "kelas": "9",
-        "text": "Mengidentifikasi ketergantungan antarruang melalui perdagangan internasional dan ekonomi kreatif nasional"
-      }
-    ],
-    "Bahasa Inggris": [
-      {
-        "id": "ing_7_1",
-        "kelas": "7",
-        "text": "To greet, take leave, express gratitude, and introduce self and others using proper English"
-      },
-      {
-        "id": "ing_7_2",
-        "kelas": "7",
-        "text": "To tell time, days, dates, and describe daily school routines with Simple Present Tense"
-      },
-      {
-        "id": "ing_7_3",
-        "kelas": "7",
-        "text": "To identify qualities and describe characteristics of people, animals, and common things around us"
-      },
-      {
-        "id": "ing_8_1",
-        "kelas": "8",
-        "text": "To ask for attention, check understanding, give compliments, and express personal opinions"
-      },
-      {
-        "id": "ing_8_2",
-        "kelas": "8",
-        "text": "To state rules, obligations, prohibitions, and write short notices or greeting cards"
-      },
-      {
-        "id": "ing_8_3",
-        "kelas": "8",
-        "text": "To write and present recount texts based on memorable personal experiences using Simple Past Tense"
-      },
-      {
-        "id": "ing_9_1",
-        "kelas": "9",
-        "text": "To express hopes, wishes, and congratulations to others for achievements and positive events"
-      },
-      {
-        "id": "ing_9_2",
-        "kelas": "9",
-        "text": "To read, comprehend, and compose procedure texts (recipes, instructions, manual guides) fluently"
-      },
-      {
-        "id": "ing_9_3",
-        "kelas": "9",
-        "text": "To analyze moral values and structure of narrative texts (folktales, fables, and legends)"
-      }
-    ],
-    "PJOK": [
-      {
-        "id": "pjok_7_1",
-        "kelas": "7",
-        "text": "Mempraktikkan gerak spesifik fundamental permainan bola besar (sepak bola, bola voli, bola basket)"
-      },
-      {
-        "id": "pjok_7_2",
-        "kelas": "7",
-        "text": "Mempraktikkan variasi gerak spesifik atletik (jalan cepat, lari jarak pendek, lompat jauh)"
-      },
-      {
-        "id": "pjok_7_3",
-        "kelas": "7",
-        "text": "Menjaga kebugaran jasmani dasar (kelenturan, daya tahan) dan menerapkan pola makan sehat"
-      },
-      {
-        "id": "pjok_8_1",
-        "kelas": "8",
-        "text": "Mempraktikkan kombinasi gerak taktis permainan bola kecil (bulu tangkis, tenis meja, rounders)"
-      },
-      {
-        "id": "pjok_8_2",
-        "kelas": "8",
-        "text": "Mempraktikkan rangkaian senam lantai (guling depan/belakang, meroda) dan renang gaya dada"
-      },
-      {
-        "id": "pjok_8_3",
-        "kelas": "8",
-        "text": "Memahami bahaya pergaulan bebas, penyalahgunaan zat adiktif, dan pencegahan penyakit"
-      },
-      {
-        "id": "pjok_9_1",
-        "kelas": "9",
-        "text": "Menerapkan strategi penyerangan dan pertahanan pada permainan beregu dan bela diri pencak silat"
-      },
-      {
-        "id": "pjok_9_2",
-        "kelas": "9",
-        "text": "Menyusun dan melaksanakan program latihan kebugaran jasmani terukur untuk kesehatan prima"
-      },
-      {
-        "id": "pjok_9_3",
-        "kelas": "9",
-        "text": "Memahami tindakan pertolongan pertama pada kecelakaan (P3K) dan keselamatan diri di jalan raya"
-      }
-    ],
-    "Prakarya": [
-      {
-        "id": "prak_7_1",
-        "kelas": "7",
-        "text": "Mengidentifikasi karakteristik jenis bahan serat alam dan tekstil serta prinsip perancangannya"
-      },
-      {
-        "id": "prak_7_2",
-        "kelas": "7",
-        "text": "Merancang, membuat, dan mengemas karya kerajinan berbahan serat ramah lingkungan"
-      },
-      {
-        "id": "prak_7_3",
-        "kelas": "7",
-        "text": "Mengolah bahan pangan buah dan sayuran segar menjadi hidangan sehat khas Nusantara"
-      },
-      {
-        "id": "prak_8_1",
-        "kelas": "8",
-        "text": "Mengidentifikasi sifat kerajinan bahan lunak alam dan buatan (tanah liat, lilin, sabun, gips)"
-      },
-      {
-        "id": "prak_8_2",
-        "kelas": "8",
-        "text": "Membuat karya kerajinan bahan lunak bernilai estetis dan fungsi pakai secara mandiri"
-      },
-      {
-        "id": "prak_8_3",
-        "kelas": "8",
-        "text": "Mengolah bahan pangan serealia, kacang-kacangan, dan umbi menjadi olahan pangan setengah jadi"
-      },
-      {
-        "id": "prak_9_1",
-        "kelas": "9",
-        "text": "Mengidentifikasi karakteristik kerajinan bahan keras (kayu, bambu, rotan, logam)"
-      },
-      {
-        "id": "prak_9_2",
-        "kelas": "9",
-        "text": "Membuat karya kerajinan bahan keras inovatif dengan teknik ukir, anyam, atau sambung"
-      },
-      {
-        "id": "prak_9_3",
-        "kelas": "9",
-        "text": "Mengolah bahan pangan hasil peternakan (daging, telur, susu) dan perikanan menjadi produk siap saji"
-      }
-    ],
-    "Informatika": [
-      {
-        "id": "info_7_1",
-        "kelas": "7",
-        "text": "Menerapkan konsep berpikir komputasional (dekomposisi, pola, abstraksi) dalam memecahkan masalah"
-      },
-      {
-        "id": "info_7_2",
-        "kelas": "7",
-        "text": "Mengidentifikasi komponen perangkat keras (hardware), software, dan sistem operasi komputer"
-      },
-      {
-        "id": "info_7_3",
-        "kelas": "7",
-        "text": "Memanfaatkan aplikasi pengolah kata dan lembar kerja untuk menyajikan data secara rapi"
-      },
-      {
-        "id": "info_8_1",
-        "kelas": "8",
-        "text": "Merancang algoritma dan mengimplementasikan program visual menggunakan Scratch/Blockly secara runut"
-      },
-      {
-        "id": "info_8_2",
-        "kelas": "8",
-        "text": "Memahami konsep jaringan lokal, internet, konektivitas nirkabel, dan enkripsi data sederhana"
-      },
-      {
-        "id": "info_8_3",
-        "kelas": "8",
-        "text": "Melakukan pengumpulan, penyaringan, visualisasi data, serta etika berinteraksi di ruang siber"
-      },
-      {
-        "id": "info_9_1",
-        "kelas": "9",
-        "text": "Menerapkan struktur data lanjut (antrean, tumpukan, graf) dalam pemecahan solusi komputasi"
-      },
-      {
-        "id": "info_9_2",
-        "kelas": "9",
-        "text": "Membuat aplikasi berbasis modular atau web sederhana yang interaktif dan solutif"
-      },
-      {
-        "id": "info_9_3",
-        "kelas": "9",
-        "text": "Menganalisis dampak sosial teknologi informasi, keamanan privasi siber, dan etika AI"
-      }
-    ],
-    "Bahasa Arab": [
-      {
-        "id": "arab_7_1",
-        "kelas": "7",
-        "text": "Melafalkan dan memahami ungkapan perkenalan diri (at-taaruf) dan fasilitas sekolah (al-adawat)"
-      },
-      {
-        "id": "arab_7_2",
-        "kelas": "7",
-        "text": "Mengidentifikasi kata tunjuk (ism isyarah) dan kata ganti (dhamir) dalam kalimat sederhana"
-      },
-      {
-        "id": "arab_7_3",
-        "kelas": "7",
-        "text": "Menulis dan membaca teks pendek deskriptif tentang lingkungan rumah dan keluarga (al-usrah)"
-      },
-      {
-        "id": "arab_8_1",
-        "kelas": "8",
-        "text": "Menggunakan kosakata jam dan waktu (as-saah) dalam percakapan sehari-hari"
-      },
-      {
-        "id": "arab_8_2",
-        "kelas": "8",
-        "text": "Menyusun kalimat fiil mudhari tentang aktivitas harian peserta didik (yaumiyyatuna)"
-      },
-      {
-        "id": "arab_8_3",
-        "kelas": "8",
-        "text": "Mendemonstrasikan percakapan komunikatif mengenai minat, hobi (al-hiwayah), dan profesi"
-      },
-      {
-        "id": "arab_9_1",
-        "kelas": "9",
-        "text": "Membaca dan menelaah teks peringatan Tahun Baru Hijriyyah (Rasul Sanah al-Hijriyyah)"
-      },
-      {
-        "id": "arab_9_2",
-        "kelas": "9",
-        "text": "Menganalisis teks naratif kisah Maulid Nabi Muhammad SAW dengan kaidah fiil madhi yang tepat"
-      },
-      {
-        "id": "arab_9_3",
-        "kelas": "9",
-        "text": "Menyusun karangan ringkas tentang peristiwa Nuzulul Quran dan Hari Besar Islam (al-Ayad)"
-      }
-    ],
-    "Tahsin ABaTaTsa": [
-      {
-        "id": "tahsin_7_1",
-        "kelas": "7",
-        "text": "Menyempurnakan pelafalan makharijul huruf halqiyyah dan lisaniyyah dengan artikulasi fasih"
-      },
-      {
-        "id": "tahsin_7_2",
-        "kelas": "7",
-        "text": "Menerapkan kaidah mad thabii 2 harakat secara konsisten dalam tilawah Al-Quran"
-      },
-      {
-        "id": "tahsin_7_3",
-        "kelas": "7",
-        "text": "Menerapkan hukum bacaan nun sukun dan tanwin (izhar halqi, idgham, iqlab, ikhfa haqiqi)"
-      },
-      {
-        "id": "tahsin_8_1",
-        "kelas": "8",
-        "text": "Menerapkan hukum bacaan mim sukun (ikhfa syafawi, idgham mimi, izhar syafawi) dengan tepat"
-      },
-      {
-        "id": "tahsin_8_2",
-        "kelas": "8",
-        "text": "Membedakan hukum mad fari (mad wajib muttasil, mad jaiz munfasil, mad arid lissukun)"
-      },
-      {
-        "id": "tahsin_8_3",
-        "kelas": "8",
-        "text": "Menerapkan sifat-sifat huruf (hams, jahr, qalqalah, istila) secara praktis dan tartil"
-      },
-      {
-        "id": "tahsin_9_1",
-        "kelas": "9",
-        "text": "Menerapkan hukum bacaan tafkhim dan tarqiq pada huruf Lam jalalah dan huruf Ra"
-      },
-      {
-        "id": "tahsin_9_2",
-        "kelas": "9",
-        "text": "Menguasai kaidah waqaf (tam, kafi, hasan, qabih) dan ibtida saat membaca ayat Al-Quran"
-      },
-      {
-        "id": "tahsin_9_3",
-        "kelas": "9",
-        "text": "Mendemonstrasikan tilawah tartil Al-Quran dengan irama murottal yang khusyuk dan fasih"
-      }
-    ],
-    "Tahfizh Al-Qur’an": [
-      {
-        "id": "tahfizh_7_1",
-        "kelas": "7",
-        "text": "Menghafal mutqin surah-surah Juz 30 (Surah An-Naba s.d. Surah Al-Muthaffifin)"
-      },
-      {
-        "id": "tahfizh_7_2",
-        "kelas": "7",
-        "text": "Menghafal mutqin surah-surah Juz 30 (Surah Al-Insyiqaq s.d. Surah Al-Ala)"
-      },
-      {
-        "id": "tahfizh_7_3",
-        "kelas": "7",
-        "text": "Menjaga kelancaran murajaah mandiri dan menyetorkan hafalan dengan kaidah tajwid baku"
-      },
-      {
-        "id": "tahfizh_8_1",
-        "kelas": "8",
-        "text": "Menghafal mutqin surah-surah Juz 30 (Surah Al-Ghasyiyah s.d. Surah Al-Zalzalah)"
-      },
-      {
-        "id": "tahfizh_8_2",
-        "kelas": "8",
-        "text": "Menghafal mutqin surah-surah Juz 30 (Surah Al-Adiyat s.d. Surah An-Nas)"
-      },
-      {
-        "id": "tahfizh_8_3",
-        "kelas": "8",
-        "text": "Melaksanakan tasmi sekali duduk sebagian Juz 30 dengan tartil tanpa salah harakat"
-      },
-      {
-        "id": "tahfizh_9_1",
-        "kelas": "9",
-        "text": "Menghafal mutqin surah pilihan: Surah Al-Mulk dan Surah Ar-Rahman dengan lancar"
-      },
-      {
-        "id": "tahfizh_9_2",
-        "kelas": "9",
-        "text": "Menghafal mutqin surah pilihan: Surah Al-Waqiah dan ayat-ayat tazkiyatun nufus"
-      },
-      {
-        "id": "tahfizh_9_3",
-        "kelas": "9",
-        "text": "Melaksanakan tasmi kubra kelulusan Juz 30 secara utuh dengan standar mutu hafizh mutqin"
-      }
-    ],
-    "Do’a Harian dan Hadits": [
-      {
-        "id": "doa_7_1",
-        "kelas": "7",
-        "text": "Menghafal doa bangun tidur, doa makan, dan adab thaharah kamar mandi sesuai sunnah"
-      },
-      {
-        "id": "doa_7_2",
-        "kelas": "7",
-        "text": "Menghafal doa masuk/keluar masjid dan doa sebelum belajar beserta maknanya"
-      },
-      {
-        "id": "doa_7_3",
-        "kelas": "7",
-        "text": "Menghafal dan mengamalkan Hadits Arbain tentang niat dan keutamaan menuntut ilmu"
-      },
-      {
-        "id": "doa_8_1",
-        "kelas": "8",
-        "text": "Menghafal doa bepergian (safar), doa naik kendaraan, dan doa saat menghadapi kesulitan"
-      },
-      {
-        "id": "doa_8_2",
-        "kelas": "8",
-        "text": "Menghafal doa menjenguk orang sakit dan doa memohon ampunan untuk kedua orang tua"
-      },
-      {
-        "id": "doa_8_3",
-        "kelas": "8",
-        "text": "Menghafal dan mengamalkan Hadits tentang persaudaraan sesama muslim dan larangan marah"
-      },
-      {
-        "id": "doa_9_1",
-        "kelas": "9",
-        "text": "Menghafal doa sholat istikharah, doa tahajjud, dan doa memohon keteguhan iman"
-      },
-      {
-        "id": "doa_9_2",
-        "kelas": "9",
-        "text": "Menghafal doa husnul khatimah dan perlindungan dari siksa kubur serta fitnah dajjal"
-      },
-      {
-        "id": "doa_9_3",
-        "kelas": "9",
-        "text": "Menghafal dan mengamalkan Hadits tentang menjaga lisan, kejujuran, dan akhlak karimah"
-      }
-    ],
-    "Wudhu dan Sholat": [
-      {
-        "id": "wudhu_7_1",
-        "kelas": "7",
-        "text": "Mempraktikkan tata cara wudhu sempurna (fardhu & sunnah) tertib sesuai tuntunan Rasulullah SAW"
-      },
-      {
-        "id": "wudhu_7_2",
-        "kelas": "7",
-        "text": "Menghafal bacaan rukun sholat fardhu (takbir, iftitah, ruku, sujud, tasyahhud akhir)"
-      },
-      {
-        "id": "wudhu_7_3",
-        "kelas": "7",
-        "text": "Mempraktikkan gerakan sholat fardhu secara tumaninah dan menjaga kekhusyukan ibadah"
-      },
-      {
-        "id": "wudhu_8_1",
-        "kelas": "8",
-        "text": "Mempraktikkan adab dan ketentuan sholat berjamaah serta tata cara makmum masbuq yang benar"
-      },
-      {
-        "id": "wudhu_8_2",
-        "kelas": "8",
-        "text": "Mempraktikkan ketentuan sholat jamak, qashar, sholat dalam perjalanan, dan sholat jenazah"
-      },
-      {
-        "id": "wudhu_8_3",
-        "kelas": "8",
-        "text": "Mempraktikkan tata cara sujud sahwi, sujud tilawah, dan sujud syukur sesuai ketentuan fikih"
-      },
-      {
-        "id": "wudhu_9_1",
-        "kelas": "9",
-        "text": "Mempraktikkan sholat sunnah rawatib muakkad dan qabliyyah/badiyyah secara konsisten"
-      },
-      {
-        "id": "wudhu_9_2",
-        "kelas": "9",
-        "text": "Mempraktikkan sholat sunnah malam (tahajjud, witir) dan sholat dhuha berjamaah"
-      },
-      {
-        "id": "wudhu_9_3",
-        "kelas": "9",
-        "text": "Mendemonstrasikan kompetensi imam sholat berjamaah dan muadzin dengan fasih dan khusyuk"
-      }
-    ]
+    "Bahasa Indonesia": {
+      "tps": [
+        {
+          "id": "tp_bahasa_indonesia_k7_1",
+          "kelas": "7",
+          "text": "memahami isi dan unsur bahasa dalam teks deskripsi"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k7_2",
+          "kelas": "7",
+          "text": "menyajikan teks sederhana secara runtut"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k7_3",
+          "kelas": "7",
+          "text": "menganalisis teks deskripsi dalam sajian visual dan informasi lisan secara kritis"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k7_4",
+          "kelas": "7",
+          "text": "membedakan unsur-unsur puisi rakyat (puisi, gurindam dan mantra)"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k7_5",
+          "kelas": "7",
+          "text": "memahami unsur-unsur penting dalam teks naratif"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k7_6",
+          "kelas": "7",
+          "text": "berkreasi dan menyajikan teks naratif secara kreatif"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k8_1",
+          "kelas": "8",
+          "text": "memahami teks laporan hasil observasi (LHO) dan menulisnya"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k8_2",
+          "kelas": "8",
+          "text": "memahami informasi, menjelaskan struktur teks LHO dan menanggapi pendapat teman saat berdiskusi"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k8_3",
+          "kelas": "8",
+          "text": "dapat menggunakan tanda baca dan tata cara menulis kata dari bahasa daerah dan bahasa asing dengan benar"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k8_4",
+          "kelas": "8",
+          "text": "dapat mengidentifikasi iklan, slogan dan poster"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k8_5",
+          "kelas": "8",
+          "text": "mengetahui kalimat persuasif dan imperatif"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k8_6",
+          "kelas": "8",
+          "text": "membuat iklan, slogan dan poster"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_1",
+          "kelas": "9",
+          "text": "memahami isi, ciri-ciri, dan sudut pandang cerita dalam teks deskripsi"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_2",
+          "kelas": "9",
+          "text": "mengenali penggunaan kata penghubung dalam teks deskripsi"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_3",
+          "kelas": "9",
+          "text": "menggunakan kata serapan dari bahasa asing dan bahasa daerah dengan tepat"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_4",
+          "kelas": "9",
+          "text": "memahami kohesi dan koherensi dalam paragraf teks deskripsi"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_5",
+          "kelas": "9",
+          "text": "menyajikan informasi deskriptif melalui infografik"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_6",
+          "kelas": "9",
+          "text": "mengubah cerita pendek menjadi teks prosedur secara sistematis"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_7",
+          "kelas": "9",
+          "text": "memahami proses penyerapan kosa kata dalam bahasa Indonesia"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_8",
+          "kelas": "9",
+          "text": "membaca nyaring teks dalam buku dengan baik"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_9",
+          "kelas": "9",
+          "text": "mempraktikkan langkah-langkah pembuatan poster"
+        },
+        {
+          "id": "tp_bahasa_indonesia_k9_10",
+          "kelas": "9",
+          "text": "mempraktikkan wawancara dan menyusun laporan sesuai tata cara yang benar"
+        }
+      ]
+    },
+    "Bahasa Inggris": {
+      "tps": [
+        {
+          "text": "To analyzed their self through simple dialogue",
+          "id": "tp_bahasa_inggris_k7_1",
+          "kelas": "7"
+        },
+        {
+          "id": "tp_bahasa_inggris_k7_2",
+          "kelas": "7",
+          "text": "To analyzed about asking and giving information by school exploring"
+        },
+        {
+          "id": "tp_bahasa_inggris_k8_1",
+          "text": "To ask for attention, check understanding, give compliments, and express personal opinions",
+          "kelas": "8"
+        },
+        {
+          "kelas": "8",
+          "id": "tp_bahasa_inggris_k8_2",
+          "text": "To state rules, obligations, prohibitions, and write short notices or greeting cards"
+        },
+        {
+          "id": "tp_bahasa_inggris_k9_1",
+          "kelas": "9",
+          "text": "To analyzed trip from their adventure"
+        },
+        {
+          "id": "tp_bahasa_inggris_k9_2",
+          "kelas": "9",
+          "text": "To analyzed fauna exploring"
+        }
+      ]
+    },
+    "IPA": {
+      "tps": [
+        {
+          "id": "tp_ipa_k7_1",
+          "kelas": "7",
+          "text": "Mengklasifikasikan makhluk hidup dan benda berdasarkan karakteristik yang diamati"
+        },
+        {
+          "id": "tp_ipa_k7_2",
+          "kelas": "7",
+          "text": "Menganalisis konsep zat, wujud zat, perubahan wujud zat, serta kerapatan massa"
+        },
+        {
+          "id": "tp_ipa_k7_3",
+          "kelas": "7",
+          "text": "Memahami konsep suhu, kalor, perpindahan kalor, serta pemuaian dalam kehidupan sehari-hari"
+        },
+        {
+          "id": "tp_ipa_k7_4",
+          "kelas": "7",
+          "text": "Menerapkan konsep pengukuran berbagai besaran menggunakan satuan standar secara teliti"
+        },
+        {
+          "id": "tp_ipa_k8_1",
+          "kelas": "8",
+          "text": "Memahami struktur dan fungsi komponen darah, organ jantung, serta pembuluh darah dalam mendukung mekanisme peredaran darah besar dan kecil"
+        },
+        {
+          "id": "tp_ipa_k8_2",
+          "kelas": "8",
+          "text": "Memahami keterkaitan antara kandungan nutrisi makanan, struktur organ, dan fungsi enzim pada proses pencernaan mekanis dan kimiawi manusia"
+        },
+        {
+          "id": "tp_ipa_k8_3",
+          "kelas": "8",
+          "text": "Menganalisis tabel Informasi Nilai Gizi  dan komposisi bahan pada kemasan jajanan/minuman favorit"
+        },
+        {
+          "id": "tp_ipa_k8_4",
+          "kelas": "8",
+          "text": "Membuat rancangan menu \"Snack Sehat & Baik\" sebagai alternatif pengganti jajanan kemasan yang kurang sehat"
+        },
+        {
+          "id": "tp_ipa_k9_1",
+          "kelas": "9",
+          "text": "Memahami struktur, fungsi, dan mekanisme kerja sistem saraf serta sistem indra manusia"
+        },
+        {
+          "id": "tp_ipa_k9_2",
+          "kelas": "9",
+          "text": "Membuat  media pembelajaran interaktif berupa  Board Game Edukatif terkait sistem saraf dan sistem indra"
+        },
+        {
+          "id": "tp_ipa_k9_3",
+          "kelas": "9",
+          "text": "Menganalisis keterkaitan antara sistem saraf dengan sistem indra"
+        }
+      ]
+    },
+    "IPS": {
+      "tps": [
+        {
+          "id": "tp_ips_k7_1",
+          "kelas": "7",
+          "text": "Memahami konektivitas antarruang, letak geografis Indonesia, dan peta rupa bumi"
+        },
+        {
+          "id": "tp_ips_k7_2",
+          "kelas": "7",
+          "text": "Menganalisis peran keluarga dan lembaga sosial dalam proses pembentukan kepribadian individu"
+        },
+        {
+          "id": "tp_ips_k7_3",
+          "kelas": "7",
+          "text": "Mengidentifikasi motif, prinsip, dan jenis-jenis tindakan ekonomi masyarakat dalam memenuhi kebutuhan"
+        },
+        {
+          "id": "tp_ips_k7_4",
+          "kelas": "7",
+          "text": "mampu merumuskan aksi nyata pembiasaan diri untuk melestarikan lingkungan sekitar dan menyikapi dampak perubahan iklim secara bertanggung jawab melalui proyek mandiri atau kelompok."
+        },
+        {
+          "id": "tp_ips_k8_1",
+          "kelas": "8",
+          "text": "Menganalisis kondisi geografis dan interaksi antarnegara anggota kawasan ASEAN"
+        },
+        {
+          "id": "tp_ips_k8_2",
+          "kelas": "8",
+          "text": "Memahami faktor pendorong dan penghambat mobilitas sosial serta integrasi sosial-budaya"
+        },
+        {
+          "id": "tp_ips_k8_3",
+          "kelas": "8",
+          "text": "Menganalisis keunggulan dan keterbatasan ruang serta pengaruhnya terhadap perdagangan antardaerah"
+        },
+        {
+          "id": "tp_ips_k9_1",
+          "kelas": "9",
+          "text": "Menganalisis pengaruh perubahan sosial budaya dan era globalisasi terhadap peradaban masyarakat"
+        },
+        {
+          "id": "tp_ips_k9_2",
+          "kelas": "9",
+          "text": "Mengidentifikasi ketergantungan antarruang melalui perdagangan internasional dan ekonomi kreatif nasional"
+        },
+        {
+          "id": "tp_ips_k9_3",
+          "kelas": "9",
+          "text": "mampu mengidentifikasi serta menganalisis bentuk-bentuk kearifan lokal khas Bangka Belitung"
+        }
+      ]
+    },
+    "Matematika": {
+      "tps": [
+        {
+          "id": "tp_matematika_k7_1",
+          "kelas": "7",
+          "text": "menganalisis konsep bilangan bulat positif dan bilangan bulat negatif dengan memodelkannya pada garis bilangan"
+        },
+        {
+          "id": "tp_matematika_k7_2",
+          "kelas": "7",
+          "text": "menentukan hasil dari operasi hitung penjumlahan, pengurangan, perkalian dan pembagian bilangan bulat"
+        },
+        {
+          "id": "tp_matematika_k7_3",
+          "kelas": "7",
+          "text": "menganalisis hubungan faktorisasi prima dari dua bilangan dengan KPK dan FPB"
+        },
+        {
+          "id": "tp_matematika_k7_4",
+          "kelas": "7",
+          "text": "menerapkan konsep bilangan bulat dalam permasalahan dalam kehidupan sehari-hari"
+        },
+        {
+          "id": "tp_matematika_k7_5",
+          "kelas": "7",
+          "text": "mengkreasikan konsep bilangan bulat dalam bentuk animasi menggunakan PowerPoint"
+        },
+        {
+          "id": "tp_matematika_k7_6",
+          "kelas": "7",
+          "text": "Menyelesaikan operasi hitung aritmetika bilangan bulat, pecahan, dan faktor prima"
+        },
+        {
+          "id": "tp_matematika_k7_7",
+          "kelas": "7",
+          "text": "Menyederhanakan bentuk aljabar linear dan menyelesaikan persamaan linear satu variabel (PLSV)"
+        },
+        {
+          "id": "tp_matematika_k7_8",
+          "kelas": "7",
+          "text": "Menganalisis perbandingan senilai, berbalik nilai, dan konsep aritmetika sosial perniagaan"
+        },
+        {
+          "id": "tp_matematika_k8_1",
+          "kelas": "8",
+          "text": "memahami bilangan berpangkat dan sifat-sifat bilangan berpangkat serta menyelesaikan operasi bilangan berpangkat"
+        },
+        {
+          "id": "tp_matematika_k8_2",
+          "kelas": "8",
+          "text": "memahami bilangan bentuk akar dan menyelesakan operasi bilangan bentuk akar serta merasionalkan penyebut bentuk akar"
+        },
+        {
+          "id": "tp_matematika_k8_3",
+          "kelas": "8",
+          "text": "mengkreasikan konsep bilangan berpangkat melalui buklet mini \"Dunia Makro dan Mikro dalam Angka\""
+        },
+        {
+          "id": "tp_matematika_k9_1",
+          "kelas": "9",
+          "text": "menentukan luas permukaan dan volume bangun ruang sisi datar"
+        },
+        {
+          "id": "tp_matematika_k9_2",
+          "kelas": "9",
+          "text": "menentukan luas permukaan dan volume bangun ruang sisi lengkung"
+        },
+        {
+          "id": "tp_matematika_k9_3",
+          "kelas": "9",
+          "text": "mengkreasikan bangun ruang sisi datar dan bangun ruang sisi lengkung dalam proyek “Architect of Geometri”"
+        },
+        {
+          "id": "tp_matematika_k9_4",
+          "kelas": "9",
+          "text": "Menerapkan sifat bilangan berpangkat (eksponen) dan bentuk akar dalam masalah matematis"
+        },
+        {
+          "id": "tp_matematika_k9_5",
+          "kelas": "9",
+          "text": "Menentukan akar-akar persamaan kuadrat dan menganalisis karakteristik fungsi kuadrat"
+        },
+        {
+          "id": "tp_matematika_k9_6",
+          "kelas": "9",
+          "text": "Menganalisis transformasi geometri (refleksi, translasi, rotasi, dilatasi) dan bangun ruang sisi lengkung"
+        }
+      ]
+    },
+    "PPKN": {
+      "tps": [
+        {
+          "id": "tp_ppkn_k7_1",
+          "kelas": "7",
+          "text": "menganalisis sejarah kelahiran Pancasila (kelahiran Pancasila dalam sidang BPUPKI, perumusan Pancasila oleh Panitia Sembilan, Proklamasi dan penetapan Pancasila sebagai dasar negara)"
+        },
+        {
+          "id": "tp_ppkn_k7_2",
+          "kelas": "7",
+          "text": "mengkreasikan sejarah kelahiran Pancasila melalui projek video pendek"
+        },
+        {
+          "id": "tp_ppkn_k8_1",
+          "kelas": "8",
+          "text": "menganalisis Pancasila sebagai dasar negara, pandangan hidup bangsa serta ideologi negara"
+        },
+        {
+          "id": "tp_ppkn_k8_2",
+          "kelas": "8",
+          "text": "mengkreasikan nilai-nilai Pancasila dalam kehidupan sehari-hari di lingkungan keluarga, sekolah dan masyarakat melalui projek video pendek"
+        },
+        {
+          "id": "tp_ppkn_k9_1",
+          "kelas": "9",
+          "text": "menganalisis hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia"
+        },
+        {
+          "id": "tp_ppkn_k9_2",
+          "kelas": "9",
+          "text": "mengkreasikan hubungan Pancasila dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945, Bhineka Tunggal Ika dan Negara Kesatuan Republik Indonesia melalui projek video pendek"
+        }
+      ]
+    },
+    "Prakarya": {
+      "tps": [
+        {
+          "id": "tp_prakarya_k7_1",
+          "kelas": "7",
+          "text": "memahami prinsip, jenis dan karakteristik kerajinan bahan lunak"
+        },
+        {
+          "id": "tp_prakarya_k7_2",
+          "kelas": "7",
+          "text": "mengkreasikan prinsip kerajinan bahan lunak menjadi produk kerajinan \"Clay untuk hiasan bingkai terbuat dari tepung\""
+        },
+        {
+          "id": "tp_prakarya_k7_3",
+          "kelas": "7",
+          "text": "menganalisis tentang kerajinan dari bahan organik lunak"
+        },
+        {
+          "id": "tp_prakarya_k7_4",
+          "kelas": "7",
+          "text": "mengkreasikan kerajinan dari bahan organik lunak menjadi sebuah produk"
+        },
+        {
+          "id": "tp_prakarya_k8_1",
+          "kelas": "8",
+          "text": "menganalisis mengenai kerajinan dari bahan limbah organik"
+        },
+        {
+          "id": "tp_prakarya_k8_2",
+          "kelas": "8",
+          "text": "mengkreasikan kerajinan dari bahan limbah organik menjadi sebuah produk"
+        },
+        {
+          "id": "tp_prakarya_k9_1",
+          "kelas": "9",
+          "text": "mengidentifikasi serat yang berasal dari alam dan kerajinan-kerajinan tekstil dari serat alami"
+        },
+        {
+          "id": "tp_prakarya_k9_2",
+          "kelas": "9",
+          "text": "mengkreasikan kerajinan tekstil bahan alam menjadi produk kerajinan \" Tie Dye\""
+        },
+        {
+          "id": "tp_prakarya_k9_3",
+          "kelas": "9",
+          "text": "menganalisis mengenai kerajinan-kerajinan tekstil dari serat alam"
+        },
+        {
+          "id": "tp_prakarya_k9_4",
+          "kelas": "9",
+          "text": "mengkreasikan mengenai kerajinan-kerajinan tekstil dari serat alam menjadi sebuah produk"
+        }
+      ]
+    },
+    "Informatika": {
+      "tps": [
+        {
+          "id": "tp_informatika_k7_1",
+          "kelas": "7",
+          "text": "menerapkan berpikir komputasional untuk menyelesaikan secara efisien persoalan komputasi yang mengandung algoritma, representasi data, struktur data (list), dan penjadwalan"
+        },
+        {
+          "id": "tp_informatika_k7_2",
+          "kelas": "7",
+          "text": "Menjelaskan sebuah lingkungan pemrograman blok/visual, objek-objek yang dapat diprogram, dan perintah/instruksi dalam lingkungan tersebut"
+        },
+        {
+          "id": "tp_informatika_k7_3",
+          "kelas": "7",
+          "text": "Membuat aplikasi kreatif (permainan, animasi, presentasi) dengan perkakas yang diajarkan"
+        },
+        {
+          "id": "tp_informatika_k8_1",
+          "kelas": "8",
+          "text": "memahami cara visualisasi data dalam pengolah lembar kerja"
+        },
+        {
+          "id": "tp_informatika_k8_2",
+          "kelas": "8",
+          "text": "menggunakan tools seperti pengolah lembar kerja untuk mengelola data dan menampilkan data sesuai dengan tujuan"
+        },
+        {
+          "id": "tp_informatika_k9_1",
+          "kelas": "9",
+          "text": "menganalisis konten yang menyusun sebuah dokumen dengan produk akhir ialah sebuah blog"
+        },
+        {
+          "id": "tp_informatika_k9_2",
+          "kelas": "9",
+          "text": "menerapkan praktik baik dalam memanfaatkan content management system (CMS) untuk pengelolaan konten digital"
+        }
+      ]
+    },
+    "PAI": {
+      "tps": [
+        {
+          "id": "tp_pai_k7_1",
+          "kelas": "7",
+          "text": "Membaca dan memahami QS An-Nisa/An-Nahl tentang kewajiban dan keutamaan menuntut ilmu"
+        },
+        {
+          "id": "tp_pai_k7_2",
+          "kelas": "7",
+          "text": "Meyakini rukun iman kepada Allah SWT dan malaikat-malaikat-Nya dengan ketaatan"
+        },
+        {
+          "id": "tp_pai_k7_3",
+          "kelas": "7",
+          "text": "Mempraktikkan tata cara bersuci (thaharah) dan sholat fardhu berjamaah secara benar"
+        },
+        {
+          "id": "tp_pai_k8_1",
+          "kelas": "8",
+          "text": "Menganalisis QS Al-Furqan tentang sikap rendah hati (tawadhu) dan hidup sederhana"
+        },
+        {
+          "id": "tp_pai_k8_2",
+          "kelas": "8",
+          "text": "Meyakini kitab-kitab suci Allah dan meneladani keteladanan para Nabi serta Rasul"
+        },
+        {
+          "id": "tp_pai_k8_3",
+          "kelas": "8",
+          "text": "mampu merancang dan melaksanakan aksi nyata pelestarian lingkungan di sekolah atau lingkungan sekitar"
+        },
+        {
+          "id": "tp_pai_k9_1",
+          "kelas": "9",
+          "text": "Menghayati QS Al-Hujurat tentang prinsip toleransi, menghargai keberagaman dan perdamaian"
+        },
+        {
+          "id": "tp_pai_k9_2",
+          "kelas": "9",
+          "text": "Meyakini peristiwa Hari Akhir serta kepasrahan atas Qadha dan Qadar Allah SWT"
+        },
+        {
+          "id": "tp_pai_k9_3",
+          "kelas": "9",
+          "text": "Mempraktikkan etika komunikasi Islami saat berinteraksi di media sosial maupun kehidupan nyata melalui simulasi atau penyusunan melalui video pendek"
+        }
+      ]
+    },
+    "PJOK": {
+      "tps": [
+        {
+          "id": "tp_pjok_k7_1",
+          "kelas": "7",
+          "text": "Mempraktikkan gerak spesifik fundamental permainan bola besar (sepak bola, bola voli, bola basket)"
+        },
+        {
+          "id": "tp_pjok_k7_2",
+          "kelas": "7",
+          "text": "Mempraktikkan variasi gerak spesifik atletik (jalan cepat, lari jarak pendek, lompat jauh)"
+        },
+        {
+          "id": "tp_pjok_k7_3",
+          "kelas": "7",
+          "text": "Menjaga kebugaran jasmani dasar (kelenturan, daya tahan) dan menerapkan pola makan sehat"
+        },
+        {
+          "id": "tp_pjok_k7_4",
+          "kelas": "7",
+          "text": "melakukan penyesuaian atau modifikasi pola gerak berdasarkan perubahan lingkungan, alat, atau situasi permainan yang diberikan oleh guru"
+        },
+        {
+          "id": "tp_pjok_k7_5",
+          "kelas": "7",
+          "text": "menunjukkan nilai-nilai tanggung jawab, kerja sama, disiplin, sportif, dan menghargai perbedaan selama beraktifitas fisik"
+        },
+        {
+          "id": "tp_pjok_k8_1",
+          "kelas": "8",
+          "text": "menganalisis prosedur aktivitas gerak spesifik start, gerakan lari jarak pendek, dan memasuki garis finish lari jarak pendek"
+        },
+        {
+          "id": "tp_pjok_k8_2",
+          "kelas": "8",
+          "text": "mempraktikkan aktivitas gerak spesifik spesifik start, gerakan lari, dan memasuki garis finish lari jarak pendek"
+        },
+        {
+          "id": "tp_pjok_k9_1",
+          "kelas": "9",
+          "text": "menganalisis prosedur aktivitas gerak spesifik start, gerakan lari jarak pendek, dan memasuki garis finish lari jarak pendek"
+        },
+        {
+          "id": "tp_pjok_k9_2",
+          "kelas": "9",
+          "text": "mempraktikkan aktivitas gerak spesifik spesifik start, gerakan lari, dan memasuki garis finish lari jarak pendek"
+        }
+      ]
+    },
+    "Bahasa Arab": {
+      "tps": [
+        {
+          "id": "tp_bahasa_arab_k7_1",
+          "kelas": "7",
+          "text": "mempraktikkan percakapan sederhana tentang perkenalan diri menggunakan ungkapan Bahasa Arab dengan lafal, intonasi, dan susunan kalimat yang tepat"
+        },
+        {
+          "id": "tp_bahasa_arab_k7_2",
+          "kelas": "7",
+          "text": "mengidentifikasi pola kalimat sederhana yang terdapat dalam materi Pembelajaran 1 serta memahami penggunaannya dalam konteks yang tepat"
+        },
+        {
+          "id": "tp_bahasa_arab_k7_3",
+          "kelas": "7",
+          "text": "mempraktikkan dialog sederhana berdasarkan materi Duruusul Lughah Pembelajaran 1 dengan lafal, intonasi, dan penggunaan kosakata yang tepat"
+        },
+        {
+          "id": "tp_bahasa_arab_k8_1",
+          "kelas": "8",
+          "text": "mengidentifikasi macam-macam huruf jar yang terdapat dalam teks Duruusul Lughah serta memahami makna dan penggunaannya dalam kalimat sederhana"
+        },
+        {
+          "id": "tp_bahasa_arab_k8_2",
+          "kelas": "8",
+          "text": "mempraktikkan dialog percakapan dalam Duruusul Lughah dengan memperhatikan pelafalan, intonasi, kosakata, dan makna percakapan"
+        },
+        {
+          "id": "tp_bahasa_arab_k8_3",
+          "kelas": "8",
+          "text": "membedakan struktur mudhaf dan mudhaf ilaih serta menjelaskan hubungan makna antara kedua kata tersebut dalam kalimat Bahasa Arab"
+        },
+        {
+          "id": "tp_bahasa_arab_k9_1",
+          "kelas": "9",
+          "text": "menulis (imla) kosakata dan kalimat Bahasa Arab yang didiktekan oleh guru dengan memperhatikan ketepatan huruf, harakat, dan tanda baca"
+        },
+        {
+          "id": "tp_bahasa_arab_k9_2",
+          "kelas": "9",
+          "text": "menerjemahkan teks Duruusul Lughah halaman 55–56 dari Bahasa Arab ke Bahasa Indonesia dengan memahami makna kosakata dan susunan kalimatnya"
+        },
+        {
+          "id": "tp_bahasa_arab_k9_3",
+          "kelas": "9",
+          "text": "mengkreasikan dan mempresentasikan video percakapan secara berkelompok dalam bentuk berita atau wawancara berbahasa Arab dengan memperhatikan ketepatan bahasa, pelafalan, intonasi, kreativitas, kerja sama, dan kepercayaan diri"
+        }
+      ]
+    },
+    "Tahfizh Al-Qur’an": {
+      "tps": []
+    },
+    "Tahsin ABaTaTsa": {
+      "tps": []
+    },
+    "Do’a Harian dan Hadits": {
+      "tps": []
+    },
+    "Wudhu dan Sholat": {
+      "tps": []
+    }
   },
   "settings": {
     "principalName": "Ustadz H. Ir. Abdul Muhyi, M.Pd",

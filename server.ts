@@ -584,8 +584,20 @@ app.post("/api/walikelas/notes", async (req, res) => {
 // 6. Learning Objectives (TP) Templates CRUD
 app.get("/api/tps", async (req, res) => {
   const db = await readDB();
-  const templates = db.tujuan_pembelajaran_templates || {};
+  const rawTemplates = db.tujuan_pembelajaran_templates || {};
   const { kelas, subject } = req.query;
+
+  // Normalize rawTemplates to Record<string, any[]>
+  const templates: Record<string, any[]> = {};
+  for (const [sub, val] of Object.entries(rawTemplates)) {
+    if (Array.isArray(val)) {
+      templates[sub] = val;
+    } else if (val && typeof val === "object" && Array.isArray((val as any).tps)) {
+      templates[sub] = (val as any).tps;
+    } else {
+      templates[sub] = [];
+    }
+  }
 
   // If specific subject requested
   if (subject && typeof subject === "string") {
@@ -602,11 +614,9 @@ app.get("/api/tps", async (req, res) => {
   if (kelas && typeof kelas === "string") {
     const filtered: Record<string, any[]> = {};
     for (const [sub, list] of Object.entries(templates)) {
-      if (Array.isArray(list)) {
-        filtered[sub] = list.filter(
-          (item: any) => String(item.kelas || "").trim() === String(kelas).trim()
-        );
-      }
+      filtered[sub] = list.filter(
+        (item: any) => String(item.kelas || "").trim() === String(kelas).trim()
+      );
     }
     return res.json(filtered);
   }
@@ -626,8 +636,10 @@ app.post("/api/tps", async (req, res) => {
   if (!db.tujuan_pembelajaran_templates) {
     db.tujuan_pembelajaran_templates = {};
   }
-  if (!db.tujuan_pembelajaran_templates[subject]) {
-    db.tujuan_pembelajaran_templates[subject] = [];
+  if (!Array.isArray(db.tujuan_pembelajaran_templates[subject])) {
+    db.tujuan_pembelajaran_templates[subject] = (db.tujuan_pembelajaran_templates[subject] && Array.isArray(db.tujuan_pembelajaran_templates[subject].tps))
+      ? db.tujuan_pembelajaran_templates[subject].tps
+      : [];
   }
 
   const newTP = {
@@ -652,8 +664,10 @@ app.put("/api/tps/:subject/:tpId", async (req, res) => {
   if (!db.tujuan_pembelajaran_templates) {
     db.tujuan_pembelajaran_templates = {};
   }
-  if (!db.tujuan_pembelajaran_templates[subject]) {
-    db.tujuan_pembelajaran_templates[subject] = [];
+  if (!Array.isArray(db.tujuan_pembelajaran_templates[subject])) {
+    db.tujuan_pembelajaran_templates[subject] = (db.tujuan_pembelajaran_templates[subject] && Array.isArray(db.tujuan_pembelajaran_templates[subject].tps))
+      ? db.tujuan_pembelajaran_templates[subject].tps
+      : [];
   }
 
   const cleanTpId = String(tpId).trim();
@@ -682,15 +696,16 @@ app.delete("/api/tps/:subject/:tpId", async (req, res) => {
   const { subject, tpId } = req.params;
   const db = await readDB();
 
-  if (
-    db.tujuan_pembelajaran_templates &&
-    db.tujuan_pembelajaran_templates[subject]
-  ) {
+  if (db.tujuan_pembelajaran_templates && db.tujuan_pembelajaran_templates[subject]) {
+    if (!Array.isArray(db.tujuan_pembelajaran_templates[subject])) {
+      db.tujuan_pembelajaran_templates[subject] = (db.tujuan_pembelajaran_templates[subject] && Array.isArray(db.tujuan_pembelajaran_templates[subject].tps))
+        ? db.tujuan_pembelajaran_templates[subject].tps
+        : [];
+    }
     const cleanTpId = String(tpId).trim();
-    db.tujuan_pembelajaran_templates[subject] =
-      db.tujuan_pembelajaran_templates[subject].filter(
-        (tp: any) => String(tp.id).trim() !== cleanTpId,
-      );
+    db.tujuan_pembelajaran_templates[subject] = db.tujuan_pembelajaran_templates[subject].filter(
+      (tp: any) => String(tp.id).trim() !== cleanTpId
+    );
     await writeDB(db);
     res.json({ message: "TP berhasil dihapus." });
   } else {

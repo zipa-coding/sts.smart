@@ -199,6 +199,29 @@ export default function TeacherPanel({
         (g) => g && g.studentId === student?.id && normalizeSubject(g.subject) === normalizeSubject(user.subject),
       );
 
+      const isDummyTpId = (id: string) =>
+        /^(pai|ppkn|indo|mat|mtk|ipa|ips|inggris|ing|pjok|prak|info|arab|tahsin|tahfizh|doa|wudhu)_[789]_\d+$/i.test(id) ||
+        /^(pai|ppkn|indo|mat|mtk|ipa|ips|inggris|ing|pjok|prak|info|arab|tahsin|tahfizh|doa|wudhu)\d+$/i.test(id);
+
+      if (existingGrade && Array.isArray(existingGrade.tps)) {
+        existingGrade.tps.forEach((gtp: any) => {
+          if (
+            gtp &&
+            gtp.text &&
+            !isDummyTpId(gtp.id || "") &&
+            !activeTemplates.some(
+              (t) => t.text.trim().toLowerCase() === gtp.text.trim().toLowerCase()
+            )
+          ) {
+            activeTemplates.push({
+              id: gtp.id || ("tp_" + Math.random().toString(36).substring(2, 7)),
+              text: gtp.text.trim(),
+              kelas: selectedClass,
+            });
+          }
+        });
+      }
+
       if (existingGrade) {
         setScore(
           String(

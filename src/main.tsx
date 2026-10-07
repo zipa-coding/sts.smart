@@ -40,24 +40,34 @@ function initializeLocalStorage() {
       try {
         clientDbCache = JSON.parse(raw);
         let needsSave = false;
+
+        // Ensure real teacher templates are updated with verified templates
+        const realTemplates = (dbData.tujuan_pembelajaran_templates || {}) as Record<string, any>;
         if (!clientDbCache.tujuan_pembelajaran_templates || typeof clientDbCache.tujuan_pembelajaran_templates !== 'object') {
-          clientDbCache.tujuan_pembelajaran_templates = dbData.tujuan_pembelajaran_templates || {};
+          clientDbCache.tujuan_pembelajaran_templates = realTemplates;
           needsSave = true;
         } else {
-          // If a subject key is completely undefined in cache (not set yet), provide default seed
-          const seedTemplates = (dbData.tujuan_pembelajaran_templates || {}) as Record<string, any[]>;
-          for (const sub of Object.keys(seedTemplates)) {
-            if (clientDbCache.tujuan_pembelajaran_templates[sub] === undefined) {
-              clientDbCache.tujuan_pembelajaran_templates[sub] = seedTemplates[sub];
+          // Check each subject
+          for (const sub of Object.keys(realTemplates)) {
+            const realSub = realTemplates[sub];
+            const realList = Array.isArray(realSub) ? realSub : (realSub?.tps || []);
+            const curSub = clientDbCache.tujuan_pembelajaran_templates[sub];
+            const curList = Array.isArray(curSub) ? curSub : (curSub?.tps || []);
+            
+            // If current cached template is empty or has fewer TPs than real template, sync with real template
+            if (!curList || curList.length < realList.length) {
+              clientDbCache.tujuan_pembelajaran_templates[sub] = realList;
               needsSave = true;
             }
           }
         }
+
         // Ensure halaqoh list is initialized if missing
         if (!Array.isArray(clientDbCache.halaqoh) || clientDbCache.halaqoh.length === 0) {
           clientDbCache.halaqoh = (dbData as any).halaqoh || [];
           needsSave = true;
         }
+
         // Clean any old dummy placeholder teacher accounts (t2, t3, t4, t5)
         if (Array.isArray(clientDbCache.teachers)) {
           const prevLen = clientDbCache.teachers.length;
@@ -304,8 +314,7 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           const allTps = await firebaseApi.getTPs();
           if (allTps && typeof allTps === 'object') {
             const db = getDB();
-            if (!db.tujuan_pembelajaran_templates) db.tujuan_pembelajaran_templates = {};
-            Object.assign(db.tujuan_pembelajaran_templates, allTps);
+            db.tujuan_pembelajaran_templates = { ...(allTps || {}) };
             saveDB(db);
           }
 
