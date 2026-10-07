@@ -901,14 +901,30 @@ app.post("/api/ekskul/grades/bulk", async (req, res) => {
       currentEkskuls = currentEkskuls.filter((e: any) => e.name !== name && e.ekskulId !== ekskulId);
     } else {
       const existIdx = currentEkskuls.findIndex((e: any) => e.name === name || (ekskulId && e.ekskulId === ekskulId));
+      const toLetter = (val: any, fallback = "B") => {
+        if (!val) return fallback;
+        const s = String(val).trim().toUpperCase();
+        if (s === "A" || s === "SANGAT BAIK" || s === "SB" || s.startsWith("A ") || s.startsWith("A(")) return "A";
+        if (s === "B" || s === "BAIK" || s.startsWith("B ") || s.startsWith("B(")) return "B";
+        if (s === "C" || s === "CUKUP" || s === "CB" || s.startsWith("C ") || s.startsWith("C(")) return "C";
+        if (s === "D" || s === "KURANG" || s === "KB" || s.startsWith("D ") || s.startsWith("D(")) return "D";
+        if (s.length === 1 && ["A", "B", "C", "D"].includes(s)) return s;
+        return fallback;
+      };
+
+      const fallbackL = toLetter(capaian, "B");
+      const uL = toLetter(usaha, fallbackL);
+      const pL = toLetter(proses, fallbackL);
+      const cL = toLetter(capaian, fallbackL);
+
       const newEkskulEntry = {
         ekskulId: ekskulId || "",
         name,
         type: type || "Pilihan",
-        usaha: usaha || "B",
-        proses: proses || "B",
-        capaian: capaian || "B",
-        predicate: capaian || "Baik",
+        usaha: uL,
+        proses: pL,
+        capaian: cL,
+        predicate: cL,
         description: description || "",
         pembinaName: pembinaName || "",
         pembinaTeacherId: pembinaTeacherId || "",

@@ -219,10 +219,10 @@ export default function PrintRaportView({
   const toGradeLetter = (val: any, fallback = "B"): string => {
     if (!val) return fallback;
     const s = String(val).trim().toUpperCase();
-    if (s === "A" || s === "SANGAT BAIK" || s === "SB") return "A";
-    if (s === "B" || s === "BAIK") return "B";
-    if (s === "C" || s === "CUKUP" || s === "CB") return "C";
-    if (s === "D" || s === "KURANG" || s === "KB") return "D";
+    if (s === "A" || s === "SANGAT BAIK" || s === "SB" || s.startsWith("A ") || s.startsWith("A(") || s === "A (SANGAT BAIK)") return "A";
+    if (s === "B" || s === "BAIK" || s.startsWith("B ") || s.startsWith("B(") || s === "B (BAIK)") return "B";
+    if (s === "C" || s === "CUKUP" || s === "CB" || s.startsWith("C ") || s.startsWith("C(") || s === "C (CUKUP)") return "C";
+    if (s === "D" || s === "KURANG" || s === "KB" || s.startsWith("D ") || s.startsWith("D(") || s === "D (KURANG)") return "D";
     if (s.length === 1 && ["A", "B", "C", "D"].includes(s)) return s;
     return fallback;
   };
@@ -439,13 +439,16 @@ export default function PrintRaportView({
             color: #000000 !important; 
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            box-sizing: border-box !important;
           }
           .pdf-meta-table { width: 100%; border: none; margin-bottom: 8px; font-size: 9.5pt; border-collapse: collapse; margin-left: auto !important; margin-right: auto !important; line-height: 1.4 !important; }
           .pdf-meta-table td { padding: 2px 4px 4px 0 !important; vertical-align: top !important; color: #000000 !important; line-height: 1.4 !important; overflow: visible !important; box-sizing: content-box !important; }
-          .pdf-box-table { width: 100%; border-collapse: collapse; margin-bottom: 7px; border: 1.1px solid black; background-color: #ffffff; margin-left: auto !important; margin-right: auto !important; }
-          .pdf-box-table td { border: 1px solid black; vertical-align: middle; color: #000000 !important; }
+          .pdf-table-block { page-break-inside: avoid !important; break-inside: avoid !important; margin-top: 3.5px !important; margin-bottom: 6.5px !important; padding-top: 1px !important; width: 100% !important; }
+          .pdf-box-table { width: 100% !important; border-collapse: collapse !important; margin: 0 !important; border: 1.2px solid #000000 !important; background-color: #ffffff !important; margin-left: auto !important; margin-right: auto !important; page-break-inside: avoid !important; break-inside: avoid !important; box-sizing: border-box !important; }
+          .pdf-box-table td { border: 1px solid #000000 !important; vertical-align: middle; color: #000000 !important; box-sizing: border-box !important; }
+          .pdf-box-table tr:first-child td { border-top: 1.2px solid #000000 !important; }
           .pdf-heading { margin: 9px 0 4px 0; text-transform: uppercase; font-size: 9.8pt; font-weight: bold; color: #000000 !important; page-break-after: avoid !important; break-after: avoid !important; }
-          .pdf-signature-table { width: 100%; border: none; margin-top: 10px; border-collapse: collapse; margin-left: auto !important; margin-right: auto !important; }
+          .pdf-signature-table { width: 100%; border: none; margin-top: 10px; border-collapse: collapse; margin-left: auto !important; margin-right: auto !important; page-break-inside: avoid !important; break-inside: avoid !important; }
           .pdf-signature-table td { text-align: center; vertical-align: middle; color: #000000 !important; }
         </style>
         <div class="pdf-wrapper">
@@ -511,72 +514,76 @@ export default function PrintRaportView({
           <h4 class="pdf-heading">A. Sikap</h4>
           
           <!-- Spiritual Aspect Table -->
-          <table class="pdf-box-table" style="page-break-inside: avoid;">
-            <tr>
-              <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
-                1. Spiritual
-              </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
-              </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
-              </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.spiritualUsaha || "B"}</span>
-              </td>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.spiritualProses || "B"}</span>
-              </td>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.spiritualCapaian || "B"}</span>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                <strong>Deskripsi:</strong> ${liveNote.spiritualDeskripsi || `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`}
-              </td>
-            </tr>
-          </table>
+          <div class="pdf-table-block">
+            <table class="pdf-box-table">
+              <tr>
+                <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
+                  1. Spiritual
+                </td>
+                <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
+                </td>
+                <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
+                </td>
+                <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${toGradeLetter(liveNote.spiritualUsaha, "B")}</span>
+                </td>
+                <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${toGradeLetter(liveNote.spiritualProses, "B")}</span>
+                </td>
+                <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${toGradeLetter(liveNote.spiritualCapaian, "B")}</span>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
+                  <strong>Deskripsi:</strong> ${liveNote.spiritualDeskripsi || `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`}
+                </td>
+              </tr>
+            </table>
+          </div>
 
           <!-- Sosial Aspect Table -->
-          <table class="pdf-box-table" style="page-break-inside: avoid;">
-            <tr>
-              <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
-                2. Sosial
-              </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
-              </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
-              </td>
-              <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.sosialUsaha || "B"}</span>
-              </td>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.sosialProses || "B"}</span>
-              </td>
-              <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.sosialCapaian || "B"}</span>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                <strong>Deskripsi:</strong> ${liveNote.sosialDeskripsi || `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`}
-              </td>
-            </tr>
-          </table>
+          <div class="pdf-table-block">
+            <table class="pdf-box-table">
+              <tr>
+                <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
+                  2. Sosial
+                </td>
+                <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
+                </td>
+                <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
+                </td>
+                <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${toGradeLetter(liveNote.sosialUsaha, "B")}</span>
+                </td>
+                <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${toGradeLetter(liveNote.sosialProses, "B")}</span>
+                </td>
+                <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${toGradeLetter(liveNote.sosialCapaian, "B")}</span>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
+                  <strong>Deskripsi:</strong> ${liveNote.sosialDeskripsi || `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`}
+                </td>
+              </tr>
+            </table>
+          </div>
 
           <h4 class="pdf-heading">B. Umum</h4>
           ${umumSubjects
@@ -588,38 +595,40 @@ export default function PrintRaportView({
               const desc = getSubjectDescription(sub);
 
               return `
-              <table class="pdf-box-table" style="page-break-inside: avoid;">
-                <tr>
-                  <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
-                    ${title}
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                    <strong>Deskripsi:</strong> ${desc}
-                  </td>
-                </tr>
-              </table>
+              <div class="pdf-table-block">
+                <table class="pdf-box-table">
+                  <tr>
+                    <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
+                      ${title}
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
+                    </td>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
+                    </td>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
+                      <strong>Deskripsi:</strong> ${desc}
+                    </td>
+                  </tr>
+                </table>
+              </div>
             `;
             })
             .join("")}
@@ -634,38 +643,40 @@ export default function PrintRaportView({
               const desc = getSubjectDescription(sub);
 
               return `
-              <table class="pdf-box-table" style="page-break-inside: avoid;">
-                <tr>
-                  <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
-                    ${title}
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                    <strong>Deskripsi:</strong> ${desc}
-                  </td>
-                </tr>
-              </table>
+              <div class="pdf-table-block">
+                <table class="pdf-box-table">
+                  <tr>
+                    <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
+                      ${title}
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
+                    </td>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
+                    </td>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
+                      <strong>Deskripsi:</strong> ${desc}
+                    </td>
+                  </tr>
+                </table>
+              </div>
             `;
             })
             .join("")}
@@ -680,38 +691,40 @@ export default function PrintRaportView({
               const desc = getSubjectDescription(sub);
 
               return `
-              <table class="pdf-box-table" style="page-break-inside: avoid;">
-                <tr>
-                  <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
-                    ${title}
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                    <strong>Deskripsi:</strong> ${desc}
-                  </td>
-                </tr>
-              </table>
+              <div class="pdf-table-block">
+                <table class="pdf-box-table">
+                  <tr>
+                    <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
+                      ${title}
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${usahaGrade}</span>
+                    </td>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${prosesGrade}</span>
+                    </td>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${capaianGrade}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
+                      <strong>Deskripsi:</strong> ${desc}
+                    </td>
+                  </tr>
+                </table>
+              </div>
             `;
             })
             .join("")}
@@ -720,89 +733,97 @@ export default function PrintRaportView({
           ${
             ((liveNote as any).ekskul || []).length === 0
               ? `
-            <table class="pdf-box-table" style="page-break-inside: avoid;">
-              <tr>
-                <td style="text-align: center; font-size: 9pt; padding: 6px; font-style: italic; color: #555;">
-                  Tidak mengikuti kegiatan ekstrakurikuler.
-                </td>
-              </tr>
-            </table>
+            <div class="pdf-table-block">
+              <table class="pdf-box-table">
+                <tr>
+                  <td style="text-align: center; font-size: 9pt; padding: 6px; font-style: italic; color: #555;">
+                    Tidak mengikuti kegiatan ekstrakurikuler.
+                  </td>
+                </tr>
+              </table>
+            </div>
           `
               : ((liveNote as any).ekskul || [])
                   .map((e: any, idx: number) => {
                     const grades = getEkskulGrades(e);
                     return `
-              <table class="pdf-box-table" style="page-break-inside: avoid;">
-                <tr>
-                  <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
-                    ${idx + 1}. Ekstrakurikuler ${e.type || "Pilihan"}: ${e.name}
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
-                  </td>
-                  <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${grades.usaha}</span>
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${grades.proses}</span>
-                  </td>
-                  <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
-                    <span style="display: inline-block; position: relative; top: -2px;">${grades.capaian}</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                    <strong>Deskripsi:</strong> ${e.description || e.deskripsi || "-"}
-                  </td>
-                </tr>
-              </table>
+              <div class="pdf-table-block">
+                <table class="pdf-box-table">
+                  <tr>
+                    <td rowspan="2" style="width: 52%; font-weight: bold; font-size: 9.3pt; padding: 3px 6px 5px 6px; vertical-align: middle; line-height: 1.25;">
+                      ${idx + 1}. Ekstrakurikuler ${e.type || "Pilihan"}: ${e.name}
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Usaha</span>
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Proses</span>
+                    </td>
+                    <td style="width: 16%; text-align: center; font-weight: bold; font-size: 8.8pt; padding: 0px 3px 5.5px 3px; background-color: #f2f2f2; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2.5px;">Capaian</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${grades.usaha}</span>
+                    </td>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${grades.proses}</span>
+                    </td>
+                    <td style="text-align: center; font-weight: bold; font-size: 10pt; padding: 0px 3px 5.5px 3px; vertical-align: middle; line-height: 1;">
+                      <span style="display: inline-block; position: relative; top: -2px;">${grades.capaian}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
+                      <strong>Deskripsi:</strong> ${e.description || e.deskripsi || "-"}
+                    </td>
+                  </tr>
+                </table>
+              </div>
             `;
                   })
                   .join("")
           }
 
           <h4 class="pdf-heading">F. Saran-Saran</h4>
-          <table class="pdf-box-table" style="page-break-inside: avoid;">
-            <tr>
-              <td style="padding: 5px 8px 6px 8px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                ${liveNote.catatan || ""}
-              </td>
-            </tr>
-          </table>
+          <div class="pdf-table-block">
+            <table class="pdf-box-table">
+              <tr>
+                <td style="padding: 5px 8px 6px 8px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
+                  ${liveNote.catatan || ""}
+                </td>
+              </tr>
+            </table>
+          </div>
 
           <h4 class="pdf-heading">G. Kedisiplinan</h4>
-          <table class="pdf-box-table" style="page-break-inside: avoid; text-align: center; border-collapse: collapse; width: 100%;">
-            <tr style="background-color: transparent;">
-              <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">
-                <span style="display: inline-block; position: relative; top: -2.5px;">Sakit</span>
-              </td>
-              <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">
-                <span style="display: inline-block; position: relative; top: -2.5px;">Izin</span>
-              </td>
-              <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">
-                <span style="display: inline-block; position: relative; top: -2.5px;">Tanpa Keterangan</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; line-height: 1.1; color: #000000 !important;">
-                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.sakit && Number(liveNote.sakit) > 0 ? `${liveNote.sakit} Hari` : "- Hari"}</span>
-              </td>
-              <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; line-height: 1.1; color: #000000 !important;">
-                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.izin && Number(liveNote.izin) > 0 ? `${liveNote.izin} Hari` : "- Hari"}</span>
-              </td>
-              <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; line-height: 1.1; color: #000000 !important;">
-                <span style="display: inline-block; position: relative; top: -2px;">${liveNote.alpa && Number(liveNote.alpa) > 0 ? `${liveNote.alpa} Hari` : "- Hari"}</span>
-              </td>
-            </tr>
-          </table>
+          <div class="pdf-table-block">
+            <table class="pdf-box-table" style="text-align: center; border-collapse: collapse; width: 100%;">
+              <tr style="background-color: transparent;">
+                <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Sakit</span>
+                </td>
+                <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Izin</span>
+                </td>
+                <td style="font-weight: bold; font-size: 8.8pt; font-family: 'Times New Roman', Times, serif; width: 33.3%; padding: 0px 4px 6.5px 4px; vertical-align: middle; text-align: center; line-height: 1.1; color: #000000 !important;">
+                  <span style="display: inline-block; position: relative; top: -2.5px;">Tanpa Keterangan</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; line-height: 1.1; color: #000000 !important;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${liveNote.sakit && Number(liveNote.sakit) > 0 ? `${liveNote.sakit} Hari` : "- Hari"}</span>
+                </td>
+                <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; line-height: 1.1; color: #000000 !important;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${liveNote.izin && Number(liveNote.izin) > 0 ? `${liveNote.izin} Hari` : "- Hari"}</span>
+                </td>
+                <td style="font-size: 9pt; text-align: center; vertical-align: middle; font-weight: normal; font-family: 'Times New Roman', Times, serif; padding: 0px 4px 6px 4px; line-height: 1.1; color: #000000 !important;">
+                  <span style="display: inline-block; position: relative; top: -2px;">${liveNote.alpa && Number(liveNote.alpa) > 0 ? `${liveNote.alpa} Hari` : "- Hari"}</span>
+                </td>
+              </tr>
+            </table>
+          </div>
 
           <br />
 

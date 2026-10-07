@@ -269,7 +269,7 @@ export default function EkskulPanel({
           usaha: g?.usaha || "B",
           proses: g?.proses || "B",
           capaian: g?.capaian || "B",
-          predicate: g?.capaian || "Baik",
+          predicate: g?.capaian || "B",
           description: g?.description || "",
           pembinaName: activeEkskul.pembinaName || currentUser.name,
           pembinaTeacherId: activeEkskul.pembinaTeacherId || currentUser.id,
