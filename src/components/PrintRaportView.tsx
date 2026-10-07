@@ -216,21 +216,23 @@ export default function PrintRaportView({
     return `D / ${kelas}`;
   };
 
-  const getEkskulGrades = (e: any) => {
-    if (e.usaha && e.proses && e.capaian) {
-      return { usaha: e.usaha, proses: e.proses, capaian: e.capaian };
-    }
-    const pred = (e.predicate || e.capaian || "Baik").trim();
-    let letter = "B";
-    if (pred === "Sangat Baik" || pred === "A") letter = "A";
-    else if (pred === "Baik" || pred === "B") letter = "B";
-    else if (pred === "Cukup" || pred === "C") letter = "C";
-    else if (pred === "Kurang" || pred === "D") letter = "D";
+  const toGradeLetter = (val: any, fallback = "B"): string => {
+    if (!val) return fallback;
+    const s = String(val).trim().toUpperCase();
+    if (s === "A" || s === "SANGAT BAIK" || s === "SB") return "A";
+    if (s === "B" || s === "BAIK") return "B";
+    if (s === "C" || s === "CUKUP" || s === "CB") return "C";
+    if (s === "D" || s === "KURANG" || s === "KB") return "D";
+    if (s.length === 1 && ["A", "B", "C", "D"].includes(s)) return s;
+    return fallback;
+  };
 
+  const getEkskulGrades = (e: any) => {
+    const fallback = toGradeLetter(e.predicate || e.capaian || "B", "B");
     return {
-      usaha: e.usaha || letter,
-      proses: e.proses || letter,
-      capaian: e.capaian || letter,
+      usaha: toGradeLetter(e.usaha, fallback),
+      proses: toGradeLetter(e.proses, fallback),
+      capaian: toGradeLetter(e.capaian, fallback),
     };
   };
 

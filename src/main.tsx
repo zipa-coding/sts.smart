@@ -68,6 +68,39 @@ function initializeLocalStorage() {
           needsSave = true;
         }
 
+        // Normalize any ekskul grades in walikelas_notes to letter format (A, B, C, D)
+        if (clientDbCache.walikelas_notes && typeof clientDbCache.walikelas_notes === 'object') {
+          const toLetter = (val: any, fallback = 'B') => {
+            if (!val) return fallback;
+            const s = String(val).trim().toUpperCase();
+            if (s === 'A' || s === 'SANGAT BAIK' || s === 'SB') return 'A';
+            if (s === 'B' || s === 'BAIK') return 'B';
+            if (s === 'C' || s === 'CUKUP' || s === 'CB') return 'C';
+            if (s === 'D' || s === 'KURANG' || s === 'KB') return 'D';
+            if (s.length === 1 && ['A', 'B', 'C', 'D'].includes(s)) return s;
+            return fallback;
+          };
+          for (const sId of Object.keys(clientDbCache.walikelas_notes)) {
+            const n = clientDbCache.walikelas_notes[sId];
+            if (n && Array.isArray(n.ekskul)) {
+              n.ekskul.forEach((e: any) => {
+                const fb = toLetter(e.predicate || e.capaian || 'B', 'B');
+                const u = toLetter(e.usaha, fb);
+                const p = toLetter(e.proses, fb);
+                const c = toLetter(e.capaian, fb);
+                const pred = toLetter(e.predicate, fb);
+                if (e.usaha !== u || e.proses !== p || e.capaian !== c || e.predicate !== pred) {
+                  e.usaha = u;
+                  e.proses = p;
+                  e.capaian = c;
+                  e.predicate = pred;
+                  needsSave = true;
+                }
+              });
+            }
+          }
+        }
+
         // Clean any old dummy placeholder teacher accounts (t2, t3, t4, t5)
         if (Array.isArray(clientDbCache.teachers)) {
           const prevLen = clientDbCache.teachers.length;

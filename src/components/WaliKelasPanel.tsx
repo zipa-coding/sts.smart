@@ -1044,9 +1044,20 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                   return (
                     <div className="space-y-2">
                       {studentEkskuls.map((eks: any, idx: number) => {
-                        const usahaVal = eks.usaha || eks.predicate || "B";
-                        const prosesVal = eks.proses || eks.predicate || "B";
-                        const capaianVal = eks.capaian || eks.predicate || "B";
+                        const toLetter = (val: any, fallback = "B") => {
+                          if (!val) return fallback;
+                          const s = String(val).trim().toUpperCase();
+                          if (s === "A" || s === "SANGAT BAIK" || s === "SB") return "A";
+                          if (s === "B" || s === "BAIK") return "B";
+                          if (s === "C" || s === "CUKUP" || s === "CB") return "C";
+                          if (s === "D" || s === "KURANG" || s === "KB") return "D";
+                          if (s.length === 1 && ["A", "B", "C", "D"].includes(s)) return s;
+                          return fallback;
+                        };
+                        const fallbackLetter = toLetter(eks.predicate || eks.capaian || "B", "B");
+                        const usahaVal = toLetter(eks.usaha, fallbackLetter);
+                        const prosesVal = toLetter(eks.proses, fallbackLetter);
+                        const capaianVal = toLetter(eks.capaian, fallbackLetter);
 
                         return (
                           <div
