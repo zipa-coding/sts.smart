@@ -216,6 +216,12 @@ export default function PrintRaportView({
     return `D / ${kelas}`;
   };
 
+  const formatWaliKelasTitle = (k: string | undefined | null) => {
+    if (!k) return "Wali Kelas";
+    const clean = String(k).replace(/^kelas\s*/i, "").trim();
+    return clean ? `Wali Kelas ${clean}` : "Wali Kelas";
+  };
+
   const toGradeLetter = (val: any, fallback = "B"): string => {
     if (!val) return fallback;
     const s = String(val).trim().toUpperCase();
@@ -849,7 +855,7 @@ export default function PrintRaportView({
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
                     </td>
                     <td style="width: 33.33%; text-align: center; vertical-align: top; border: none;">
-                      <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                      <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
                     </td>
                   </tr>
@@ -865,7 +871,7 @@ export default function PrintRaportView({
                       ${parentHtml}
                     </td>
                     <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
-                      <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                      <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
                     </td>
                   </tr>
@@ -888,7 +894,7 @@ export default function PrintRaportView({
                       ${parentHtml}
                     </td>
                     <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
-                      <p style="margin: 0 0 55px 0;">&nbsp;<br />Wali Kelas Kelas ${student.kelas}</p>
+                      <p style="margin: 0 0 55px 0;">&nbsp;<br />${formatWaliKelasTitle(student.kelas)}</p>
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
                     </td>
                   </tr>
@@ -912,7 +918,7 @@ export default function PrintRaportView({
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
                     </td>
                     <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
-                      <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                      <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
                       <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
                     </td>
                   </tr>
@@ -935,7 +941,7 @@ export default function PrintRaportView({
                     ${parentHtml}
                   </td>
                   <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
-                    <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                    <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
                     <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
                   </td>
                 </tr>
@@ -1573,7 +1579,7 @@ export default function PrintRaportView({
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
                 </td>
                 <td style="width: 33.33%; text-align: center; vertical-align: top; border: none; color: #000000;">
-                  <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                  <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
                 </td>
               </tr>
@@ -1589,7 +1595,7 @@ export default function PrintRaportView({
                   ${parentHtml}
                 </td>
                 <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
-                  <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                  <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
                 </td>
               </tr>
@@ -1612,7 +1618,7 @@ export default function PrintRaportView({
                   ${parentHtml}
                 </td>
                 <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
-                  <p style="margin: 0 0 50px 0; font-size: 11pt;">&nbsp;<br />Wali Kelas Kelas ${student.kelas}</p>
+                  <p style="margin: 0 0 50px 0; font-size: 11pt;">&nbsp;<br />${formatWaliKelasTitle(student.kelas)}</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
                 </td>
               </tr>
@@ -1636,7 +1642,7 @@ export default function PrintRaportView({
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
                 </td>
                 <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
-                  <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                  <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
                 </td>
               </tr>
@@ -1659,7 +1665,7 @@ export default function PrintRaportView({
                 ${parentHtml}
               </td>
               <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
-                <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />Wali Kelas Kelas ${student.kelas}</p>
+                <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
                 <p style="margin: 0; font-weight: bold; font-size: 11pt;">${wName}</p>
               </td>
             </tr>
@@ -2552,7 +2558,7 @@ export default function PrintRaportView({
                       {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
                       <br />
                       <span className="font-semibold">
-                        Wali Kelas Kelas {student.kelas}
+                        {formatWaliKelasTitle(student.kelas)}
                       </span>
                     </p>
                     <div className="font-bold inline-block text-center text-black">
@@ -2617,7 +2623,7 @@ export default function PrintRaportView({
                     {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
                     <br />
                     <span className="font-semibold">
-                      Wali Kelas Kelas {student.kelas}
+                      {formatWaliKelasTitle(student.kelas)}
                     </span>
                   </p>
                   <div className="font-bold inline-block text-center text-black text-[11px]">
@@ -2649,7 +2655,7 @@ export default function PrintRaportView({
                       {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
                       <br />
                       <span className="font-semibold">
-                        Wali Kelas Kelas {student.kelas}
+                        {formatWaliKelasTitle(student.kelas)}
                       </span>
                     </p>
                     <div className="font-bold inline-block text-center text-black">
@@ -2700,7 +2706,7 @@ export default function PrintRaportView({
                     <p className="mb-16 text-black">
                       <span className="invisible block">&nbsp;</span>
                       <span className="font-semibold">
-                        Wali Kelas Kelas {student.kelas}
+                        {formatWaliKelasTitle(student.kelas)}
                       </span>
                     </p>
                     <div className="font-bold inline-block text-center text-black">
@@ -2758,7 +2764,7 @@ export default function PrintRaportView({
                       {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
                       <br />
                       <span className="font-semibold">
-                        Wali Kelas Kelas {student.kelas}
+                        {formatWaliKelasTitle(student.kelas)}
                       </span>
                     </p>
                     <div className="font-bold inline-block text-center text-black">

@@ -2888,7 +2888,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                           ) : null}
                         </div>
                         <div>
-                          <p className="mb-10 text-slate-700">{signatureCity}, {tanggalRaport}<br />Wali Kelas Kelas 7</p>
+                          <p className="mb-10 text-slate-700">{signatureCity}, {tanggalRaport}<br />Wali Kelas 7</p>
                           <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">Ustadzah Nama Wali Kelas</p>
                         </div>
                       </div>
@@ -2938,7 +2938,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                           ) : null}
                         </div>
                         <div>
-                          <p className="mb-10 text-slate-700">{signatureCity}, {tanggalRaport}<br />Wali Kelas Kelas 7</p>
+                          <p className="mb-10 text-slate-700">{signatureCity}, {tanggalRaport}<br />Wali Kelas 7</p>
                           <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">Nama Wali Kelas</p>
                         </div>
                       </div>
@@ -2967,7 +2967,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                           ) : null}
                         </div>
                         <div>
-                          <p className="mb-10 text-slate-700">&nbsp;<br />Wali Kelas Kelas 7</p>
+                          <p className="mb-10 text-slate-700">&nbsp;<br />Wali Kelas 7</p>
                           <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">Nama Wali Kelas</p>
                         </div>
                       </div>
@@ -2995,7 +2995,7 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
                           )}
                         </div>
                         <div>
-                          <p className="mb-10 text-slate-700">{signatureCity}, {tanggalRaport}<br />Wali Kelas Kelas 7</p>
+                          <p className="mb-10 text-slate-700">{signatureCity}, {tanggalRaport}<br />Wali Kelas 7</p>
                           <p className="font-bold border-b border-dotted border-slate-400 inline-block px-4">Nama Wali Kelas</p>
                         </div>
                       </div>
