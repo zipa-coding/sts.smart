@@ -199,18 +199,15 @@ export default function TeacherPanel({
         (g) => g && g.studentId === student?.id && normalizeSubject(g.subject) === normalizeSubject(user.subject),
       );
 
-      const isDummyTpId = (id: string) =>
-        /^(pai|ppkn|indo|mat|mtk|ipa|ips|inggris|ing|pjok|prak|info|arab|tahsin|tahfizh|doa|wudhu)_[789]_\d+$/i.test(id) ||
-        /^(pai|ppkn|indo|mat|mtk|ipa|ips|inggris|ing|pjok|prak|info|arab|tahsin|tahfizh|doa|wudhu)\d+$/i.test(id);
-
       if (existingGrade && Array.isArray(existingGrade.tps)) {
         existingGrade.tps.forEach((gtp: any) => {
           if (
             gtp &&
             gtp.text &&
-            !isDummyTpId(gtp.id || "") &&
             !activeTemplates.some(
-              (t) => t.text.trim().toLowerCase() === gtp.text.trim().toLowerCase()
+              (t) =>
+                (t.id && gtp.id && String(t.id).trim() === String(gtp.id).trim()) ||
+                t.text.trim().toLowerCase() === gtp.text.trim().toLowerCase()
             )
           ) {
             activeTemplates.push({
@@ -376,7 +373,7 @@ export default function TeacherPanel({
     }
   };
 
-  // Switch achievement status of some TP and automatically synchronize description
+  // Switch achievement status of some TP (preserves teacher-entered custom descriptions)
   const toggleTp = (id: string) => {
     const currentVal = tpAchievements[id];
     // If currently false -> true; if true or undefined -> false
@@ -387,8 +384,9 @@ export default function TeacherPanel({
     };
     setTpAchievements(nextMap);
 
-    // Otomatis memperbarui deskripsi sesuai status TP terbaru & menyertakan nama siswa
-    if (selectedStudent && tpTemplates.length > 0) {
+    // Hanya perbarui narasi otomatis jika guru BELUM memasukkan deskripsi kustom/manual
+    // Deskripsi yang sudah diinputkan oleh guru tidak boleh ditimpa saat toggle TP
+    if (!isCustomDescActive && selectedStudent && tpTemplates.length > 0) {
       const updatedDesc = generateNarrativeDescription(
         selectedStudent,
         user.subject,
@@ -407,7 +405,8 @@ export default function TeacherPanel({
     });
     setTpAchievements(nextMap);
 
-    if (selectedStudent && tpTemplates.length > 0) {
+    // Hanya perbarui narasi otomatis jika guru belum memasukkan deskripsi kustom
+    if (!isCustomDescActive && selectedStudent && tpTemplates.length > 0) {
       const updatedDesc = generateNarrativeDescription(
         selectedStudent,
         user.subject,
@@ -478,7 +477,18 @@ export default function TeacherPanel({
     });
 
     // Description is taken directly from the textarea (supports both auto from TP and purely manual)
-    const finalDescription = customDescription.trim();
+    let finalDescription = customDescription.trim();
+    if (selectedStudent && finalDescription) {
+      // Safety guard: Pastikan deskripsi tidak memuat nama siswa lain jika guru menyalin teks
+      const otherStudents = students.filter(
+        (s) => s && s.id !== selectedStudent.id && s.kelas === selectedStudent.kelas,
+      );
+      for (const other of otherStudents) {
+        if (other && other.name && finalDescription.includes(other.name)) {
+          finalDescription = finalDescription.split(other.name).join(selectedStudent.name);
+        }
+      }
+    }
 
     try {
       const response = await fetch("/api/grades", {
@@ -1096,7 +1106,10 @@ export default function TeacherPanel({
 
                 <textarea
                   value={customDescription}
-                  onChange={(e) => setCustomDescription(e.target.value)}
+                  onChange={(e) => {
+                    setCustomDescription(e.target.value);
+                    setIsCustomDescActive(true);
+                  }}
                   rows={4}
                   placeholder={
                     selectedStudent

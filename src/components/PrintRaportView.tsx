@@ -71,7 +71,7 @@ export default function PrintRaportView({
 
   // Dynamic state for Headmaster/Principal info & Raport format configurations
   const [principal, setPrincipal] = useState({
-    name: "Ari Gunawan, S.Kom.",
+    name: "",
     nip: "",
   });
 
@@ -87,11 +87,11 @@ export default function PrintRaportView({
     fontFamily: "Times New Roman",
     descFontSize: "9pt",
     paperSize: "A4",
-    tanggalRaport: "17 Juni 2026",
+    tanggalRaport: "",
     principalSignaturePosition: "bottom_center",
     signatureCity: "Pangkal Pinang",
     principalTitle: "Kepala Sekolah",
-    showPrincipalNip: false,
+    showPrincipalNip: true,
     showParentSignature: true,
     watermarkSize: 440,
     watermarkOpacity: 0.05,
@@ -109,13 +109,20 @@ export default function PrintRaportView({
     fetch("/api/settings")
       .then((res) => res.json())
       .then((data) => {
-        if (data.principalName) {
+        if (data.principalName !== undefined) {
+          let pName = data.principalName;
+          let pNip = data.principalNip || "";
+          if (pName === "Ari Gunawan, S.Kom.") {
+            pName = "Ustadz H. Ir. Abdul Muhyi, M.Pd";
+            if (!pNip) pNip = "19780512 200501 1 002";
+          }
           setPrincipal({
-            name: data.principalName,
-            nip: data.principalNip || "",
+            name: pName,
+            nip: pNip,
           });
         }
         if (data.format) {
+          const tgl = (data.format.tanggalRaport === "17 Juni 2026") ? "" : (data.format.tanggalRaport || "");
           setFormat({
             semesterName: data.format.semesterName || "Ganjil",
             tahunPelajaran: data.format.tahunPelajaran || "2026/2027",
@@ -140,12 +147,15 @@ export default function PrintRaportView({
             fontFamily: data.format.fontFamily || "Times New Roman",
             descFontSize: data.format.descFontSize || "9pt",
             paperSize: data.format.paperSize || "A4",
-            tanggalRaport: data.format.tanggalRaport || "17 Juni 2026",
+            tanggalRaport: tgl,
             principalSignaturePosition:
               data.format.principalSignaturePosition || "bottom_center",
             signatureCity: data.format.signatureCity || "Pangkal Pinang",
             principalTitle: data.format.principalTitle || "Kepala Sekolah",
-            showPrincipalNip: false,
+            showPrincipalNip:
+              data.format.showPrincipalNip !== undefined
+                ? !!data.format.showPrincipalNip
+                : true,
             showParentSignature:
               data.format.showParentSignature !== undefined
                 ? !!data.format.showParentSignature
@@ -836,10 +846,12 @@ export default function PrintRaportView({
           ${(() => {
             const pos = format.principalSignaturePosition || "bottom_center";
             const city = format.signatureCity || "Pangkal Pinang";
-            const dateStr = format.tanggalRaport || "17 Juni 2026";
+            const dateStr = format.tanggalRaport ? `${format.tanggalRaport}` : "………………………";
             const pTitle = format.principalTitle || "Kepala Sekolah";
             const showParent = format.showParentSignature !== false;
-            const pName = principal?.name || "Ari Gunawan, S.Kom.";
+            const pName = principal?.name ? principal.name : "……………………………";
+            const showNip = format.showPrincipalNip !== false && !!principal?.nip;
+            const nipHtml = showNip ? `<br /><span style="font-size: 9pt; font-weight: normal; font-family: monospace;">NIP. ${principal.nip}</span>` : "";
             const wName = waliKelas ? waliKelas.name : "……………………………";
             const parentHtml = showParent ? `<p style="margin: 0 0 55px 0;">&nbsp;<br />Orang Tua/Wali Siswa</p><p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>` : "";
 
@@ -852,7 +864,7 @@ export default function PrintRaportView({
                     </td>
                     <td style="width: 33.33%; text-align: center; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
-                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
                     </td>
                     <td style="width: 33.33%; text-align: center; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
@@ -878,7 +890,7 @@ export default function PrintRaportView({
                   <tr>
                     <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
-                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
                     </td>
                     <td style="width: 50%; border: none;"></td>
                   </tr>
@@ -902,7 +914,7 @@ export default function PrintRaportView({
                     <td style="width: 50%; border: none;"></td>
                     <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0; line-height: 1.3;">${city}, ${dateStr}<br />Mengetahui,<br />${pTitle}</p>
-                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
                     </td>
                   </tr>
                 </table>
@@ -915,7 +927,7 @@ export default function PrintRaportView({
                   <tr>
                     <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
-                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                      <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
                     </td>
                     <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none;">
                       <p style="margin: 0 0 55px 0;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
@@ -948,7 +960,7 @@ export default function PrintRaportView({
                 <tr>
                   <td colspan="2" style="text-align: center; padding-top: 15px; vertical-align: top; border: none;">
                     <p style="margin: 0 0 55px 0; line-height: 1.3;">Mengetahui,<br />${pTitle}</p>
-                    <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                    <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
                   </td>
                 </tr>
               </table>
@@ -1560,10 +1572,12 @@ export default function PrintRaportView({
       ${(() => {
         const pos = format.principalSignaturePosition || "bottom_center";
         const city = format.signatureCity || "Pangkal Pinang";
-        const dateStr = format.tanggalRaport || "17 Juni 2026";
+        const dateStr = format.tanggalRaport ? `${format.tanggalRaport}` : "………………………";
         const pTitle = format.principalTitle || "Kepala Sekolah";
         const showParent = format.showParentSignature !== false;
-        const pName = principal?.name || "Ari Gunawan, S.Kom.";
+        const pName = principal?.name ? principal.name : "……………………………";
+        const showNip = format.showPrincipalNip !== false && !!principal?.nip;
+        const nipHtml = showNip ? `<br /><span style="font-size: 9.5pt; font-weight: normal; font-family: monospace;">NIP. ${principal.nip}</span>` : "";
         const wName = waliKelas ? waliKelas.name : "……………………………";
         const parentHtml = showParent ? `<p style="margin: 0 0 50px 0; font-size: 11pt;">&nbsp;<br />Orang Tua/Wali Siswa</p><p style="margin: 0; font-weight: bold; font-size: 11pt;">……………………………</p>` : "";
 
@@ -1576,7 +1590,7 @@ export default function PrintRaportView({
                 </td>
                 <td style="width: 33.33%; text-align: center; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
-                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
                 </td>
                 <td style="width: 33.33%; text-align: center; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
@@ -1602,7 +1616,7 @@ export default function PrintRaportView({
               <tr>
                 <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
-                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
                 </td>
                 <td style="width: 50%; border: none;"></td>
               </tr>
@@ -1626,7 +1640,7 @@ export default function PrintRaportView({
                 <td style="width: 50%; border: none;"></td>
                 <td style="width: 50%; text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">${city}, ${dateStr}<br />Mengetahui,<br />${pTitle}</p>
-                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
                 </td>
               </tr>
             </table>
@@ -1639,7 +1653,7 @@ export default function PrintRaportView({
               <tr>
                 <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
-                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                  <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
                 </td>
                 <td style="width: 50%; padding-bottom: 50px; text-align: center; vertical-align: top; border: none; color: #000000;">
                   <p style="margin: 0 0 50px 0; font-size: 11pt;">${city}, ${dateStr}<br />${formatWaliKelasTitle(student.kelas)}</p>
@@ -1672,7 +1686,7 @@ export default function PrintRaportView({
             <tr>
               <td colspan="2" style="text-align: center; padding-top: 15px; vertical-align: top; border: none; color: #000000;">
                 <p style="margin: 0 0 50px 0; line-height: 1.3; font-size: 11pt;">Mengetahui,<br />${pTitle}</p>
-                <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}</p>
+                <p style="margin: 0; font-weight: bold; font-size: 11pt;">${pName}${nipHtml}</p>
               </td>
             </tr>
           </table>
@@ -2555,7 +2569,7 @@ export default function PrintRaportView({
                   </div>
                   <div>
                     <p className="mb-16 text-black">
-                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "………………………"}
                       <br />
                       <span className="font-semibold">
                         {formatWaliKelasTitle(student.kelas)}
@@ -2575,7 +2589,7 @@ export default function PrintRaportView({
                       {format.principalTitle || "Kepala Sekolah"}
                     </p>
                     <div className="font-bold inline-block text-center text-black">
-                      {principal.name}
+                      {principal.name || "……………………………"}
                     </div>
                     {format.showPrincipalNip !== false && principal.nip && (
                       <p className="text-[10px] text-gray-500 font-mono mt-1 font-bold">
@@ -2610,7 +2624,7 @@ export default function PrintRaportView({
                     {format.principalTitle || "Kepala Sekolah"}
                   </p>
                   <div className="font-bold inline-block text-center text-black text-[11px]">
-                    {principal.name}
+                    {principal.name || "……………………………"}
                   </div>
                   {format.showPrincipalNip !== false && principal.nip && (
                     <p className="text-[9.5px] text-gray-500 font-mono mt-1 font-bold">
@@ -2620,7 +2634,7 @@ export default function PrintRaportView({
                 </div>
                 <div>
                   <p className="mb-16 text-black text-[11px]">
-                    {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                    {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "………………………"}
                     <br />
                     <span className="font-semibold">
                       {formatWaliKelasTitle(student.kelas)}
@@ -2652,7 +2666,7 @@ export default function PrintRaportView({
                   </div>
                   <div>
                     <p className="mb-16 text-black">
-                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "………………………"}
                       <br />
                       <span className="font-semibold">
                         {formatWaliKelasTitle(student.kelas)}
@@ -2672,7 +2686,7 @@ export default function PrintRaportView({
                       {format.principalTitle || "Kepala Sekolah"}
                     </p>
                     <div className="font-bold inline-block text-center text-black">
-                      {principal.name}
+                      {principal.name || "……………………………"}
                     </div>
                     {format.showPrincipalNip !== false && principal.nip && (
                       <p className="text-[10px] text-gray-500 font-mono mt-1 font-bold">
@@ -2719,7 +2733,7 @@ export default function PrintRaportView({
                   <div />
                   <div>
                     <p className="mb-16 text-black">
-                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "………………………"}
                       <br />
                       <span className="uppercase font-bold tracking-wide">
                         Mengetahui,
@@ -2728,7 +2742,7 @@ export default function PrintRaportView({
                       </span>
                     </p>
                     <div className="font-bold inline-block text-center text-black">
-                      {principal.name}
+                      {principal.name || "……………………………"}
                     </div>
                     {format.showPrincipalNip !== false && principal.nip && (
                       <p className="text-[10px] text-gray-500 font-mono mt-1 font-bold">
@@ -2751,7 +2765,7 @@ export default function PrintRaportView({
                       {format.principalTitle || "Kepala Sekolah"}
                     </p>
                     <div className="font-bold inline-block text-center text-black">
-                      {principal.name}
+                      {principal.name || "……………………………"}
                     </div>
                     {format.showPrincipalNip !== false && principal.nip && (
                       <p className="text-[10px] text-gray-500 font-mono mt-1 font-bold">
@@ -2761,7 +2775,7 @@ export default function PrintRaportView({
                   </div>
                   <div>
                     <p className="mb-16 text-black">
-                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "17 Juni 2026"}
+                      {format.signatureCity || "Pangkal Pinang"}, {format.tanggalRaport || "………………………"}
                       <br />
                       <span className="font-semibold">
                         {formatWaliKelasTitle(student.kelas)}

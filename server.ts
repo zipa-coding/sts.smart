@@ -500,10 +500,31 @@ app.post("/api/grades", async (req, res) => {
 
   const db = await readDB();
 
+  const normalizeSubj = (s: string) =>
+    (s || "").toLowerCase().replace(/[’'"`]/g, "'").replace(/\s+/g, " ").trim();
   // Find if grade already exists for this student and subject
   const index = db.grades.findIndex(
-    (g: any) => g.studentId === studentId && g.subject === subject,
+    (g: any) =>
+      g.studentId === studentId &&
+      normalizeSubj(g.subject) === normalizeSubj(subject),
   );
+
+  let safeDeskripsi = deskripsi || "";
+  const currentStudent = Array.isArray(db.students)
+    ? db.students.find((s: any) => s && s.id === studentId)
+    : null;
+
+  if (currentStudent && safeDeskripsi.trim() !== "") {
+    // Safety guard: Jika deskripsi berisi nama siswa lain dari rombel yang sama, otomatis selaraskan ke nama siswa saat ini
+    const otherStudents = db.students.filter(
+      (s: any) => s && s.id !== studentId && s.kelas === currentStudent.kelas,
+    );
+    for (const other of otherStudents) {
+      if (other && other.name && safeDeskripsi.includes(other.name)) {
+        safeDeskripsi = safeDeskripsi.split(other.name).join(currentStudent.name);
+      }
+    }
+  }
 
   const updatedGrade = {
     studentId,
@@ -513,7 +534,7 @@ app.post("/api/grades", async (req, res) => {
     usaha: usaha || "B",
     proses: proses || "B",
     capaian: capaian || "B",
-    deskripsi: deskripsi || "",
+    deskripsi: safeDeskripsi,
     lastUpdatedBy: teacherName || "Guru Mata Pelajaran",
     lastUpdatedAt: new Date().toISOString(),
   };
@@ -716,8 +737,7 @@ app.delete("/api/tps/:subject/:tpId", async (req, res) => {
 // 6.5. School Settings API (Principal, NIP & Raport Format config)
 app.get("/api/settings", async (req, res) => {
   const db = await readDB();
-  const principalName =
-    db.settings?.principalName || "Ari Gunawan, S.Kom.";
+  const principalName = "Ari Gunawan, S.Kom.";
   const principalNip = db.settings?.principalNip || "";
   const format = {
     semesterName: "Ganjil",
@@ -746,8 +766,8 @@ app.post("/api/settings", async (req, res) => {
   if (!db.settings) {
     db.settings = {};
   }
-  db.settings.principalName =
-    principalName || "Ari Gunawan, S.Kom.";
+  // Tetapkan nama kepala sekolah permanen: Ari Gunawan, S.Kom.
+  db.settings.principalName = "Ari Gunawan, S.Kom.";
   db.settings.principalNip = principalNip || "";
 
   if (format) {
@@ -1227,6 +1247,9 @@ app.post("/api/reset", async (req, res) => {
       const raw = await fs.readFile(DB_PATH, "utf-8");
       originalData = JSON.parse(raw);
     }
+
+    if (!originalData.settings) originalData.settings = {};
+    originalData.settings.principalName = "Ari Gunawan, S.Kom.";
 
     await writeDB(originalData);
     res.json({ success: true, message: "Data berhasil dikembalikan ke kondisi awal." });

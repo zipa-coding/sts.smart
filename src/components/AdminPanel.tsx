@@ -2578,17 +2578,20 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Nama Kepala Sekolah & Gelar
+                  <label className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Nama Kepala Sekolah & Gelar</span>
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      Kepala Sekolah Tetap
+                    </span>
                   </label>
                   <input
                     type="text"
                     required
-                    value={principalName}
-                    onChange={(e) => setPrincipalName(e.target.value)}
-                    placeholder="Contoh: Ari Gunawan, S.Kom."
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs md:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition"
+                    readOnly
+                    value="Ari Gunawan, S.Kom."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs md:text-sm bg-slate-100 text-slate-800 font-bold focus:outline-none cursor-not-allowed select-none transition"
                   />
+                  <p className="text-[10px] text-slate-500 mt-1">Kepala Sekolah ditetapkan secara permanen: <strong>Ari Gunawan, S.Kom.</strong></p>
                 </div>
 
                 <div>

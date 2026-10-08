@@ -787,7 +787,7 @@ export const firebaseApi = {
     if (!db) throw new Error("Database not connected");
     const { principalName, principalNip, format } = body;
     const settingsData = {
-      principalName: principalName || "Ari Gunawan, S.Kom.",
+      principalName: "Ari Gunawan, S.Kom.",
       principalNip: principalNip || "",
       format: format ? {
         semesterName: format.semesterName || "Ganjil",

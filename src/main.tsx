@@ -111,6 +111,41 @@ function initializeLocalStorage() {
             needsSave = true;
           }
         }
+
+        // Tetapkan nama kepala sekolah permanen: Ari Gunawan, S.Kom.
+        if (!clientDbCache.settings) {
+          clientDbCache.settings = {};
+          needsSave = true;
+        }
+        if (clientDbCache.settings.principalName !== "Ari Gunawan, S.Kom.") {
+          clientDbCache.settings.principalName = "Ari Gunawan, S.Kom.";
+          needsSave = true;
+        }
+
+        // Pastikan deskripsi anak dan studentId pada nilai (terutama PPKN) 100% sinkron dan tidak tertukar
+        if (Array.isArray(clientDbCache.grades) && Array.isArray(clientDbCache.students)) {
+          const studentList: any[] = clientDbCache.students;
+          clientDbCache.grades.forEach((g: any) => {
+            if (g && g.subject === "PPKN" && (g.deskripsi || g.description)) {
+              const desc = g.deskripsi || g.description || "";
+              let matched: any = null;
+              for (const s of studentList) {
+                if (s && s.name && desc.includes(s.name)) {
+                  matched = s;
+                  break;
+                }
+              }
+              if (!matched) {
+                if (desc.includes("Shaza Qurratu Ain")) matched = studentList.find((s) => s.id === "s7_28");
+                else if (desc.includes("Aaisyah Nur Husnaa")) matched = studentList.find((s) => s.id === "s9_1");
+              }
+              if (matched && g.studentId !== matched.id) {
+                g.studentId = matched.id;
+                needsSave = true;
+              }
+            }
+          });
+        }
         if (needsSave) {
           localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
         }
@@ -852,7 +887,25 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     if (path === '/api/grades' && method === 'POST') {
       const { studentId, subject, score, tps, teacherName, usaha, proses, capaian, deskripsi } = body || {};
       const db = getDB();
-      const index = db.grades.findIndex((g: any) => g.studentId === studentId && g.subject === subject);
+      const normalizeSubj = (s: string) => (s || "").toLowerCase().replace(/[’'"`]/g, "'").replace(/\s+/g, " ").trim();
+      const index = db.grades.findIndex((g: any) => g.studentId === studentId && normalizeSubj(g.subject) === normalizeSubj(subject));
+      
+      let safeDeskripsi = deskripsi || "";
+      const currentStudent = Array.isArray(db.students)
+        ? db.students.find((s: any) => s && s.id === studentId)
+        : null;
+
+      if (currentStudent && safeDeskripsi.trim() !== "") {
+        const otherStudents = db.students.filter(
+          (s: any) => s && s.id !== studentId && s.kelas === currentStudent.kelas
+        );
+        for (const other of otherStudents) {
+          if (other && other.name && safeDeskripsi.includes(other.name)) {
+            safeDeskripsi = safeDeskripsi.split(other.name).join(currentStudent.name);
+          }
+        }
+      }
+
       const updatedGrade = {
         studentId,
         subject,
@@ -861,7 +914,7 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         usaha: usaha || "B",
         proses: proses || "B",
         capaian: capaian || "B",
-        deskripsi: deskripsi || "",
+        deskripsi: safeDeskripsi,
         lastUpdatedBy: teacherName || "Guru Mata Pelajaran",
         lastUpdatedAt: new Date().toISOString()
       };
@@ -991,7 +1044,7 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // 6.5 GET /api/settings
     if (path === '/api/settings' && method === 'GET') {
       const db = getDB();
-      const principalName = db.settings?.principalName || "Ari Gunawan, S.Kom.";
+      const principalName = "Ari Gunawan, S.Kom.";
       const principalNip = db.settings?.principalNip || "";
       const format = db.settings?.format || {
         semesterName: "Ganjil",
@@ -1031,10 +1084,10 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
 
     // POST /api/settings
     if (path === '/api/settings' && method === 'POST') {
-      const { principalName, principalNip, format } = body || {};
+      const { principalNip, format } = body || {};
       const db = getDB();
       if (!db.settings) db.settings = {};
-      db.settings.principalName = principalName || "Ari Gunawan, S.Kom.";
+      db.settings.principalName = "Ari Gunawan, S.Kom.";
       db.settings.principalNip = principalNip || "";
       if (format) {
         db.settings.format = {
