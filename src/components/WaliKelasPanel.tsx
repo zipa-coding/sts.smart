@@ -19,9 +19,21 @@ import {
   Users,
   ShieldCheck,
   Check,
-  RotateCcw
+  RotateCcw,
+  Archive,
+  FileArchive,
+  FileDown,
+  CheckSquare,
+  Square
 } from "lucide-react";
 import PrintRaportView from "./PrintRaportView";
+import {
+  downloadSingleStudentRaportPdf,
+  downloadClassRaportZip,
+  ZipBatchProgress,
+  RaportFormatSettings,
+  RaportPrincipalSettings
+} from "../lib/raportPdfService";
 
 interface WaliKelasPanelProps {
   user: Teacher;
@@ -84,6 +96,75 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   const [newStudentNisn, setNewStudentNisn] = useState("");
   const [isAddingStudent, setIsAddingStudent] = useState(false);
   const [addStudentError, setAddStudentError] = useState("");
+
+  // Raport Settings State (Loaded from server for PDF generation)
+  const [raportSettings, setRaportSettings] = useState<{
+    principal: RaportPrincipalSettings;
+    format: RaportFormatSettings;
+  }>({
+    principal: { name: "Ari Gunawan, S.Kom.", nip: "" },
+    format: {
+      semesterName: "Ganjil",
+      tahunPelajaran: "2026/2027",
+      showLogo: true,
+      paperSize: "A4",
+      tanggalRaport: "17 Juni 2026",
+      signatureCity: "Pangkal Pinang",
+      principalTitle: "Kepala Sekolah",
+      principalSignaturePosition: "bottom_center",
+      showPrincipalNip: false,
+      showParentSignature: true,
+      watermarkOpacity: 0.05,
+      watermarkSize: 440,
+      descFontSize: "9pt",
+    },
+  });
+
+  // Single & Batch ZIP Download states
+  const [isDownloadingSingleId, setIsDownloadingSingleId] = useState<string | null>(null);
+  const [isZipModalOpen, setIsZipModalOpen] = useState(false);
+  const [isGeneratingZip, setIsGeneratingZip] = useState(false);
+  const [zipProgress, setZipProgress] = useState<ZipBatchProgress>({
+    current: 0,
+    total: 0,
+    studentName: "",
+    percent: 0,
+    status: "idle",
+  });
+  const [selectedStudentIdsForZip, setSelectedStudentIdsForZip] = useState<string[]>([]);
+  const zipCancelRef = useRef(false);
+
+  // Fetch report settings on mount
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data) {
+          setRaportSettings({
+            principal: {
+              name: "Ari Gunawan, S.Kom.",
+              nip: data.principalNip || "",
+            },
+            format: {
+              semesterName: data.format?.semesterName || "Ganjil",
+              tahunPelajaran: data.format?.tahunPelajaran || "2026/2027",
+              showLogo: data.format?.showLogo !== undefined ? !!data.format.showLogo : true,
+              paperSize: data.format?.paperSize || "A4",
+              tanggalRaport: data.format?.tanggalRaport || "",
+              signatureCity: data.format?.signatureCity || "Pangkal Pinang",
+              principalTitle: data.format?.principalTitle || "Kepala Sekolah",
+              principalSignaturePosition: data.format?.principalSignaturePosition || "bottom_center",
+              showPrincipalNip: data.format?.showPrincipalNip !== false,
+              showParentSignature: data.format?.showParentSignature !== false,
+              watermarkOpacity: data.format?.watermarkOpacity || 0.05,
+              watermarkSize: data.format?.watermarkSize || 440,
+              descFontSize: data.format?.descFontSize || "9pt",
+            },
+          });
+        }
+      })
+      .catch((err) => console.error("Error loading raport settings:", err));
+  }, []);
 
   // Helper generators for professional religious & character descriptions
   const generateSpiritualNarrative = (name: string, pred: string) => {
@@ -444,6 +525,134 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     }
   };
 
+  // Single Student PDF Download handler
+  const handleDownloadSingleStudent = async (studentToDownload: Student) => {
+    if (!studentToDownload) return;
+    setIsDownloadingSingleId(studentToDownload.id);
+    try {
+      const sGrades = grades.filter(
+        (g) => String(g.studentId).trim() === String(studentToDownload.id).trim()
+      );
+      const sNote = allClassNotes[studentToDownload.id] || {
+        sakit: 0,
+        izin: 0,
+        alpa: 0,
+        catatan: "",
+        spiritualUsaha: "B",
+        spiritualProses: "B",
+        spiritualCapaian: "B",
+        spiritualDeskripsi: "",
+        sosialUsaha: "B",
+        sosialProses: "B",
+        sosialCapaian: "B",
+        sosialDeskripsi: "",
+        ekskul: [],
+      };
+
+      await downloadSingleStudentRaportPdf({
+        student: studentToDownload,
+        grades: sGrades,
+        waliKelasNote: sNote,
+        waliKelas: user,
+        principal: raportSettings.principal,
+        format: raportSettings.format,
+      });
+
+      setSuccess(`Rapor ${studentToDownload.name} berhasil diunduh dalam format PDF!`);
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err: any) {
+      console.error("Single PDF download failed:", err);
+      setError(err?.message || "Gagal mengunduh berkas PDF siswa.");
+      setTimeout(() => setError(""), 5000);
+    } finally {
+      setIsDownloadingSingleId(null);
+    }
+  };
+
+  // Open ZIP Download Modal with all students selected by default
+  const handleOpenZipModal = () => {
+    const ids = currentClassStudents.map((s) => s.id);
+    setSelectedStudentIdsForZip(ids);
+    setZipProgress({
+      current: 0,
+      total: currentClassStudents.length,
+      studentName: "",
+      percent: 0,
+      status: "idle",
+    });
+    setIsZipModalOpen(true);
+  };
+
+  // Toggle selection for ZIP batch
+  const handleToggleSelectStudentForZip = (studentId: string) => {
+    if (isGeneratingZip) return;
+    setSelectedStudentIdsForZip((prev) =>
+      prev.includes(studentId)
+        ? prev.filter((id) => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  const handleToggleSelectAllZip = () => {
+    if (isGeneratingZip) return;
+    if (selectedStudentIdsForZip.length === currentClassStudents.length) {
+      setSelectedStudentIdsForZip([]);
+    } else {
+      setSelectedStudentIdsForZip(currentClassStudents.map((s) => s.id));
+    }
+  };
+
+  // Run the ZIP compilation & download
+  const handleStartZipDownload = async () => {
+    const studentsToDownload = currentClassStudents.filter((s) =>
+      selectedStudentIdsForZip.includes(s.id)
+    );
+
+    if (studentsToDownload.length === 0) {
+      setError("Pilih minimal 1 siswa untuk diunduh.");
+      setTimeout(() => setError(""), 4000);
+      return;
+    }
+
+    setIsGeneratingZip(true);
+    zipCancelRef.current = false;
+    setZipProgress({
+      current: 0,
+      total: studentsToDownload.length,
+      studentName: "Mempersiapkan dokumen...",
+      percent: 0,
+      status: "generating",
+    });
+
+    try {
+      const result = await downloadClassRaportZip({
+        students: studentsToDownload,
+        allGrades: grades,
+        allNotes: allClassNotes,
+        waliKelas: user,
+        principal: raportSettings.principal,
+        format: raportSettings.format,
+        className: selectedClass,
+        onProgress: (p) => setZipProgress(p),
+        isCancelled: () => zipCancelRef.current,
+      });
+
+      setSuccess(`Berhasil mengunduh ${result.count} rapor dalam berkas ZIP: ${result.zipName}`);
+      setTimeout(() => setSuccess(""), 6000);
+    } catch (err: any) {
+      if (!zipCancelRef.current) {
+        console.error("Error generating ZIP:", err);
+        setZipProgress((prev) => ({
+          ...prev,
+          status: "error",
+          errorMessage: err.message || "Gagal mengunduh berkas ZIP.",
+        }));
+      }
+    } finally {
+      setIsGeneratingZip(false);
+    }
+  };
+
   const studentGrades = selectedStudent
     ? grades.filter((g) => String(g.studentId).trim() === String(selectedStudent.id).trim())
     : [];
@@ -470,6 +679,9 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
         grades={studentGrades}
         waliKelasNote={studentNote}
         waliKelas={user}
+        allClassStudents={currentClassStudents}
+        allClassNotes={allClassNotes}
+        allGrades={grades}
         onBack={() => setRaportPrintTarget(null)}
       />
     );
@@ -507,6 +719,31 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                 <option value="9">Kelas 9</option>
               </select>
             )}
+          </div>
+        </div>
+
+        {/* Quick Batch ZIP Download Banner for Walas */}
+        <div className="bg-gradient-to-br from-[#0c2e22] to-[#122841] border border-emerald-500/50 rounded-xl p-3 shadow-md">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shrink-0">
+                <Archive className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-white leading-tight">Unduh Rapor 1 Kelas</h4>
+                <p className="text-[10px] text-emerald-300 font-mono">Format Arsip ZIP ({currentClassStudents.length} Siswa)</p>
+              </div>
+            </div>
+            <button
+              onClick={handleOpenZipModal}
+              disabled={currentClassStudents.length === 0}
+              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] rounded-lg transition shadow-md flex items-center gap-1 cursor-pointer border border-emerald-400 disabled:opacity-40"
+              title="Unduh seluruh raport PDF kelas ini dalam satu berkas ZIP"
+              id="unduh-zip-walas-btn"
+            >
+              <FileArchive className="w-3.5 h-3.5" />
+              <span>Unduh ZIP</span>
+            </button>
           </div>
         </div>
 
@@ -577,7 +814,24 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                 >
                   <div className="flex items-center justify-between w-full">
                     <span className="font-black block truncate leading-tight text-white">{s.name}</span>
-                    <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isSelected ? "translate-x-1 text-emerald-400" : ""}`} />
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadSingleStudent(s);
+                        }}
+                        disabled={isDownloadingSingleId === s.id}
+                        className="p-1 hover:bg-emerald-600/30 text-emerald-400 hover:text-emerald-200 rounded-lg transition cursor-pointer border border-transparent hover:border-emerald-500/40"
+                        title={`Unduh PDF rapor ${s.name}`}
+                      >
+                        {isDownloadingSingleId === s.id ? (
+                          <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <FileDown className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                      <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isSelected ? "translate-x-1 text-emerald-400" : ""}`} />
+                    </div>
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] font-mono">
                     <span className={`px-2 py-0.5 rounded-md font-bold ${
@@ -653,13 +907,45 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                   </button>
                 </div>
 
+                {/* Quick Single PDF Download */}
+                <button
+                  onClick={() => handleDownloadSingleStudent(selectedStudent)}
+                  disabled={isDownloadingSingleId === selectedStudent.id}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-[#1a2d4b] hover:bg-[#233a60] text-emerald-300 font-black text-xs rounded-xl transition shadow-md border border-emerald-500/50 cursor-pointer disabled:opacity-50"
+                  title="Unduh berkas PDF Rapor siswa ini secara langsung"
+                >
+                  {isDownloadingSingleId === selectedStudent.id ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                      <span>Mengunduh...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileDown className="w-4 h-4 text-emerald-400" />
+                      <span>Unduh PDF Siswa</span>
+                    </>
+                  )}
+                </button>
+
+                {/* View / Print Full Raport */}
                 <button
                   onClick={() => setRaportPrintTarget(selectedStudent)}
                   className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-lg border border-emerald-300 cursor-pointer"
                   id="view-raport-trigger"
+                  title="Buka tampilan cetak & pratinjau rapor lengkap"
                 >
                   <Printer className="w-4 h-4" />
                   <span>Cetak Rapor Siswa</span>
+                </button>
+
+                {/* Batch ZIP for Class */}
+                <button
+                  onClick={handleOpenZipModal}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-teal-700 hover:bg-teal-600 text-white font-black text-xs rounded-xl transition shadow-md border border-teal-400 cursor-pointer"
+                  title="Unduh seluruh rapor siswa kelas ini dalam format berkas ZIP"
+                >
+                  <Archive className="w-4 h-4" />
+                  <span>Unduh 1 Kelas (ZIP)</span>
                 </button>
               </div>
             </div>
@@ -1240,6 +1526,193 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ZIP Export Modal for Wali Kelas */}
+      {isZipModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in" id="walas-zip-export-modal">
+          <div className="bg-[#0f172a] border-2 border-teal-500/60 rounded-2xl max-w-xl w-full p-6 text-white shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-700/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-400 flex items-center justify-center text-teal-300">
+                  <Archive className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-white">Unduh Rapor Siswa (Format ZIP)</h3>
+                  <p className="text-xs text-teal-300/80 font-mono">
+                    Kelas {selectedClass} • {selectedStudentIdsForZip.length} dari {currentClassStudents.length} Siswa Terpilih
+                  </p>
+                </div>
+              </div>
+              {!isGeneratingZip && (
+                <button
+                  onClick={() => setIsZipModalOpen(false)}
+                  className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Modal Body: Generating Progress */}
+            {isGeneratingZip || zipProgress.status === "generating" || zipProgress.status === "zipping" ? (
+              <div className="py-4 space-y-4">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-teal-300 flex items-center gap-2">
+                    <div className="w-3.5 h-3.5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+                    <span>{zipProgress.status === "zipping" ? "Mengompresi ke Berkas ZIP..." : "Membuat & Mengonversi Dokumen PDF..."}</span>
+                  </span>
+                  <span className="font-mono text-teal-400 font-black text-sm">{zipProgress.percent}%</span>
+                </div>
+
+                <div className="w-full bg-slate-800 rounded-full h-4 overflow-hidden border border-slate-700 p-0.5">
+                  <div
+                    className="bg-gradient-to-r from-teal-500 via-emerald-400 to-green-500 h-full rounded-full transition-all duration-300 shadow-md"
+                    style={{ width: `${zipProgress.percent}%` }}
+                  />
+                </div>
+
+                <div className="bg-[#142036] p-3.5 rounded-xl border border-[#233c66] text-xs space-y-1.5">
+                  <div className="text-slate-400 text-[11px] font-mono">Status Saat Ini:</div>
+                  <div className="text-white font-bold text-sm truncate">
+                    {zipProgress.current > 0 ? `${zipProgress.current} dari ${zipProgress.total}: ` : ""}
+                    {zipProgress.studentName || "Mempersiapkan template..."}
+                  </div>
+                  <div className="text-emerald-400 text-[10px] italic">
+                    Setiap halaman diberi nomor urut dan watermark secara otomatis.
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-400 italic text-center">
+                  💡 Harap jangan menutup jendela browser Anda hingga proses kompilasi berkas ZIP selesai.
+                </p>
+
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={() => {
+                      zipCancelRef.current = true;
+                    }}
+                    className="px-4 py-2 bg-red-950/80 hover:bg-red-900 border border-red-500 text-red-200 text-xs font-bold rounded-xl transition cursor-pointer"
+                  >
+                    Batalkan Pengunduhan
+                  </button>
+                </div>
+              </div>
+            ) : zipProgress.status === "done" ? (
+              <div className="py-4 text-center space-y-3">
+                <div className="w-14 h-14 bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h4 className="text-lg font-black text-emerald-300">Pengunduhan ZIP Selesai!</h4>
+                <p className="text-xs text-slate-300 leading-relaxed px-4">
+                  Seluruh <strong>{zipProgress.total} berkas rapor siswa Kelas {selectedClass}</strong> telah berhasil dikemas dan diunduh ke komputer Anda dalam satu berkas arsip ZIP.
+                </p>
+                <div className="pt-2 flex justify-center gap-2">
+                  <button
+                    onClick={() => setIsZipModalOpen(false)}
+                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-lg border border-emerald-300 cursor-pointer"
+                  >
+                    Selesai & Tutup
+                  </button>
+                  <button
+                    onClick={() => {
+                      setZipProgress({ current: 0, total: currentClassStudents.length, studentName: "", percent: 0, status: "idle" });
+                    }}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-600 transition cursor-pointer"
+                  >
+                    Unduh Lagi
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Idle / Student Selection Mode */
+              <div className="space-y-4">
+                <div className="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl text-xs text-emerald-200 leading-relaxed">
+                  Fitur ini memungkinkan wali kelas mengunduh seluruh raport siswa dalam format <strong>PDF beresolusi tinggi</strong> sekaligus dalam satu berkas arsip <strong>ZIP</strong> tanpa perlu mendownload satu per satu.
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-bold px-1">
+                  <button
+                    onClick={handleToggleSelectAllZip}
+                    className="text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 cursor-pointer font-black text-xs"
+                  >
+                    {selectedStudentIdsForZip.length === currentClassStudents.length ? (
+                      <>
+                        <CheckSquare className="w-4 h-4" />
+                        <span>Batalkan Pilih Semua</span>
+                      </>
+                    ) : (
+                      <>
+                        <Square className="w-4 h-4" />
+                        <span>Pilih Semua Siswa ({currentClassStudents.length})</span>
+                      </>
+                    )}
+                  </button>
+                  <span className="text-slate-400 text-[11px] font-mono">
+                    {selectedStudentIdsForZip.length} Siswa Dipilih
+                  </span>
+                </div>
+
+                {/* Students Checklist */}
+                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 border border-slate-700/80 p-2 rounded-xl bg-[#090f1d]">
+                  {currentClassStudents.map((s, idx) => {
+                    const isChecked = selectedStudentIdsForZip.includes(s.id);
+                    const sGrades = grades.filter((g) => g.studentId === s.id);
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => handleToggleSelectStudentForZip(s.id)}
+                        className={`flex items-center justify-between p-2 rounded-lg text-xs cursor-pointer transition border ${
+                          isChecked
+                            ? "bg-[#0f291e] border-emerald-500/60 text-white font-bold"
+                            : "bg-[#142036] border-slate-800 text-slate-400 hover:bg-slate-800"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                          />
+                          <span className="font-mono text-[11px] text-slate-400">{String(idx + 1).padStart(2, "0")}.</span>
+                          <span className="font-bold text-white">{s.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                            NISN: {s.nisn || "-"}
+                          </span>
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${
+                            sGrades.length === 15 ? "bg-emerald-900 text-emerald-200" : "bg-amber-950 text-amber-300"
+                          }`}>
+                            Mapel: {sGrades.length}/15
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-700/80">
+                  <button
+                    onClick={() => setIsZipModalOpen(false)}
+                    className="px-4 py-2 border border-slate-600 text-slate-300 hover:bg-slate-800 text-xs font-bold rounded-xl cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleStartZipDownload}
+                    disabled={selectedStudentIdsForZip.length === 0}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition shadow-lg border border-emerald-300 flex items-center gap-2 cursor-pointer disabled:opacity-40"
+                  >
+                    <Archive className="w-4 h-4" />
+                    <span>Mulai Unduh ZIP ({selectedStudentIdsForZip.length} Siswa)</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

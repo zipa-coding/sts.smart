@@ -24,7 +24,8 @@ import {
   Star,
   SlidersHorizontal,
   Eye,
-  BookOpen
+  BookOpen,
+  AlertTriangle,
 } from "lucide-react";
 
 interface DashboardProgressProps {
@@ -44,8 +45,10 @@ export default function DashboardProgress({
 
   // Student Rankings State
   const [rankingClassFilter, setRankingClassFilter] = useState<string>("all");
+  const [rankingSubjectFilter, setRankingSubjectFilter] = useState<string>("all");
   const [rankingSearch, setRankingSearch] = useState<string>("");
   const [rankingSortOrder, setRankingSortOrder] = useState<"desc" | "asc">("desc");
+  const [rankingBasis, setRankingBasis] = useState<"total" | "average">("total");
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
 
   const fetchSummary = async () => {
@@ -97,6 +100,22 @@ export default function DashboardProgress({
     });
   }, [categorizedSubjects, categoryFilter, searchQuery]);
 
+  const allAvailableSubjects = useMemo(() => {
+    if (!summary?.subjectProgress) return [];
+    return summary.subjectProgress.map((s) => s.subject);
+  }, [summary]);
+
+  const getStudentSubjectScore = (s: any, sub: string) => {
+    if (!s || !s.subjectScores) return null;
+    const normTarget = sub.toLowerCase().replace(/[^a-z0-9]/g, "");
+    for (const [k, v] of Object.entries(s.subjectScores)) {
+      if (k.toLowerCase().replace(/[^a-z0-9]/g, "") === normTarget) {
+        return typeof v === "number" ? v : Number(v);
+      }
+    }
+    return null;
+  };
+
   // Filtered and Sorted Student Rankings
   const filteredRankings = useMemo(() => {
     if (!summary?.studentRankings) return [];
@@ -115,20 +134,110 @@ export default function DashboardProgress({
       );
     }
 
+    // Per-Subject Ranking calculation
+    if (rankingSubjectFilter !== "all") {
+      const withSub = list.map((s: any) => {
+        const sc = getStudentSubjectScore(s, rankingSubjectFilter);
+        return {
+          ...s,
+          currentSubjectScore: sc,
+        };
+      });
+
+      const graded = withSub.filter((s) => s.currentSubjectScore !== null);
+      const ungraded = withSub.filter((s) => s.currentSubjectScore === null);
+
+      if (rankingSortOrder === "asc") {
+        graded.sort((a, b) => {
+          if (a.currentSubjectScore! !== b.currentSubjectScore!) {
+            return a.currentSubjectScore! - b.currentSubjectScore!;
+          }
+          return a.name.localeCompare(b.name, "id");
+        });
+      } else {
+        graded.sort((a, b) => {
+          if (b.currentSubjectScore! !== a.currentSubjectScore!) {
+            return b.currentSubjectScore! - a.currentSubjectScore!;
+          }
+          return a.name.localeCompare(b.name, "id");
+        });
+      }
+
+      // Assign tie-aware ranks
+      let lastScore: number | null = null;
+      let lastRank = 1;
+      graded.forEach((item: any, idx: number) => {
+        const score = item.currentSubjectScore;
+        if (idx === 0) {
+          item.rank = 1;
+          lastScore = score;
+          lastRank = 1;
+        } else {
+          if (score === lastScore) {
+            item.rank = lastRank;
+          } else {
+            item.rank = idx + 1;
+            lastRank = idx + 1;
+            lastScore = score;
+          }
+        }
+      });
+
+      ungraded.sort((a, b) => a.name.localeCompare(b.name, "id"));
+      return [...graded, ...ungraded];
+    }
+
+    // Default: Overall Accumulation
     if (rankingSortOrder === "asc") {
       list.sort((a, b) => {
-        if (a.totalScore !== b.totalScore) return a.totalScore - b.totalScore;
-        return a.averageScore - b.averageScore;
+        if (rankingBasis === "average") {
+          if (a.averageScore !== b.averageScore) return a.averageScore - b.averageScore;
+          if (a.totalScore !== b.totalScore) return a.totalScore - b.totalScore;
+        } else {
+          if (a.totalScore !== b.totalScore) return a.totalScore - b.totalScore;
+          if (a.averageScore !== b.averageScore) return a.averageScore - b.averageScore;
+        }
+        return a.name.localeCompare(b.name, "id");
       });
     } else {
       list.sort((a, b) => {
-        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-        return b.averageScore - a.averageScore;
+        if (rankingBasis === "average") {
+          if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
+          if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+        } else {
+          if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+          if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
+        }
+        return a.name.localeCompare(b.name, "id");
       });
     }
 
+    // Assign tie-aware overall ranks
+    let lastPrimary: number | null = null;
+    let lastSecondary: number | null = null;
+    let lastRank = 1;
+    list.forEach((item: any, idx: number) => {
+      const primary = rankingBasis === "average" ? item.averageScore : item.totalScore;
+      const secondary = rankingBasis === "average" ? item.totalScore : item.averageScore;
+      if (idx === 0) {
+        item.rank = 1;
+        lastPrimary = primary;
+        lastSecondary = secondary;
+        lastRank = 1;
+      } else {
+        if (primary === lastPrimary && secondary === lastSecondary) {
+          item.rank = lastRank;
+        } else {
+          item.rank = idx + 1;
+          lastRank = idx + 1;
+          lastPrimary = primary;
+          lastSecondary = secondary;
+        }
+      }
+    });
+
     return list;
-  }, [summary?.studentRankings, rankingClassFilter, rankingSearch, rankingSortOrder]);
+  }, [summary?.studentRankings, rankingClassFilter, rankingSearch, rankingSortOrder, rankingSubjectFilter, rankingBasis]);
 
   const topThreePodium = useMemo(() => {
     if (!summary?.studentRankings) return [];
@@ -136,12 +245,36 @@ export default function DashboardProgress({
     if (rankingClassFilter !== "all") {
       pool = pool.filter((s) => String(s.kelas).trim() === rankingClassFilter);
     }
+
+    if (rankingSubjectFilter !== "all") {
+      const withScore = pool
+        .map((s: any) => ({
+          ...s,
+          currentSubjectScore: getStudentSubjectScore(s, rankingSubjectFilter),
+        }))
+        .filter((s) => s.currentSubjectScore !== null);
+
+      withScore.sort((a, b) => {
+        if (b.currentSubjectScore! !== a.currentSubjectScore!) {
+          return b.currentSubjectScore! - a.currentSubjectScore!;
+        }
+        return a.name.localeCompare(b.name, "id");
+      });
+      return withScore.slice(0, 3);
+    }
+
     pool.sort((a, b) => {
-      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-      return b.averageScore - a.averageScore;
+      if (rankingBasis === "average") {
+        if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+      } else {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+        if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
+      }
+      return a.name.localeCompare(b.name, "id");
     });
     return pool.slice(0, 3);
-  }, [summary?.studentRankings, rankingClassFilter]);
+  }, [summary?.studentRankings, rankingClassFilter, rankingSubjectFilter, rankingBasis]);
 
   // Overall Statistics calculations
   const stats = useMemo(() => {
@@ -655,6 +788,23 @@ export default function DashboardProgress({
 
           {/* Filtering and Sort Toolbar */}
           <div className="flex flex-wrap items-center gap-2.5">
+            {/* Subject selector for ranking */}
+            <div className="relative min-w-[190px]">
+              <select
+                value={rankingSubjectFilter}
+                onChange={(e) => setRankingSubjectFilter(e.target.value)}
+                className="w-full px-3 py-1.5 bg-[#080d1a] border border-[#1a2948] rounded-xl text-xs font-bold text-white focus:outline-none focus:border-amber-400 cursor-pointer appearance-none pr-8"
+              >
+                <option value="all">Semua Mapel (Akumulasi)</option>
+                {allAvailableSubjects.map((sub) => (
+                  <option key={sub} value={sub}>
+                    Mapel: {sub}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-amber-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
             {/* Class filter tabs */}
             <div className="flex items-center bg-[#080d1a] border border-[#1a2948] p-1 rounded-xl">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 hidden sm:inline">
@@ -679,6 +829,39 @@ export default function DashboardProgress({
                 </button>
               ))}
             </div>
+
+            {/* Dasar Perhitungan Peringkat (Aktif saat mode Semua Mapel) */}
+            {rankingSubjectFilter === "all" && (
+              <div className="flex items-center bg-[#080d1a] border border-[#1a2948] p-1 rounded-xl">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 hidden sm:inline">
+                  Dasar:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRankingBasis("total")}
+                  title="Peringkat berdasarkan Total Akumulasi Nilai Semua Mapel"
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    rankingBasis === "total"
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Total Nilai
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRankingBasis("average")}
+                  title="Peringkat berdasarkan Rata-Rata Nilai (Perbandingan adil jika belum semua mapel terisi)"
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    rankingBasis === "average"
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Rata-Rata (Fair)
+                </button>
+              </div>
+            )}
 
             {/* Sort order toggle */}
             <div className="flex items-center bg-[#080d1a] border border-[#1a2948] p-1 rounded-xl">
@@ -722,131 +905,175 @@ export default function DashboardProgress({
           </div>
         </div>
 
+        {/* Guidance Alert Banner when filtering a specific subject */}
+        {rankingSubjectFilter !== "all" && (
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                Peringkat nilai mata pelajaran <strong>{rankingSubjectFilter}</strong> (
+                {filteredRankings.filter((s: any) => s.currentSubjectScore !== null).length} siswa terinput nilai)
+              </span>
+            </div>
+            <div className="flex items-center gap-2 font-bold text-[11px]">
+              <span className="px-2.5 py-0.5 rounded-md bg-red-950/70 text-red-300 border border-red-500/40 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                <span>
+                  {filteredRankings.filter((s: any) => s.currentSubjectScore !== null && s.currentSubjectScore < 75).length} Siswa Perlu Bimbingan Lebih (&lt; KKM 75)
+                </span>
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* TOP 3 PODIUM / CHAMPION CARDS (Displayed when in desc sort) */}
         {rankingSortOrder === "desc" && topThreePodium.length > 0 && !rankingSearch && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 pb-2">
             {/* JUARA 2 (Silver) */}
-            {topThreePodium[1] && (
-              <div className="order-2 md:order-1 rounded-2xl bg-gradient-to-b from-slate-800/60 to-[#080d1a] border border-slate-600/40 p-4 shadow-lg flex flex-col justify-between hover:border-slate-400 transition relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 w-20 h-20 bg-slate-400/5 rounded-full blur-xl pointer-events-none"></div>
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="px-2.5 py-1 rounded-lg bg-slate-300/10 border border-slate-300/30 text-slate-300 text-xs font-bold flex items-center gap-1.5">
-                      <span>🥈</span> Juara 2
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-bold">
-                      Kelas {topThreePodium[1].kelas}
-                    </span>
-                  </div>
-                  <h4 className="text-base font-bold text-white truncate" title={topThreePodium[1].name}>
-                    {topThreePodium[1].name}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    NISN: {topThreePodium[1].nisn || "-"}
-                  </p>
-                </div>
-                <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-between">
+            {topThreePodium[1] && (() => {
+              const p1 = topThreePodium[0] as any;
+              const p2 = topThreePodium[1] as any;
+              const isSub = rankingSubjectFilter !== "all";
+              const isTieWithP1 = isSub
+                ? p1.currentSubjectScore === p2.currentSubjectScore
+                : (rankingBasis === "average" ? p1.averageScore === p2.averageScore : p1.totalScore === p2.totalScore);
+
+              return (
+                <div className="order-2 md:order-1 rounded-2xl bg-gradient-to-b from-slate-800/60 to-[#080d1a] border border-slate-600/40 p-4 shadow-lg flex flex-col justify-between hover:border-slate-400 transition relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 w-20 h-20 bg-slate-400/5 rounded-full blur-xl pointer-events-none"></div>
                   <div>
-                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
-                      Total Akumulasi
-                    </span>
-                    <span className="text-xl font-black text-slate-200 font-mono">
-                      {topThreePodium[1].totalScore.toLocaleString("id-ID")}
-                    </span>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-300/10 border border-slate-300/30 text-slate-300 text-xs font-bold flex items-center gap-1.5">
+                        <span>{isTieWithP1 ? "🥇" : "🥈"}</span> {isTieWithP1 ? "Juara 1 (Bersama)" : "Juara 2"}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-bold">
+                        Kelas {p2.kelas}
+                      </span>
+                    </div>
+                    <h4 className="text-base font-bold text-white truncate" title={p2.name}>
+                      {p2.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-mono">
+                      NISN: {p2.nisn || "-"}
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
-                      Rata-Rata
-                    </span>
-                    <span className="text-lg font-bold text-cyan-400 font-mono">
-                      {topThreePodium[1].averageScore}
-                    </span>
+                  <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
+                        {isSub ? `Nilai ${rankingSubjectFilter}` : (rankingBasis === "average" ? "Rata-Rata" : "Total Akumulasi")}
+                      </span>
+                      <span className="text-xl font-black text-slate-200 font-mono">
+                        {isSub ? p2.currentSubjectScore : (rankingBasis === "average" ? p2.averageScore : p2.totalScore.toLocaleString("id-ID"))}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
+                        {isSub ? "Persentase" : (rankingBasis === "average" ? "Total Akumulasi" : "Rata-Rata")}
+                      </span>
+                      <span className="text-lg font-bold text-cyan-400 font-mono">
+                        {isSub ? `${p2.currentSubjectScore}%` : (rankingBasis === "average" ? `${p2.totalScore.toLocaleString("id-ID")} Poin` : p2.averageScore)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* JUARA 1 (Gold - Center & Elevated) */}
-            {topThreePodium[0] && (
-              <div className="order-1 md:order-2 rounded-2xl bg-gradient-to-b from-amber-900/30 via-[#0c162c] to-[#080d1a] border-2 border-amber-500/60 p-5 shadow-[0_0_25px_rgba(245,158,11,0.15)] flex flex-col justify-between hover:border-amber-400 transition relative overflow-hidden">
-                <div className="absolute -right-6 -top-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-black flex items-center gap-1.5 shadow-xs">
-                      <span>🥇</span> Juara 1 (Terbaik)
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono text-[10px] font-bold">
-                      Kelas {topThreePodium[0].kelas}
-                    </span>
-                  </div>
-                  <h4 className="text-lg font-black text-amber-200 truncate" title={topThreePodium[0].name}>
-                    {topThreePodium[0].name}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    NISN: {topThreePodium[0].nisn || "-"}
-                  </p>
-                </div>
-                <div className="mt-4 pt-3 border-t border-amber-500/30 flex items-center justify-between">
+            {topThreePodium[0] && (() => {
+              const p1 = topThreePodium[0] as any;
+              const isSub = rankingSubjectFilter !== "all";
+
+              return (
+                <div className="order-1 md:order-2 rounded-2xl bg-gradient-to-b from-amber-900/30 via-[#0c162c] to-[#080d1a] border-2 border-amber-500/60 p-5 shadow-[0_0_25px_rgba(245,158,11,0.15)] flex flex-col justify-between hover:border-amber-400 transition relative overflow-hidden">
+                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
                   <div>
-                    <span className="text-[9px] uppercase tracking-wider text-amber-400/80 font-mono block font-bold">
-                      Total Akumulasi
-                    </span>
-                    <span className="text-2xl font-black text-amber-400 font-mono">
-                      {topThreePodium[0].totalScore.toLocaleString("id-ID")}
-                    </span>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-black flex items-center gap-1.5 shadow-xs">
+                        <span>🥇</span> Juara 1 (Terbaik)
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono text-[10px] font-bold">
+                        Kelas {p1.kelas}
+                      </span>
+                    </div>
+                    <h4 className="text-lg font-black text-amber-200 truncate" title={p1.name}>
+                      {p1.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-mono">
+                      NISN: {p1.nisn || "-"}
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[9px] uppercase tracking-wider text-amber-400/80 font-mono block font-bold">
-                      Rata-Rata
-                    </span>
-                    <span className="text-xl font-black text-emerald-400 font-mono">
-                      {topThreePodium[0].averageScore}
-                    </span>
+                  <div className="mt-4 pt-3 border-t border-amber-500/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider text-amber-400/80 font-mono block font-bold">
+                        {isSub ? `Nilai ${rankingSubjectFilter}` : (rankingBasis === "average" ? "Rata-Rata" : "Total Akumulasi")}
+                      </span>
+                      <span className="text-2xl font-black text-amber-400 font-mono">
+                        {isSub ? p1.currentSubjectScore : (rankingBasis === "average" ? p1.averageScore : p1.totalScore.toLocaleString("id-ID"))}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] uppercase tracking-wider text-amber-400/80 font-mono block font-bold">
+                        {isSub ? "Persentase" : (rankingBasis === "average" ? "Total Akumulasi" : "Rata-Rata")}
+                      </span>
+                      <span className="text-xl font-black text-emerald-400 font-mono">
+                        {isSub ? `${p1.currentSubjectScore}%` : (rankingBasis === "average" ? `${p1.totalScore.toLocaleString("id-ID")} Poin` : p1.averageScore)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* JUARA 3 (Bronze) */}
-            {topThreePodium[2] && (
-              <div className="order-3 md:order-3 rounded-2xl bg-gradient-to-b from-amber-950/40 to-[#080d1a] border border-amber-700/40 p-4 shadow-lg flex flex-col justify-between hover:border-amber-600 transition relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 w-20 h-20 bg-amber-700/5 rounded-full blur-xl pointer-events-none"></div>
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="px-2.5 py-1 rounded-lg bg-amber-700/20 border border-amber-700/40 text-amber-400 text-xs font-bold flex items-center gap-1.5">
-                      <span>🥉</span> Juara 3
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-bold">
-                      Kelas {topThreePodium[2].kelas}
-                    </span>
-                  </div>
-                  <h4 className="text-base font-bold text-white truncate" title={topThreePodium[2].name}>
-                    {topThreePodium[2].name}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    NISN: {topThreePodium[2].nisn || "-"}
-                  </p>
-                </div>
-                <div className="mt-4 pt-3 border-t border-amber-900/50 flex items-center justify-between">
+            {topThreePodium[2] && (() => {
+              const p2 = topThreePodium[1] as any;
+              const p3 = topThreePodium[2] as any;
+              const isSub = rankingSubjectFilter !== "all";
+              const isTieWithP2 = isSub
+                ? p2.currentSubjectScore === p3.currentSubjectScore
+                : (rankingBasis === "average" ? p2.averageScore === p3.averageScore : p2.totalScore === p3.totalScore);
+
+              return (
+                <div className="order-3 md:order-3 rounded-2xl bg-gradient-to-b from-amber-950/40 to-[#080d1a] border border-amber-700/40 p-4 shadow-lg flex flex-col justify-between hover:border-amber-600 transition relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 w-20 h-20 bg-amber-700/5 rounded-full blur-xl pointer-events-none"></div>
                   <div>
-                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
-                      Total Akumulasi
-                    </span>
-                    <span className="text-xl font-black text-amber-300/90 font-mono">
-                      {topThreePodium[2].totalScore.toLocaleString("id-ID")}
-                    </span>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="px-2.5 py-1 rounded-lg bg-amber-700/20 border border-amber-700/40 text-amber-400 text-xs font-bold flex items-center gap-1.5">
+                        <span>{isTieWithP2 ? "🥈" : "🥉"}</span> {isTieWithP2 ? "Juara 2 (Bersama)" : "Juara 3"}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-bold">
+                        Kelas {p3.kelas}
+                      </span>
+                    </div>
+                    <h4 className="text-base font-bold text-white truncate" title={p3.name}>
+                      {p3.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-mono">
+                      NISN: {p3.nisn || "-"}
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
-                      Rata-Rata
-                    </span>
-                    <span className="text-lg font-bold text-cyan-400 font-mono">
-                      {topThreePodium[2].averageScore}
-                    </span>
+                  <div className="mt-4 pt-3 border-t border-amber-900/50 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
+                        {isSub ? `Nilai ${rankingSubjectFilter}` : (rankingBasis === "average" ? "Rata-Rata" : "Total Akumulasi")}
+                      </span>
+                      <span className="text-xl font-black text-amber-300/90 font-mono">
+                        {isSub ? p3.currentSubjectScore : (rankingBasis === "average" ? p3.averageScore : p3.totalScore.toLocaleString("id-ID"))}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">
+                        {isSub ? "Persentase" : (rankingBasis === "average" ? "Total Akumulasi" : "Rata-Rata")}
+                      </span>
+                      <span className="text-lg font-bold text-cyan-400 font-mono">
+                        {isSub ? `${p3.currentSubjectScore}%` : (rankingBasis === "average" ? `${p3.totalScore.toLocaleString("id-ID")} Poin` : p3.averageScore)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
@@ -859,10 +1086,21 @@ export default function DashboardProgress({
                   <th className="py-3 px-4 text-center w-16">Peringkat</th>
                   <th className="py-3 px-4">Nama Siswa / NISN</th>
                   <th className="py-3 px-4 text-center">Kelas</th>
-                  <th className="py-3 px-4 text-center">Capaian Mapel</th>
-                  <th className="py-3 px-4 text-right">Akumulasi Nilai</th>
-                  <th className="py-3 px-4 text-right">Rata-Rata</th>
-                  <th className="py-3 px-4 text-center">Predikat</th>
+                  {rankingSubjectFilter !== "all" ? (
+                    <>
+                      <th className="py-3 px-4 text-center">Nilai ({rankingSubjectFilter})</th>
+                      <th className="py-3 px-4 text-left min-w-[150px]">Persentase Nilai</th>
+                      <th className="py-3 px-4 text-center">Predikat</th>
+                      <th className="py-3 px-4 min-w-[200px]">Status Pembelajaran & Bimbingan</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="py-3 px-4 text-center">Capaian Mapel</th>
+                      <th className="py-3 px-4 text-right">Akumulasi Nilai</th>
+                      <th className="py-3 px-4 text-right">Rata-Rata</th>
+                      <th className="py-3 px-4 text-center">Predikat</th>
+                    </>
+                  )}
                   <th className="py-3 px-4 text-center w-28">Rincian Mapel</th>
                 </tr>
               </thead>
@@ -881,11 +1119,18 @@ export default function DashboardProgress({
                     const isTop3 = rankNum === 3;
                     const isExpanded = expandedStudentId === student.studentId;
 
+                    const subScore = (student as any).currentSubjectScore as number | null;
+                    const hasSubScore = subScore !== null && subScore !== undefined;
+                    const isNeedsGuidance = rankingSubjectFilter !== "all" && hasSubScore && subScore < 75;
+                    const isAdvanced = rankingSubjectFilter !== "all" && hasSubScore && subScore >= 85;
+
                     return (
                       <React.Fragment key={student.studentId}>
                         <tr
                           className={`hover:bg-[#0f1b36] transition ${
-                            isTop1
+                            isNeedsGuidance
+                              ? "bg-red-950/20"
+                              : isTop1
                               ? "bg-amber-500/5 font-semibold"
                               : isTop2
                               ? "bg-slate-400/5"
@@ -932,71 +1177,176 @@ export default function DashboardProgress({
                             </span>
                           </td>
 
-                          {/* Completed Subjects */}
-                          <td className="py-3.5 px-4 text-center">
-                            <div className="inline-flex flex-col items-center">
-                              <span className="text-[11px] font-mono font-bold text-slate-300">
-                                {student.filledSubjectsCount} / {student.totalSubjectsCount}
-                              </span>
-                              <div className="w-16 h-1.5 bg-[#0f172a] rounded-full overflow-hidden mt-1 border border-[#1a2948]">
-                                <div
-                                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full"
-                                  style={{
-                                    width: `${Math.min(
-                                      100,
-                                      Math.round(
-                                        (student.filledSubjectsCount /
-                                          (student.totalSubjectsCount || 1)) *
-                                          100
-                                      )
-                                    )}%`,
-                                  }}
-                                ></div>
-                              </div>
-                            </div>
-                          </td>
+                          {/* Conditional Columns: Subject-Specific vs Overall */}
+                          {rankingSubjectFilter !== "all" ? (
+                            <>
+                              {/* Subject Score */}
+                              <td className="py-3.5 px-4 text-center font-mono">
+                                {hasSubScore ? (
+                                  <span
+                                    className={`text-sm font-black px-2.5 py-0.5 rounded-lg ${
+                                      isNeedsGuidance
+                                        ? "bg-red-500/20 text-red-300 border border-red-500/50"
+                                        : isAdvanced
+                                        ? "bg-emerald-500/20 text-emerald-300"
+                                        : "bg-[#0f172a] text-white"
+                                    }`}
+                                  >
+                                    {subScore}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-500 italic text-[11px]">Belum diisi</span>
+                                )}
+                              </td>
 
-                          {/* Total Score */}
-                          <td className="py-3.5 px-4 text-right">
-                            <span className="text-sm font-black text-amber-300 font-mono">
-                              {student.totalScore.toLocaleString("id-ID")}
-                            </span>
-                            <span className="text-[10px] text-slate-400 ml-1">Poin</span>
-                          </td>
+                              {/* Subject Percentage Progress Bar */}
+                              <td className="py-3.5 px-4">
+                                {hasSubScore ? (
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between text-[11px] font-mono">
+                                      <span className="text-slate-400">Penguasaan:</span>
+                                      <span
+                                        className={`font-black ${
+                                          isNeedsGuidance
+                                            ? "text-red-400"
+                                            : isAdvanced
+                                            ? "text-emerald-400"
+                                            : "text-cyan-400"
+                                        }`}
+                                      >
+                                        {subScore}%
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-[#0f172a] h-2 rounded-full overflow-hidden border border-[#1a2948]">
+                                      <div
+                                        className={`h-full rounded-full transition-all duration-500 ${
+                                          isNeedsGuidance
+                                            ? "bg-red-500"
+                                            : isAdvanced
+                                            ? "bg-emerald-400"
+                                            : "bg-blue-500"
+                                        }`}
+                                        style={{ width: `${Math.min(100, Math.max(0, subScore))}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-500 text-[11px]">-</span>
+                                )}
+                              </td>
 
-                          {/* Average Score */}
-                          <td className="py-3.5 px-4 text-right">
-                            <span
-                              className={`text-sm font-black font-mono ${
-                                student.averageScore > 91
-                                  ? "text-emerald-400"
-                                  : student.averageScore >= 80
-                                  ? "text-cyan-400"
-                                  : student.averageScore > 0
-                                  ? "text-amber-400"
-                                  : "text-slate-500"
-                              }`}
-                            >
-                              {student.averageScore}
-                            </span>
-                          </td>
+                              {/* Predikat */}
+                              <td className="py-3.5 px-4 text-center">
+                                {hasSubScore ? (
+                                  <span
+                                    className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                                      subScore >= 85
+                                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                        : subScore >= 75
+                                        ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                                        : "bg-red-500/20 text-red-300 border border-red-500/40"
+                                    }`}
+                                  >
+                                    {subScore >= 85 ? "A (Sangat Baik)" : subScore >= 75 ? "B (Baik)" : "C (Perlu Bimbingan)"}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-500">-</span>
+                                )}
+                              </td>
 
-                          {/* Predikat */}
-                          <td className="py-3.5 px-4 text-center">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                                student.predikat.startsWith("A")
-                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                  : student.predikat.startsWith("B")
-                                  ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
-                                  : student.predikat.startsWith("C")
-                                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                                  : "bg-slate-800 text-slate-400 border border-slate-700"
-                              }`}
-                            >
-                              {student.predikat}
-                            </span>
-                          </td>
+                              {/* Guidance Status */}
+                              <td className="py-3.5 px-4">
+                                {hasSubScore ? (
+                                  isNeedsGuidance ? (
+                                    <span className="px-2.5 py-1 rounded-lg bg-red-950/80 text-red-300 border border-red-500 font-bold text-[10px] inline-flex items-center gap-1.5 shadow-xs">
+                                      <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                                      <span>PERLU BIMBINGAN LEBIH (&lt; KKM 75)</span>
+                                    </span>
+                                  ) : isAdvanced ? (
+                                    <span className="px-2.5 py-1 rounded-lg bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] inline-flex items-center gap-1.5">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                      <span>SANGAT BAIK / TUNTAS</span>
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-1 rounded-lg bg-blue-950/70 text-blue-300 border border-blue-500/40 font-bold text-[10px] inline-flex items-center gap-1.5">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                      <span>TUNTAS</span>
+                                    </span>
+                                  )
+                                ) : (
+                                  <span className="text-slate-500 text-[11px] italic">Belum dinilai guru</span>
+                                )}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              {/* Completed Subjects */}
+                              <td className="py-3.5 px-4 text-center">
+                                <div className="inline-flex flex-col items-center">
+                                  <span className="text-[11px] font-mono font-bold text-slate-300">
+                                    {student.filledSubjectsCount} / {student.totalSubjectsCount}
+                                  </span>
+                                  <div className="w-16 h-1.5 bg-[#0f172a] rounded-full overflow-hidden mt-1 border border-[#1a2948]">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full"
+                                      style={{
+                                        width: `${Math.min(
+                                          100,
+                                          Math.round(
+                                            (student.filledSubjectsCount /
+                                              (student.totalSubjectsCount || 1)) *
+                                              100
+                                          )
+                                        )}%`,
+                                      }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Total Score */}
+                              <td className="py-3.5 px-4 text-right">
+                                <span className="text-sm font-black text-amber-300 font-mono">
+                                  {student.totalScore.toLocaleString("id-ID")}
+                                </span>
+                                <span className="text-[10px] text-slate-400 ml-1">Poin</span>
+                              </td>
+
+                              {/* Average Score */}
+                              <td className="py-3.5 px-4 text-right">
+                                <span
+                                  className={`text-sm font-black font-mono ${
+                                    student.averageScore > 91
+                                      ? "text-emerald-400"
+                                      : student.averageScore >= 80
+                                      ? "text-cyan-400"
+                                      : student.averageScore > 0
+                                      ? "text-amber-400"
+                                      : "text-slate-500"
+                                  }`}
+                                >
+                                  {student.averageScore}
+                                </span>
+                              </td>
+
+                              {/* Predikat */}
+                              <td className="py-3.5 px-4 text-center">
+                                <span
+                                  className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    student.predikat.startsWith("A")
+                                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                      : student.predikat.startsWith("B")
+                                      ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                                      : student.predikat.startsWith("C")
+                                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                                      : "bg-slate-800 text-slate-400 border border-slate-700"
+                                  }`}
+                                >
+                                  {student.predikat}
+                                </span>
+                              </td>
+                            </>
+                          )}
 
                           {/* Action toggle detail */}
                           <td className="py-3.5 px-4 text-center">

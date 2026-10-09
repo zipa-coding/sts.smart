@@ -47,16 +47,31 @@ function initializeLocalStorage() {
           clientDbCache.tujuan_pembelajaran_templates = realTemplates;
           needsSave = true;
         } else {
-          // Check each subject
+          // Check each subject and protect all teacher-created TPs
           for (const sub of Object.keys(realTemplates)) {
             const realSub = realTemplates[sub];
-            const realList = Array.isArray(realSub) ? realSub : (realSub?.tps || []);
+            const realList: any[] = Array.isArray(realSub) ? realSub : (realSub?.tps || []);
             const curSub = clientDbCache.tujuan_pembelajaran_templates[sub];
-            const curList = Array.isArray(curSub) ? curSub : (curSub?.tps || []);
+            const curList: any[] = Array.isArray(curSub) ? [...curSub] : (curSub?.tps ? [...curSub.tps] : []);
             
-            // If current cached template is empty or has fewer TPs than real template, sync with real template
-            if (!curList || curList.length < realList.length) {
-              clientDbCache.tujuan_pembelajaran_templates[sub] = realList;
+            // JANGAN PERNAH menimpa atau menghapus TP yang telah ditambahkan oleh guru.
+            // Pertahankan seluruh TP yang sudah ada, hanya tambahkan jika belum pernah ada sama sekali.
+            const existingIds = new Set(curList.map((t: any) => String(t.id || '').trim()));
+            const existingTexts = new Set(curList.map((t: any) => String(t.text || '').trim().toLowerCase()));
+            
+            let updated = false;
+            for (const rTp of realList) {
+              const rId = String(rTp.id || '').trim();
+              const rText = String(rTp.text || '').trim().toLowerCase();
+              if (!existingIds.has(rId) && !existingTexts.has(rText)) {
+                curList.push(rTp);
+                existingIds.add(rId);
+                existingTexts.add(rText);
+                updated = true;
+              }
+            }
+            if (updated || !Array.isArray(curSub)) {
+              clientDbCache.tujuan_pembelajaran_templates[sub] = curList;
               needsSave = true;
             }
           }
@@ -1079,12 +1094,52 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         if (format.watermarkSize === undefined) format.watermarkSize = 440;
         if (format.watermarkOpacity === undefined) format.watermarkOpacity = 0.05;
       }
-      return new Response(JSON.stringify({ principalName, principalNip, format }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      const halaqohFormat = db.settings?.halaqohFormat || {
+        tahunPelajaran: "2025/2026",
+        semesterName: "Semester-1",
+        tanggalRaport: "30 September 2025",
+        kota: "Pangkalpinang",
+        headerTitle: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+        descFontSize: "9.5pt",
+      };
+      return new Response(JSON.stringify({ principalName, principalNip, format, halaqohFormat }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // GET /api/settings/halaqoh
+    if (path === '/api/settings/halaqoh' && method === 'GET') {
+      const db = getDB();
+      const halaqohFormat = db.settings?.halaqohFormat || {
+        tahunPelajaran: "2025/2026",
+        semesterName: "Semester-1",
+        tanggalRaport: "30 September 2025",
+        kota: "Pangkalpinang",
+        headerTitle: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+        descFontSize: "9.5pt",
+      };
+      return new Response(JSON.stringify(halaqohFormat), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // POST /api/settings/halaqoh
+    if (path === '/api/settings/halaqoh' && method === 'POST') {
+      const db = getDB();
+      if (!db.settings) db.settings = {};
+      db.settings.halaqohFormat = {
+        tahunPelajaran: "2025/2026",
+        semesterName: "Semester-1",
+        tanggalRaport: "30 September 2025",
+        kota: "Pangkalpinang",
+        headerTitle: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+        descFontSize: "9.5pt",
+        ...(db.settings.halaqohFormat || {}),
+        ...(body || {}),
+      };
+      saveDB(db);
+      return new Response(JSON.stringify({ success: true, halaqohFormat: db.settings.halaqohFormat }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // POST /api/settings
     if (path === '/api/settings' && method === 'POST') {
-      const { principalNip, format } = body || {};
+      const { principalNip, format, halaqohFormat } = body || {};
       const db = getDB();
       if (!db.settings) db.settings = {};
       db.settings.principalName = "Ari Gunawan, S.Kom.";
@@ -1110,6 +1165,18 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           showParentSignature: format.showParentSignature !== undefined ? format.showParentSignature : true,
           watermarkSize: format.watermarkSize !== undefined ? Number(format.watermarkSize) : 440,
           watermarkOpacity: format.watermarkOpacity !== undefined ? Number(format.watermarkOpacity) : 0.05
+        };
+      }
+      if (halaqohFormat) {
+        db.settings.halaqohFormat = {
+          tahunPelajaran: halaqohFormat.tahunPelajaran || "2025/2026",
+          semesterName: halaqohFormat.semesterName || "Semester-1",
+          tanggalRaport: halaqohFormat.tanggalRaport || "30 September 2025",
+          kota: halaqohFormat.kota || "Pangkalpinang",
+          headerTitle: halaqohFormat.headerTitle || "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+          descFontSize: halaqohFormat.descFontSize || "9.5pt",
+          ...(db.settings.halaqohFormat || {}),
+          ...halaqohFormat,
         };
       }
       saveDB(db);
@@ -1380,17 +1447,17 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       const studentRankings = db.students.map((s: any) => {
         const studentGrades = db.grades.filter((g: any) => g.studentId === s.id);
         const subjectScores: Record<string, number> = {};
-        let totalScore = 0;
-        let filledSubjectsCount = 0;
 
         studentGrades.forEach((g: any) => {
           const val = Number(g.score);
           if (!isNaN(val) && g.score !== null && g.score !== undefined && g.subject) {
             subjectScores[g.subject] = val;
-            totalScore += val;
-            filledSubjectsCount++;
           }
         });
+
+        const validScores = Object.values(subjectScores);
+        const totalScore = validScores.reduce((acc, curr) => acc + curr, 0);
+        const filledSubjectsCount = validScores.length;
 
         const averageScore =
           filledSubjectsCount > 0
@@ -1422,18 +1489,42 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       studentRankings.sort((a: any, b: any) => {
         if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
         if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name, "id");
       });
 
       studentRankings.forEach((s: any, idx: number) => {
-        s.rank = idx + 1;
+        if (idx > 0) {
+          const prev = studentRankings[idx - 1];
+          if (s.totalScore === prev.totalScore && s.averageScore === prev.averageScore) {
+            s.rank = prev.rank;
+          } else {
+            s.rank = idx + 1;
+          }
+        } else {
+          s.rank = 1;
+        }
       });
 
-      const classCounters: Record<string, number> = {};
+      const classGroups: Record<string, any[]> = {};
       studentRankings.forEach((s: any) => {
         const k = s.kelas;
-        classCounters[k] = (classCounters[k] || 0) + 1;
-        s.rankInClass = classCounters[k];
+        if (!classGroups[k]) classGroups[k] = [];
+        classGroups[k].push(s);
+      });
+
+      Object.values(classGroups).forEach((group) => {
+        group.forEach((s: any, idx: number) => {
+          if (idx > 0) {
+            const prev = group[idx - 1];
+            if (s.totalScore === prev.totalScore && s.averageScore === prev.averageScore) {
+              s.rankInClass = prev.rankInClass;
+            } else {
+              s.rankInClass = idx + 1;
+            }
+          } else {
+            s.rankInClass = 1;
+          }
+        });
       });
 
       return new Response(JSON.stringify({

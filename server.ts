@@ -757,11 +757,51 @@ app.get("/api/settings", async (req, res) => {
     showPrincipalNip: false,
     ...(db.settings?.format || {}),
   };
-  res.json({ principalName, principalNip, format });
+  const halaqohFormat = {
+    tahunPelajaran: "2025/2026",
+    semesterName: "Semester-1",
+    tanggalRaport: "30 September 2025",
+    kota: "Pangkalpinang",
+    headerTitle: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+    descFontSize: "9.5pt",
+    ...(db.settings?.halaqohFormat || {}),
+  };
+  res.json({ principalName, principalNip, format, halaqohFormat });
+});
+
+app.get("/api/settings/halaqoh", async (req, res) => {
+  const db = await readDB();
+  const halaqohFormat = {
+    tahunPelajaran: "2025/2026",
+    semesterName: "Semester-1",
+    tanggalRaport: "30 September 2025",
+    kota: "Pangkalpinang",
+    headerTitle: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+    descFontSize: "9.5pt",
+    ...(db.settings?.halaqohFormat || {}),
+  };
+  res.json(halaqohFormat);
+});
+
+app.post("/api/settings/halaqoh", async (req, res) => {
+  const db = await readDB();
+  if (!db.settings) db.settings = {};
+  db.settings.halaqohFormat = {
+    tahunPelajaran: "2025/2026",
+    semesterName: "Semester-1",
+    tanggalRaport: "30 September 2025",
+    kota: "Pangkalpinang",
+    headerTitle: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+    descFontSize: "9.5pt",
+    ...(db.settings?.halaqohFormat || {}),
+    ...req.body,
+  };
+  await writeDB(db);
+  res.json({ success: true, halaqohFormat: db.settings.halaqohFormat });
 });
 
 app.post("/api/settings", async (req, res) => {
-  const { principalName, principalNip, format } = req.body;
+  const { principalName, principalNip, format, halaqohFormat } = req.body;
   const db = await readDB();
   if (!db.settings) {
     db.settings = {};
@@ -799,6 +839,19 @@ app.post("/api/settings", async (req, res) => {
         format.watermarkSize !== undefined ? format.watermarkSize : 440,
       watermarkOpacity:
         format.watermarkOpacity !== undefined ? format.watermarkOpacity : 0.05,
+    };
+  }
+
+  if (halaqohFormat) {
+    db.settings.halaqohFormat = {
+      tahunPelajaran: halaqohFormat.tahunPelajaran || "2025/2026",
+      semesterName: halaqohFormat.semesterName || "Semester-1",
+      tanggalRaport: halaqohFormat.tanggalRaport || "30 September 2025",
+      kota: halaqohFormat.kota || "Pangkalpinang",
+      headerTitle: halaqohFormat.headerTitle || "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+      descFontSize: halaqohFormat.descFontSize || "9.5pt",
+      ...(db.settings.halaqohFormat || {}),
+      ...halaqohFormat,
     };
   }
 
@@ -1067,18 +1120,18 @@ app.get("/api/summary", async (req, res) => {
   const studentRankings = db.students.map((s: any) => {
     const studentGrades = db.grades.filter((g: any) => matchesStudent(g, s));
     const subjectScores: Record<string, number> = {};
-    let totalScore = 0;
-    let filledSubjectsCount = 0;
 
     studentGrades.forEach((g: any) => {
       const val = Number(g.score);
       if (!isNaN(val) && g.score !== null && g.score !== undefined && g.subject) {
+        // Map by subject to prevent duplicate count
         subjectScores[g.subject] = val;
-        totalScore += val;
-        filledSubjectsCount++;
       }
     });
 
+    const validScores = Object.values(subjectScores);
+    const totalScore = validScores.reduce((acc, curr) => acc + curr, 0);
+    const filledSubjectsCount = validScores.length;
 
     const averageScore =
       filledSubjectsCount > 0
@@ -1107,24 +1160,48 @@ app.get("/api/summary", async (req, res) => {
     };
   });
 
-  // Sort descending by totalScore, then averageScore, then name
+  // Sort descending by totalScore, then averageScore, then alphabetical name
   studentRankings.sort((a: any, b: any) => {
     if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
     if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
-    return a.name.localeCompare(b.name);
+    return a.name.localeCompare(b.name, "id");
   });
 
-  // Assign overall rank (1-indexed)
+  // Assign tie-aware overall rank (students with equal total and average score share the same rank)
   studentRankings.forEach((s: any, idx: number) => {
-    s.rank = idx + 1;
+    if (idx > 0) {
+      const prev = studentRankings[idx - 1];
+      if (s.totalScore === prev.totalScore && s.averageScore === prev.averageScore) {
+        s.rank = prev.rank;
+      } else {
+        s.rank = idx + 1;
+      }
+    } else {
+      s.rank = 1;
+    }
   });
 
-  // Assign rankInClass per class
-  const classCounters: Record<string, number> = {};
+  // Assign tie-aware rankInClass per class
+  const classGroups: Record<string, any[]> = {};
   studentRankings.forEach((s: any) => {
     const k = s.kelas;
-    classCounters[k] = (classCounters[k] || 0) + 1;
-    s.rankInClass = classCounters[k];
+    if (!classGroups[k]) classGroups[k] = [];
+    classGroups[k].push(s);
+  });
+
+  Object.values(classGroups).forEach((group) => {
+    group.forEach((s: any, idx: number) => {
+      if (idx > 0) {
+        const prev = group[idx - 1];
+        if (s.totalScore === prev.totalScore && s.averageScore === prev.averageScore) {
+          s.rankInClass = prev.rankInClass;
+        } else {
+          s.rankInClass = idx + 1;
+        }
+      } else {
+        s.rankInClass = 1;
+      }
+    });
   });
 
   res.json({

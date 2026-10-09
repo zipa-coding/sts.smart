@@ -8,6 +8,10 @@ import {
   Moon,
   X,
   ExternalLink,
+  Archive,
+  FileArchive,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import SmpIslamSmartLogo from "./SmpIslamSmartLogo";
 import logoUrl from "../assets/images/smp_logo_exact_match_revised_1783840969621.jpg";
@@ -15,12 +19,16 @@ import logoJsitUrl from "../assets/images/logo_jsit_indonesia_1783956323407.jpg"
 import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.jpg";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
+import { downloadClassRaportZip, ZipBatchProgress } from "../lib/raportPdfService";
 
 interface PrintRaportViewProps {
   student: Student;
   grades: Grade[];
   waliKelasNote: WaliKelasNote;
   waliKelas: Teacher | null;
+  allClassStudents?: Student[];
+  allClassNotes?: Record<string, WaliKelasNote>;
+  allGrades?: Grade[];
   onBack: () => void;
 }
 
@@ -29,6 +37,9 @@ export default function PrintRaportView({
   grades,
   waliKelasNote,
   waliKelas,
+  allClassStudents,
+  allClassNotes,
+  allGrades,
   onBack,
 }: PrintRaportViewProps) {
   // Permanently in dark mode
@@ -101,6 +112,44 @@ export default function PrintRaportView({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [isIframe, setIsIframe] = useState(false);
 
+  // Batch ZIP Download states
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+  const [showZipModal, setShowZipModal] = useState(false);
+  const [zipProgress, setZipProgress] = useState<ZipBatchProgress>({
+    current: 0,
+    total: 0,
+    studentName: "",
+    percent: 0,
+    status: "idle",
+  });
+  const zipCancelRef = React.useRef(false);
+
+  const handleDownloadZipAll = async () => {
+    if (!allClassStudents || allClassStudents.length === 0) return;
+    setIsDownloadingZip(true);
+    setShowZipModal(true);
+    zipCancelRef.current = false;
+    try {
+      await downloadClassRaportZip({
+        students: allClassStudents,
+        allGrades: allGrades || grades || [],
+        allNotes: allClassNotes || {},
+        waliKelas,
+        principal,
+        format,
+        className: student.kelas || "7",
+        onProgress: (p) => setZipProgress(p),
+        isCancelled: () => zipCancelRef.current,
+      });
+    } catch (err: any) {
+      if (!zipCancelRef.current) {
+        console.error("ZIP download failed in PrintRaportView:", err);
+      }
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
   React.useEffect(() => {
     setIsIframe(window.self !== window.top);
   }, []);
@@ -110,12 +159,8 @@ export default function PrintRaportView({
       .then((res) => res.json())
       .then((data) => {
         if (data.principalName !== undefined) {
-          let pName = data.principalName;
-          let pNip = data.principalNip || "";
-          if (pName === "Ari Gunawan, S.Kom.") {
-            pName = "Ustadz H. Ir. Abdul Muhyi, M.Pd";
-            if (!pNip) pNip = "19780512 200501 1 002";
-          }
+          const pName = "Ari Gunawan, S.Kom.";
+          const pNip = data.principalNip || "";
           setPrincipal({
             name: pName,
             nip: pNip,
@@ -1917,6 +1962,25 @@ export default function PrintRaportView({
                     </>
                   )}
                 </button>
+                {allClassStudents && allClassStudents.length > 1 && (
+                  <button
+                    onClick={handleDownloadZipAll}
+                    disabled={isDownloadingZip}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-700 hover:bg-teal-600 text-white rounded-md text-xs font-bold transition shadow-xs cursor-pointer border border-teal-500 disabled:opacity-50"
+                    title="Unduh seluruh rapor siswa kelas ini dalam satu berkas arsip ZIP"
+                  >
+                    {isDownloadingZip ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>ZIP ({zipProgress.percent}%)...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Archive className="w-3.5 h-3.5" /> Unduh 1 Kelas (.zip)
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -2994,6 +3058,105 @@ export default function PrintRaportView({
                     Simpan PDF
                   </button>
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* ZIP Progress Modal */}
+      {showZipModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in no-print">
+          <div className="bg-[#0f172a] border-2 border-teal-500/50 rounded-2xl max-w-lg w-full p-6 text-white shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-700/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-teal-500/20 border border-teal-400 flex items-center justify-center text-teal-300">
+                  <Archive className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-white">Unduh Rapor 1 Kelas (ZIP)</h3>
+                  <p className="text-[11px] text-teal-300/80 font-mono">Kelas {student.kelas} • {allClassStudents?.length || 0} Siswa</p>
+                </div>
+              </div>
+              {!isDownloadingZip && (
+                <button
+                  onClick={() => setShowZipModal(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {zipProgress.status === "done" ? (
+              <div className="py-4 text-center space-y-3">
+                <div className="w-14 h-14 bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h4 className="text-base font-black text-emerald-300">Pengunduhan ZIP Selesai!</h4>
+                <p className="text-xs text-slate-300 leading-relaxed px-4">
+                  Seluruh <strong>{zipProgress.total}</strong> berkas rapor PDF telah berhasil dikemas dan diunduh ke komputer Anda dalam 1 berkas ZIP.
+                </p>
+                <button
+                  onClick={() => setShowZipModal(false)}
+                  className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow"
+                >
+                  Selesai & Tutup
+                </button>
+              </div>
+            ) : zipProgress.status === "cancelled" ? (
+              <div className="py-4 text-center space-y-3">
+                <div className="w-12 h-12 bg-amber-500/20 border border-amber-400 text-amber-300 rounded-full flex items-center justify-center mx-auto">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-amber-300">Pengunduhan Dibatalkan</h4>
+                <button
+                  onClick={() => setShowZipModal(false)}
+                  className="mt-2 px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-lg transition"
+                >
+                  Tutup
+                </button>
+              </div>
+            ) : (
+              <div className="py-2 space-y-4">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-teal-300 flex items-center gap-1.5">
+                    <div className="w-3 h-3 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+                    {zipProgress.status === "zipping" ? "Mengompresi Arsip ZIP..." : "Memproses Rapor PDF..."}
+                  </span>
+                  <span className="font-mono text-teal-400 font-black">{zipProgress.percent}%</span>
+                </div>
+
+                <div className="w-full bg-slate-800 rounded-full h-3.5 overflow-hidden border border-slate-700 p-0.5">
+                  <div
+                    className="bg-gradient-to-r from-teal-500 via-emerald-400 to-green-500 h-full rounded-full transition-all duration-300 shadow-sm"
+                    style={{ width: `${zipProgress.percent}%` }}
+                  />
+                </div>
+
+                <div className="bg-[#142036] p-3 rounded-xl border border-[#233c66] text-xs space-y-1">
+                  <div className="text-slate-400 text-[11px]">Siswa Saat Ini:</div>
+                  <div className="text-white font-bold truncate">
+                    {zipProgress.current > 0 ? `${zipProgress.current}/${zipProgress.total}: ` : ""}
+                    {zipProgress.studentName || "Mempersiapkan..."}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-400 italic text-center">
+                  Harap jangan menutup browser selama proses pengunduhan berlangsung.
+                </p>
+
+                {isDownloadingZip && (
+                  <div className="flex justify-center pt-1">
+                    <button
+                      onClick={() => {
+                        zipCancelRef.current = true;
+                      }}
+                      className="px-4 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-500 text-red-200 text-xs font-bold rounded-lg transition"
+                    >
+                      Batalkan Pengunduhan
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

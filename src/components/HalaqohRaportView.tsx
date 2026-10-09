@@ -17,12 +17,16 @@ import {
   Calendar,
   UserCheck,
   Archive,
+  Settings,
+  Check,
+  X,
 } from "lucide-react";
 import logoUrl from "../assets/images/smp_logo_exact_match_revised_1783840969621.jpg";
 import logoJsitUrl from "../assets/images/logo_jsit_indonesia_1783956323407.jpg";
 import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.jpg";
 import kopSuratBannerUrl from "../assets/images/kop_surat_banner.png";
-import { exportHalaqohToWord, exportAllHalaqohToZip } from "../lib/wordExport";
+import { exportHalaqohToWord, exportAllHalaqohToZip, triggerBrowserDownload } from "../lib/wordExport";
+import JSZip from "jszip";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
 
@@ -80,6 +84,105 @@ export default function HalaqohRaportView({
     localStorage.setItem("halaqoh_desc_font_size", newSize);
   };
 
+  // Dynamic Academic Year, Semester, Date & Location Settings for Halaqoh Raport
+  const [tahunPelajaran, setTahunPelajaran] = useState<string>(() => {
+    return localStorage.getItem("halaqoh_tahun_pelajaran") || "2025/2026";
+  });
+  const [semesterName, setSemesterName] = useState<string>(() => {
+    return localStorage.getItem("halaqoh_semester") || "Semester-1";
+  });
+  const [tanggalRaport, setTanggalRaport] = useState<string>(() => {
+    return localStorage.getItem("halaqoh_tanggal_raport") || "30 September 2025";
+  });
+  const [kota, setKota] = useState<string>(() => {
+    return localStorage.getItem("halaqoh_kota") || "Pangkalpinang";
+  });
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState("");
+
+  // Form states for the modal
+  const [formTahunPelajaran, setFormTahunPelajaran] = useState(tahunPelajaran);
+  const [formSemesterName, setFormSemesterName] = useState(semesterName);
+  const [formTanggalRaport, setFormTanggalRaport] = useState(tanggalRaport);
+  const [formKota, setFormKota] = useState(kota);
+
+  const handleOpenSettingsModal = () => {
+    setFormTahunPelajaran(tahunPelajaran);
+    setFormSemesterName(semesterName);
+    setFormTanggalRaport(tanggalRaport);
+    setFormKota(kota);
+    setSettingsMessage("");
+    setIsSettingsModalOpen(true);
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSettings(true);
+    setSettingsMessage("");
+    try {
+      const payload = {
+        tahunPelajaran: formTahunPelajaran.trim() || "2025/2026",
+        semesterName: formSemesterName.trim() || "Semester-1",
+        tanggalRaport: formTanggalRaport.trim() || "30 September 2025",
+        kota: formKota.trim() || "Pangkalpinang",
+        descFontSize,
+      };
+
+      await fetch("/api/settings/halaqoh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      // Update local storage
+      localStorage.setItem("halaqoh_tahun_pelajaran", payload.tahunPelajaran);
+      localStorage.setItem("halaqoh_semester", payload.semesterName);
+      localStorage.setItem("halaqoh_tanggal_raport", payload.tanggalRaport);
+      localStorage.setItem("halaqoh_kota", payload.kota);
+
+      // Update active component state
+      setTahunPelajaran(payload.tahunPelajaran);
+      setSemesterName(payload.semesterName);
+      setTanggalRaport(payload.tanggalRaport);
+      setKota(payload.kota);
+
+      setSettingsMessage("Pengaturan tahun dan format raport halaqoh berhasil disimpan!");
+      setTimeout(() => {
+        setIsSettingsModalOpen(false);
+        setSettingsMessage("");
+      }, 1000);
+    } catch (err: any) {
+      console.error("Gagal menyimpan pengaturan halaqoh:", err);
+      const payload = {
+        tahunPelajaran: formTahunPelajaran.trim() || "2025/2026",
+        semesterName: formSemesterName.trim() || "Semester-1",
+        tanggalRaport: formTanggalRaport.trim() || "30 September 2025",
+        kota: formKota.trim() || "Pangkalpinang",
+      };
+      localStorage.setItem("halaqoh_tahun_pelajaran", payload.tahunPelajaran);
+      localStorage.setItem("halaqoh_semester", payload.semesterName);
+      localStorage.setItem("halaqoh_tanggal_raport", payload.tanggalRaport);
+      localStorage.setItem("halaqoh_kota", payload.kota);
+      setTahunPelajaran(payload.tahunPelajaran);
+      setSemesterName(payload.semesterName);
+      setTanggalRaport(payload.tanggalRaport);
+      setKota(payload.kota);
+      setIsSettingsModalOpen(false);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  // Quick helper to construct custom format payload
+  const getCustomFormat = () => ({
+    tahunPelajaran,
+    semesterName,
+    tanggalRaport,
+    kota,
+    headerTitle: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+  });
+
   const [downloadingSubject, setDownloadingSubject] = useState<string | null>(
     null
   );
@@ -89,6 +192,7 @@ export default function HalaqohRaportView({
   );
   const [isBatchDownloadingWord, setIsBatchDownloadingWord] = useState(false);
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+  const [isDownloadingZipPDF, setIsDownloadingZipPDF] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -108,7 +212,8 @@ export default function HalaqohRaportView({
         students,
         grades,
         teachers,
-        descFontSize
+        descFontSize,
+        getCustomFormat()
       );
     } catch (err) {
       console.error("Gagal mengekspor file Word:", err);
@@ -128,7 +233,9 @@ export default function HalaqohRaportView({
         students,
         grades,
         teachers,
-        descFontSize
+        descFontSize,
+        undefined,
+        getCustomFormat()
       );
     } catch (err) {
       console.error("Gagal mengunduh arsip zip Word:", err);
@@ -154,11 +261,12 @@ export default function HalaqohRaportView({
     setLoading(true);
     setError("");
     try {
-      const [resH, resS, resG, resT] = await Promise.all([
+      const [resH, resS, resG, resT, resSet] = await Promise.all([
         fetch("/api/halaqoh"),
         fetch("/api/students"),
         fetch("/api/grades"),
         fetch("/api/teachers"),
+        fetch("/api/settings/halaqoh").catch(() => null),
       ]);
 
       const hData = await resH.json();
@@ -175,6 +283,32 @@ export default function HalaqohRaportView({
       setStudents(sArr);
       setGrades(gArr);
       setTeachers(tArr);
+
+      if (resSet && resSet.ok) {
+        const sConf = await resSet.json().catch(() => null);
+        if (sConf) {
+          if (sConf.tahunPelajaran) {
+            setTahunPelajaran(sConf.tahunPelajaran);
+            localStorage.setItem("halaqoh_tahun_pelajaran", sConf.tahunPelajaran);
+          }
+          if (sConf.semesterName) {
+            setSemesterName(sConf.semesterName);
+            localStorage.setItem("halaqoh_semester", sConf.semesterName);
+          }
+          if (sConf.tanggalRaport) {
+            setTanggalRaport(sConf.tanggalRaport);
+            localStorage.setItem("halaqoh_tanggal_raport", sConf.tanggalRaport);
+          }
+          if (sConf.kota) {
+            setKota(sConf.kota);
+            localStorage.setItem("halaqoh_kota", sConf.kota);
+          }
+          if (sConf.descFontSize) {
+            setDescFontSize(sConf.descFontSize);
+            localStorage.setItem("halaqoh_desc_font_size", sConf.descFontSize);
+          }
+        }
+      }
 
       if (hArr.length > 0) {
         // If current user is a mentor of a halaqoh, auto-select it
@@ -394,7 +528,7 @@ export default function HalaqohRaportView({
       <div style="text-align: center; margin-bottom: 12px;">
         <h2 style="margin: 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)</h2>
         <h3 style="margin: 2px 0 0 0; font-size: 12.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">${subjectMeta.shortTitle}</h3>
-        <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">Semester-1, Tahun Pelajaran 2025/2026</p>
+        <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: bold; line-height: 1.3; color: #000000; font-family: 'Times New Roman', serif;">${semesterName}, Tahun Pelajaran ${tahunPelajaran}</p>
       </div>
     `;
 
@@ -404,7 +538,7 @@ export default function HalaqohRaportView({
         <!-- Signature right aligned with actual Mentor Name -->
         <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
           <div style="width: 280px; text-align: center; font-size: 10.5pt; line-height: 1.35; font-family: 'Times New Roman', serif; color: #000000;">
-            <p style="margin: 0 0 3px 0; color: #000000;">Pangkalpinang, 30 September 2025</p>
+            <p style="margin: 0 0 3px 0; color: #000000;">${kota}, ${tanggalRaport}</p>
             <p style="margin: 0 0 36px 0; color: #000000;">Ustadz/ah Pembimbing,</p>
             <p style="margin: 0; color: #000000;">( <span style="font-weight: bold; text-decoration: ${mentorName ? 'underline' : 'none'};">${mentorName || "....................................................."}</span> )</p>
           </div>
@@ -701,6 +835,97 @@ export default function HalaqohRaportView({
     });
   };
 
+  // Helper to generate a single Keislaman PDF as a Blob
+  const generateHalaqohPdfBlob = async (
+    subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0]
+  ): Promise<Blob> => {
+    if (!activeHalaqoh) throw new Error("No active halaqoh");
+
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "-9999px";
+    wrapper.style.top = "0px";
+    wrapper.style.width = "720px";
+    wrapper.style.backgroundColor = "#ffffff";
+    wrapper.style.zIndex = "-9999";
+
+    const pdfContainer = document.createElement("div");
+    pdfContainer.style.position = "relative";
+    pdfContainer.style.width = "720px";
+    pdfContainer.style.backgroundColor = "#ffffff";
+    pdfContainer.style.padding = "0px";
+    pdfContainer.style.boxSizing = "border-box";
+    pdfContainer.style.color = "#000000";
+
+    pdfContainer.innerHTML = generateHalaqohHTML(activeHalaqoh, subjectMeta);
+    wrapper.appendChild(pdfContainer);
+    document.body.appendChild(wrapper);
+
+    const safeSubName = subjectMeta.shortTitle.replace(/[^a-zA-Z0-9]/g, "_");
+    const safeHalaqohName = activeHalaqoh.name.replace(/[^a-zA-Z0-9]/g, "_");
+    const fileName = `Raport_ETTQ_${safeSubName}_${safeHalaqohName}.pdf`;
+
+    const opt = {
+      margin: [6, 8, 8, 8],
+      filename: fileName,
+      image: { type: "jpeg", quality: 1.0 },
+      html2canvas: {
+        scale: 3.0,
+        useCORS: true,
+        logging: false,
+        scrollY: 0,
+        scrollX: 0,
+        windowWidth: 720,
+        backgroundColor: "#ffffff",
+        letterRendering: true,
+      },
+      jsPDF: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+      },
+      pagebreak: { mode: ["css"], avoid: ".student-card-item" },
+    };
+
+    try {
+      const runner =
+        (window as any).html2pdf ||
+        (typeof html2pdf === "function" ? html2pdf : (html2pdf as any)?.default);
+      const pdf = await runner().set(opt).from(pdfContainer).toPdf().get("pdf");
+      const blob = pdf.output("blob");
+      return blob;
+    } finally {
+      if (document.body.contains(wrapper)) {
+        document.body.removeChild(wrapper);
+      }
+    }
+  };
+
+  // Handle Batch downloading of all 4 Keislaman PDFs in 1 ZIP
+  const handleDownloadZipPDF = async () => {
+    if (!activeHalaqoh) return;
+    setIsDownloadingZipPDF(true);
+    try {
+      const zip = new JSZip();
+      const safeHalaqohName = activeHalaqoh.name.replace(/[^a-zA-Z0-9]/g, "_");
+      for (const sub of KEISLAMAN_SUBJECTS) {
+        const safeSubName = sub.shortTitle.replace(/[^a-zA-Z0-9]/g, "_");
+        const blob = await generateHalaqohPdfBlob(sub);
+        zip.file(`Raport_ETTQ_${safeSubName}_${safeHalaqohName}.pdf`, blob);
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      }
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      triggerBrowserDownload(
+        zipBlob,
+        `Raport_Keislaman_Halaqoh_${safeHalaqohName}_4Mapel_PDF.zip`
+      );
+    } catch (err) {
+      console.error("Batch Keislaman PDF ZIP failed:", err);
+    } finally {
+      setIsDownloadingZipPDF(false);
+    }
+  };
+
   // Handle Batch downloading of all 4 separate Keislaman PDFs
   const handleDownloadAllSeparatePDFs = async () => {
     if (!activeHalaqoh) return;
@@ -796,6 +1021,17 @@ export default function HalaqohRaportView({
 
         {/* Global Action Download Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Tombol Pengaturan Tahun & Sesi Raport Halaqoh */}
+          <button
+            onClick={handleOpenSettingsModal}
+            className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-bold flex items-center gap-2 cursor-pointer transition shadow-xs"
+            title="Ubah Tahun Pelajaran, Semester, dan Tanggal Raport Halaqoh"
+          >
+            <Calendar className="w-4 h-4 text-amber-400" />
+            <span>Tahun: <strong className="text-white">{tahunPelajaran}</strong> ({semesterName})</span>
+            <Settings className="w-3.5 h-3.5 text-amber-300 ml-0.5" />
+          </button>
+
           <button
             onClick={handlePrint}
             disabled={!activeHalaqoh || halaqohStudents.length === 0}
@@ -843,6 +1079,20 @@ export default function HalaqohRaportView({
               <FileDown className="w-4 h-4 text-indigo-400" />
             )}
             <span>Download 4 Word Terpisah</span>
+          </button>
+
+          <button
+            onClick={handleDownloadZipPDF}
+            disabled={!activeHalaqoh || halaqohStudents.length === 0 || isDownloadingZipPDF}
+            title="Download seluruh 4 mapel PDF keislaman dalam 1 berkas arsip ZIP"
+            className="px-3.5 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-200 hover:text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
+          >
+            {isDownloadingZipPDF ? (
+              <div className="w-4 h-4 border-2 border-emerald-400/40 border-t-emerald-400 rounded-full animate-spin"></div>
+            ) : (
+              <Archive className="w-4 h-4 text-emerald-400" />
+            )}
+            <span>Download 4 PDF (.zip)</span>
           </button>
 
           <button
@@ -1038,6 +1288,170 @@ export default function HalaqohRaportView({
           </div>
         )}
       </div>
+
+      {/* MODAL PENGATURAN TAHUN AJARAN & FORMAT RAPORT HALAQOH */}
+      {isSettingsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0f172a] border-2 border-[#2b4168] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 bg-[#0c1322] border-b border-[#1e3256] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white uppercase tracking-tight">
+                    Pengaturan Raport Halaqoh
+                  </h3>
+                  <p className="text-xs text-slate-300">
+                    Ubah Tahun Ajaran, Semester, dan Tanggal Terbit Raport ETTQ
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2844] transition cursor-pointer"
+                title="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form Content */}
+            <form onSubmit={handleSaveSettings} className="p-5 sm:p-6 space-y-4">
+              {settingsMessage && (
+                <div className="p-3 bg-emerald-950/80 border border-emerald-400 text-emerald-200 text-xs font-bold rounded-xl flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{settingsMessage}</span>
+                </div>
+              )}
+
+              {/* 1. Tahun Pelajaran */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-white uppercase tracking-wider flex items-center justify-between">
+                  <span>Tahun Pelajaran:</span>
+                  <span className="text-[10px] text-amber-300 font-mono font-normal">Wajib Diisi</span>
+                </label>
+                <input
+                  type="text"
+                  value={formTahunPelajaran}
+                  onChange={(e) => setFormTahunPelajaran(e.target.value)}
+                  placeholder="Contoh: 2025/2026 atau 2026/2027"
+                  className="w-full px-3.5 py-2.5 bg-[#0a101f] border border-[#2b4168] rounded-xl text-sm font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                  required
+                />
+                {/* Quick Presets for Tahun Pelajaran */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span className="text-[10px] text-slate-400 font-bold mr-1">Pilihan Cepat:</span>
+                  {["2024/2025", "2025/2026", "2026/2027", "2027/2028"].map((th) => (
+                    <button
+                      key={th}
+                      type="button"
+                      onClick={() => setFormTahunPelajaran(th)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                        formTahunPelajaran === th
+                          ? "bg-amber-500 text-slate-950 border-amber-300 shadow-sm"
+                          : "bg-[#142036] text-slate-300 hover:text-white border-[#2b4168] hover:bg-[#1e2f4f]"
+                      }`}
+                    >
+                      {th}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  Tahun ajaran ini langsung tampil pada kop judul raport ETTQ di layar pratinjau, hasil cetak, PDF, dan unduhan file Word (.docx).
+                </p>
+              </div>
+
+              {/* 2. Semester */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-white uppercase tracking-wider block">
+                  Semester:
+                </label>
+                <input
+                  type="text"
+                  value={formSemesterName}
+                  onChange={(e) => setFormSemesterName(e.target.value)}
+                  placeholder="Contoh: Semester-1, Semester-2, Ganjil, atau Genap"
+                  className="w-full px-3.5 py-2.5 bg-[#0a101f] border border-[#2b4168] rounded-xl text-sm font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                  required
+                />
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  {["Semester-1", "Semester-2", "Semester Ganjil", "Semester Genap"].map((sem) => (
+                    <button
+                      key={sem}
+                      type="button"
+                      onClick={() => setFormSemesterName(sem)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                        formSemesterName === sem
+                          ? "bg-amber-500 text-slate-950 border-amber-300 shadow-sm"
+                          : "bg-[#142036] text-slate-300 hover:text-white border-[#2b4168] hover:bg-[#1e2f4f]"
+                      }`}
+                    >
+                      {sem}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Tanggal Raport & Kota */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-white uppercase tracking-wider block">
+                    Tanggal Raport:
+                  </label>
+                  <input
+                    type="text"
+                    value={formTanggalRaport}
+                    onChange={(e) => setFormTanggalRaport(e.target.value)}
+                    placeholder="Contoh: 30 September 2025"
+                    className="w-full px-3 py-2.5 bg-[#0a101f] border border-[#2b4168] rounded-xl text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-white uppercase tracking-wider block">
+                    Kota Penerbitan:
+                  </label>
+                  <input
+                    type="text"
+                    value={formKota}
+                    onChange={(e) => setFormKota(e.target.value)}
+                    placeholder="Contoh: Pangkalpinang"
+                    className="w-full px-3 py-2.5 bg-[#0a101f] border border-[#2b4168] rounded-xl text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-[#1e3256] flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-[#142036] hover:bg-[#1e2f4f] border border-[#2b4168] text-slate-300 hover:text-white text-xs font-bold cursor-pointer transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingSettings || !formTahunPelajaran.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer transition shadow-lg shadow-amber-950/40 disabled:opacity-50"
+                >
+                  {savingSettings ? (
+                    <div className="w-4 h-4 border-2 border-slate-950/40 border-t-slate-950 rounded-full animate-spin"></div>
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  <span>Simpan Pengaturan Tahun</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

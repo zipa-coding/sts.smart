@@ -9,6 +9,7 @@ import {
   Key,
   Save,
   BookOpen,
+  Calendar,
   CalendarDays,
   UserCheck,
   X,
@@ -101,6 +102,22 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   const [principalTitle, setPrincipalTitle] = useState("Kepala Sekolah");
   const [showPrincipalNip, setShowPrincipalNip] = useState(false);
   const [showParentSignature, setShowParentSignature] = useState(true);
+
+  // Halaqoh Raport Year & Session Settings
+  const [halaqohTahunPelajaran, setHalaqohTahunPelajaran] = useState<string>(() => {
+    return localStorage.getItem("halaqoh_tahun_pelajaran") || "2025/2026";
+  });
+  const [halaqohSemester, setHalaqohSemester] = useState<string>(() => {
+    return localStorage.getItem("halaqoh_semester") || "Semester-1";
+  });
+  const [halaqohTanggalRaport, setHalaqohTanggalRaport] = useState<string>(() => {
+    return localStorage.getItem("halaqoh_tanggal_raport") || "30 September 2025";
+  });
+  const [halaqohKota, setHalaqohKota] = useState<string>(() => {
+    return localStorage.getItem("halaqoh_kota") || "Pangkalpinang";
+  });
+  const [isSavingHalaqohSettings, setIsSavingHalaqohSettings] = useState(false);
+  const [halaqohSettingsSuccess, setHalaqohSettingsSuccess] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1039,6 +1056,24 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
         if (setData.principalNip) {
           setPrincipalNip(setData.principalNip);
         }
+        if (setData.halaqohFormat) {
+          if (setData.halaqohFormat.tahunPelajaran) {
+            setHalaqohTahunPelajaran(setData.halaqohFormat.tahunPelajaran);
+            localStorage.setItem("halaqoh_tahun_pelajaran", setData.halaqohFormat.tahunPelajaran);
+          }
+          if (setData.halaqohFormat.semesterName) {
+            setHalaqohSemester(setData.halaqohFormat.semesterName);
+            localStorage.setItem("halaqoh_semester", setData.halaqohFormat.semesterName);
+          }
+          if (setData.halaqohFormat.tanggalRaport) {
+            setHalaqohTanggalRaport(setData.halaqohFormat.tanggalRaport);
+            localStorage.setItem("halaqoh_tanggal_raport", setData.halaqohFormat.tanggalRaport);
+          }
+          if (setData.halaqohFormat.kota) {
+            setHalaqohKota(setData.halaqohFormat.kota);
+            localStorage.setItem("halaqoh_kota", setData.halaqohFormat.kota);
+          }
+        }
         if (setData.format) {
           setSemesterName(setData.format.semesterName || "Ganjil");
           setTahunPelajaran(setData.format.tahunPelajaran || "2026/2027");
@@ -1636,6 +1671,41 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
       setError(err.message || "Terjadi kesalahan.");
     } finally {
       setSettingsLoading(false);
+    }
+  };
+
+  // Save Halaqoh Raport Year & Session Settings
+  const handleSaveHalaqohSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSavingHalaqohSettings(true);
+    setHalaqohSettingsSuccess("");
+    try {
+      const payload = {
+        tahunPelajaran: halaqohTahunPelajaran.trim() || "2025/2026",
+        semesterName: halaqohSemester.trim() || "Semester-1",
+        tanggalRaport: halaqohTanggalRaport.trim() || "30 September 2025",
+        kota: halaqohKota.trim() || "Pangkalpinang",
+      };
+      const res = await fetch("/api/settings/halaqoh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Gagal menyimpan pengaturan raport halaqoh.");
+      
+      localStorage.setItem("halaqoh_tahun_pelajaran", payload.tahunPelajaran);
+      localStorage.setItem("halaqoh_semester", payload.semesterName);
+      localStorage.setItem("halaqoh_tanggal_raport", payload.tanggalRaport);
+      localStorage.setItem("halaqoh_kota", payload.kota);
+      
+      setHalaqohSettingsSuccess("Pengaturan tahun pelajaran & format raport halaqoh berhasil disimpan!");
+      showSuccess("Pengaturan raport halaqoh tersimpan!");
+      setTimeout(() => setHalaqohSettingsSuccess(""), 4000);
+      onRefreshTrigger();
+    } catch (err: any) {
+      setError(err.message || "Gagal menyimpan pengaturan halaqoh.");
+    } finally {
+      setIsSavingHalaqohSettings(false);
     }
   };
 
@@ -5008,6 +5078,137 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
               <Plus className="w-4 h-4" />
               <span>Tambah Kelompok Halaqoh</span>
             </button>
+          </div>
+
+          {/* Pengaturan Tahun Ajaran & Format Raport Halaqoh */}
+          <div className="bg-slate-50 border-2 border-emerald-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wide">
+                    Pengaturan Tahun Ajaran & Format Raport Halaqoh
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Tahun ajaran, semester, tanggal, dan kota penerbitan yang dicetak pada hasil raport halaqoh santri
+                  </p>
+                </div>
+              </div>
+              {halaqohSettingsSuccess && (
+                <span className="px-3 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1">
+                  ✓ {halaqohSettingsSuccess}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {/* 1. Tahun Pelajaran */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                  Tahun Pelajaran:
+                </label>
+                <input
+                  type="text"
+                  value={halaqohTahunPelajaran}
+                  onChange={(e) => setHalaqohTahunPelajaran(e.target.value)}
+                  placeholder="Contoh: 2025/2026"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
+                />
+                <div className="flex gap-1 pt-0.5">
+                  {["2024/2025", "2025/2026", "2026/2027"].map((yr) => (
+                    <button
+                      key={yr}
+                      type="button"
+                      onClick={() => setHalaqohTahunPelajaran(yr)}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition cursor-pointer ${
+                        halaqohTahunPelajaran === yr
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                      }`}
+                    >
+                      {yr}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Semester */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                  Semester:
+                </label>
+                <input
+                  type="text"
+                  value={halaqohSemester}
+                  onChange={(e) => setHalaqohSemester(e.target.value)}
+                  placeholder="Contoh: Semester-1 atau Ganjil"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
+                />
+                <div className="flex gap-1 pt-0.5">
+                  {["Semester-1", "Semester-2", "Ganjil", "Genap"].map((sem) => (
+                    <button
+                      key={sem}
+                      type="button"
+                      onClick={() => setHalaqohSemester(sem)}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition cursor-pointer ${
+                        halaqohSemester === sem
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                      }`}
+                    >
+                      {sem}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Tanggal Raport */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                  Tanggal Raport:
+                </label>
+                <input
+                  type="text"
+                  value={halaqohTanggalRaport}
+                  onChange={(e) => setHalaqohTanggalRaport(e.target.value)}
+                  placeholder="Contoh: 30 September 2025"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
+                />
+              </div>
+
+              {/* 4. Kota & Simpan Action */}
+              <div className="space-y-1.5 flex flex-col justify-between">
+                <div>
+                  <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                    Kota Penerbitan:
+                  </label>
+                  <input
+                    type="text"
+                    value={halaqohKota}
+                    onChange={(e) => setHalaqohKota(e.target.value)}
+                    placeholder="Contoh: Pangkalpinang"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={isSavingHalaqohSettings}
+                  onClick={handleSaveHalaqohSettings}
+                  className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 mt-1"
+                >
+                  {isSavingHalaqohSettings ? (
+                    <span>Menyimpan...</span>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      <span>Simpan Pengaturan Halaqoh</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Halaqoh Cards Grid */}

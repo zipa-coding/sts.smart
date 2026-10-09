@@ -66,13 +66,22 @@ export function triggerBrowserDownload(blob: Blob, fileName: string): void {
   }
 }
 
+export interface HalaqohCustomFormat {
+  tahunPelajaran?: string;
+  semesterName?: string;
+  tanggalRaport?: string;
+  kota?: string;
+  headerTitle?: string;
+}
+
 export async function generateHalaqohWordBlob(
   halaqoh: Halaqoh,
   subjectMeta: (typeof KEISLAMAN_SUBJECTS)[0],
   allStudents: Student[],
   grades: Grade[],
   teachers: Teacher[],
-  descFontSize: string = "9.5pt"
+  descFontSize: string = "9.5pt",
+  customFormat?: HalaqohCustomFormat
 ): Promise<{ blob: Blob; fileName: string }> {
   // 1. Fetch Kop Surat Banner image buffer reliably (with caching for speed)
   let bannerBuffer: ArrayBuffer | null = cachedBannerBuffer;
@@ -466,12 +475,19 @@ export async function generateHalaqohWordBlob(
     );
   }
 
+  // Dynamic Academic Year, Semester, Date & Header
+  const customTahun = customFormat?.tahunPelajaran || "2025/2026";
+  const customSemester = customFormat?.semesterName || "Semester-1";
+  const customTanggal = customFormat?.tanggalRaport || "30 September 2025";
+  const customKota = customFormat?.kota || "Pangkalpinang";
+  const customHeader = customFormat?.headerTitle || "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)";
+
   // Document Title exactly matching reference with compact spacing
   documentChildren.push(
     new Paragraph({
       children: [
         new TextRun({
-          text: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+          text: customHeader,
           bold: true,
           font: "Times New Roman",
           size: 26, // 13pt
@@ -495,7 +511,7 @@ export async function generateHalaqohWordBlob(
     new Paragraph({
       children: [
         new TextRun({
-          text: "Semester-1, Tahun Pelajaran 2025/2026",
+          text: `${customSemester}, Tahun Pelajaran ${customTahun}`,
           bold: true,
           font: "Times New Roman",
           size: 21, // 10.5pt
@@ -556,7 +572,7 @@ export async function generateHalaqohWordBlob(
     new Paragraph({
       children: [
         new TextRun({
-          text: "Pangkalpinang, 30 September 2025",
+          text: `${customKota}, ${customTanggal}`,
           font: "Times New Roman",
           size: 21,
         }),
@@ -768,7 +784,8 @@ export async function exportHalaqohToWord(
   allStudents: Student[],
   grades: Grade[],
   teachers: Teacher[],
-  descFontSize: string = "9.5pt"
+  descFontSize: string = "9.5pt",
+  customFormat?: HalaqohCustomFormat
 ): Promise<void> {
   const { blob, fileName } = await generateHalaqohWordBlob(
     halaqoh,
@@ -776,7 +793,8 @@ export async function exportHalaqohToWord(
     allStudents,
     grades,
     teachers,
-    descFontSize
+    descFontSize,
+    customFormat
   );
   triggerBrowserDownload(blob, fileName);
 }
@@ -791,7 +809,8 @@ export async function exportAllHalaqohToZip(
   grades: Grade[],
   teachers: Teacher[],
   descFontSize: string = "9.5pt",
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
+  customFormat?: HalaqohCustomFormat
 ): Promise<void> {
   const zip = new JSZip();
   const folderName = `Raport_Word_${halaqoh.name.replace(/[^a-zA-Z0-9]/g, "_")}`;
@@ -808,7 +827,8 @@ export async function exportAllHalaqohToZip(
       allStudents,
       grades,
       teachers,
-      descFontSize
+      descFontSize,
+      customFormat
     );
     zipFolder.file(fileName, blob);
   }

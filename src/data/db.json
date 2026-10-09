@@ -5983,6 +5983,14 @@
       "showParentSignature": true,
       "watermarkSize": 440,
       "watermarkOpacity": 0.05
+    },
+    "halaqohFormat": {
+      "tahunPelajaran": "2025/2026",
+      "semesterName": "Semester-1",
+      "tanggalRaport": "30 September 2025",
+      "kota": "Pangkalpinang",
+      "headerTitle": "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+      "descFontSize": "9.5pt"
     }
   },
   "halaqoh": [
