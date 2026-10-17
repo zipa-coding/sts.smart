@@ -19,6 +19,7 @@ import { saveAs } from "file-saver";
 import JSZip from "jszip";
 import { Student, Grade, Halaqoh, Teacher, sortHalaqohStudents } from "../types";
 import { KEISLAMAN_SUBJECTS } from "../components/HalaqohRaportView";
+import { sanitizeTextForStudent } from "./raportPdfService";
 import kopSuratBannerUrl from "../assets/images/kop_surat_banner.png";
 
 const border = {
@@ -196,7 +197,7 @@ export async function generateHalaqohWordBlob(
 
     let descContent = "";
     if (gradeObj?.deskripsi && gradeObj.deskripsi.trim()) {
-      descContent = gradeObj.deskripsi.trim();
+      descContent = sanitizeTextForStudent(gradeObj.deskripsi.trim(), student, allStudents, true);
     } else {
       const studentFirstName = student.name.split(" ")[0] || student.name;
       descContent = `Alhamdulillah ananda ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;

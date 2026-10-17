@@ -511,7 +511,13 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
 
         if (path === '/api/ekskul/grades/bulk' && method === 'POST') {
           const grades = body?.grades || [];
-          const res = await firebaseApi.postEkskulGradesBulk(grades);
+          const res: any = await firebaseApi.postEkskulGradesBulk(grades);
+          const db = getDB();
+          if (!db.walikelas_notes) db.walikelas_notes = {};
+          if (res && res.notes && typeof res.notes === 'object') {
+            db.walikelas_notes = { ...db.walikelas_notes, ...res.notes };
+            saveDB(db);
+          }
           return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
@@ -951,9 +957,19 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     // POST /api/walikelas/notes
     if (path === '/api/walikelas/notes' && method === 'POST') {
       const { studentId, sakit, izin, alpa, catatan, spiritualUsaha, spiritualProses, spiritualCapaian, spiritualDeskripsi, sosialUsaha, sosialProses, sosialCapaian, sosialDeskripsi, ekskul } = body || {};
+      const cleanStudentId = String(studentId || "").trim();
       const db = getDB();
       if (!db.walikelas_notes) db.walikelas_notes = {};
-      db.walikelas_notes[studentId] = {
+      const existingEkskul = Array.isArray(db.walikelas_notes[cleanStudentId]?.ekskul)
+        ? db.walikelas_notes[cleanStudentId].ekskul
+        : [];
+      const incomingEkskul = Array.isArray(ekskul) ? ekskul : [];
+      const finalEkskul = (incomingEkskul.length > 0 ? incomingEkskul : existingEkskul)
+        .filter((item: any) => item && item.name && (!item.studentId || String(item.studentId).trim() === cleanStudentId))
+        .map((item: any) => ({ ...item, studentId: cleanStudentId }));
+
+      db.walikelas_notes[cleanStudentId] = {
+        studentId: cleanStudentId,
         sakit: Number(sakit || 0),
         izin: Number(izin || 0),
         alpa: Number(alpa || 0),
@@ -966,10 +982,10 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         sosialProses: sosialProses || "B",
         sosialCapaian: sosialCapaian || "B",
         sosialDeskripsi: sosialDeskripsi || "",
-        ekskul: ekskul || []
+        ekskul: finalEkskul
       };
       saveDB(db);
-      return new Response(JSON.stringify({ studentId, ...db.walikelas_notes[studentId] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ studentId: cleanStudentId, ...db.walikelas_notes[cleanStudentId] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // 6. GET /api/tps
@@ -1253,13 +1269,18 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
       const grades = body?.grades || [];
       const db = getDB();
       if (!db.walikelas_notes) db.walikelas_notes = {};
+      const allStudents = Array.isArray(db.students) ? db.students : [];
 
       for (const item of grades) {
         const { studentId, ekskulId, name, type, usaha, proses, capaian, description, pembinaName, pembinaTeacherId, selected } = item;
         if (!studentId || !name) continue;
+        const cleanStudentId = String(studentId).trim();
+        const currentStudent = allStudents.find((s: any) => s && String(s.id).trim() === cleanStudentId);
+        const studentName = currentStudent?.name ? String(currentStudent.name).trim() : String(item.studentName || "").trim();
 
-        if (!db.walikelas_notes[studentId]) {
-          db.walikelas_notes[studentId] = {
+        if (!db.walikelas_notes[cleanStudentId]) {
+          db.walikelas_notes[cleanStudentId] = {
+            studentId: cleanStudentId,
             sakit: 0,
             izin: 0,
             alpa: 0,
@@ -1276,7 +1297,9 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           };
         }
 
-        let currentEkskuls = Array.isArray(db.walikelas_notes[studentId].ekskul) ? db.walikelas_notes[studentId].ekskul : [];
+        let currentEkskuls = (Array.isArray(db.walikelas_notes[cleanStudentId].ekskul) ? db.walikelas_notes[cleanStudentId].ekskul : [])
+          .filter((e: any) => e && e.name && (!e.studentId || String(e.studentId).trim() === cleanStudentId));
+
         if (selected === false) {
           currentEkskuls = currentEkskuls.filter((e: any) => e.name !== name && e.ekskulId !== ekskulId);
         } else {
@@ -1297,7 +1320,25 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           const pL = toLetter(proses, fallbackL);
           const cL = toLetter(capaian, fallbackL);
 
+          let safeDesc = String(description || "").trim();
+          if (safeDesc && studentName && allStudents.length > 0) {
+            const others = allStudents
+              .filter((s: any) => s && s.name && String(s.id).trim() !== cleanStudentId && String(s.name).trim().toLowerCase() !== studentName.toLowerCase())
+              .sort((a: any, b: any) => String(b.name || "").trim().length - String(a.name || "").trim().length);
+            for (const other of others) {
+              const otherName = String(other.name).trim();
+              if (otherName.length < 3) continue;
+              const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              const regex = new RegExp(escaped, "gi");
+              if (regex.test(safeDesc)) {
+                safeDesc = safeDesc.replace(regex, studentName);
+              }
+            }
+          }
+
           const newEkskulEntry = {
+            studentId: cleanStudentId,
+            studentName,
             ekskulId: ekskulId || "",
             name,
             type: type || "Pilihan",
@@ -1305,7 +1346,7 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
             proses: pL,
             capaian: cL,
             predicate: cL,
-            description: description || "",
+            description: safeDesc,
             pembinaName: pembinaName || "",
             pembinaTeacherId: pembinaTeacherId || "",
             updatedAt: new Date().toISOString()
@@ -1316,7 +1357,7 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
             currentEkskuls.push(newEkskulEntry);
           }
         }
-        db.walikelas_notes[studentId].ekskul = currentEkskuls;
+        db.walikelas_notes[cleanStudentId].ekskul = currentEkskuls;
       }
 
       saveDB(db);

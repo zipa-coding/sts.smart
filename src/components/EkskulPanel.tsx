@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Teacher, Student, Ekskul, StudentEkskulGrade } from "../types";
+import { Teacher, Student, Ekskul } from "../types";
+import { sanitizeTextForStudent } from "../lib/raportPdfService";
 import {
   Award,
   Users,
@@ -135,7 +136,8 @@ export default function EkskulPanel({
     } = {};
 
     students.forEach((s) => {
-      const studentNote = allNotes[s.id];
+      const cleanSid = String(s.id).trim();
+      const studentNote = allNotes[cleanSid] || allNotes[s.id];
       const ekskulArray: any[] =
         studentNote && Array.isArray(studentNote.ekskul)
           ? studentNote.ekskul
@@ -143,17 +145,20 @@ export default function EkskulPanel({
 
       const match = ekskulArray.find(
         (item: any) =>
-          (item.ekskulId && item.ekskulId === activeEkskul.id) ||
-          (item.name && item.name.toLowerCase() === activeEkskul.name.toLowerCase())
+          item &&
+          (!item.studentId || String(item.studentId).trim() === cleanSid) &&
+          ((item.ekskulId && item.ekskulId === activeEkskul.id) ||
+            (item.name && item.name.toLowerCase() === activeEkskul.name.toLowerCase()))
       );
 
       if (match) {
+        const rawDesc = match.description || match.deskripsi || "";
         initial[s.id] = {
           selected: true,
           usaha: match.usaha || match.predicate || "B",
           proses: match.proses || match.predicate || "B",
           capaian: match.capaian || match.predicate || "B",
-          description: match.description || match.deskripsi || "",
+          description: sanitizeTextForStudent(rawDesc, s, students),
         };
       } else {
         // Default: Wajib is selected for everyone, Pilihan is unselected
@@ -260,21 +265,36 @@ export default function EkskulPanel({
     setSuccess("");
 
     try {
+      const studentById = new Map<string, Student>();
+      students.forEach((s) => {
+        if (s && s.id) studentById.set(String(s.id).trim(), s);
+      });
+
       const payloadGrades = Object.entries(studentGrades).map(
-        ([studentId, g]: [string, any]) => ({
-          studentId,
-          ekskulId: activeEkskul.id,
-          name: activeEkskul.name,
-          type: activeEkskul.type,
-          usaha: g?.usaha || "B",
-          proses: g?.proses || "B",
-          capaian: g?.capaian || "B",
-          predicate: g?.capaian || "B",
-          description: g?.description || "",
-          pembinaName: activeEkskul.pembinaName || currentUser.name,
-          pembinaTeacherId: activeEkskul.pembinaTeacherId || currentUser.id,
-          selected: !!g?.selected,
-        })
+        ([studentId, g]: [string, any]) => {
+          const cleanSid = String(studentId).trim();
+          const studentObj = studentById.get(cleanSid);
+          const safeDesc = sanitizeTextForStudent(
+            g?.description || "",
+            studentObj || { id: cleanSid, name: "" },
+            students
+          );
+          return {
+            studentId: cleanSid,
+            studentName: studentObj?.name || "",
+            ekskulId: activeEkskul.id,
+            name: activeEkskul.name,
+            type: activeEkskul.type,
+            usaha: g?.usaha || "B",
+            proses: g?.proses || "B",
+            capaian: g?.capaian || "B",
+            predicate: g?.capaian || "B",
+            description: safeDesc,
+            pembinaName: activeEkskul.pembinaName || currentUser.name,
+            pembinaTeacherId: activeEkskul.pembinaTeacherId || currentUser.id,
+            selected: !!g?.selected,
+          };
+        }
       );
 
       const res = await fetch("/api/ekskul/grades/bulk", {
@@ -293,10 +313,25 @@ export default function EkskulPanel({
       );
       onRefreshTrigger();
 
-      // Refresh notes map
+      // Refresh notes map and sync any local walikelas_draft_* caches
       const getNotes = await fetch("/api/walikelas/notes");
       const updatedNotes = await getNotes.json();
-      setAllNotes(updatedNotes);
+      if (updatedNotes && typeof updatedNotes === "object") {
+        setAllNotes(updatedNotes);
+        Object.entries(updatedNotes).forEach(([sid, noteObj]: [string, any]) => {
+          try {
+            const draftKey = `walikelas_draft_${sid}`;
+            const rawDraft = localStorage.getItem(draftKey);
+            if (rawDraft && noteObj && Array.isArray(noteObj.ekskul)) {
+              const parsed = JSON.parse(rawDraft);
+              if (parsed && String(parsed.studentId || "").trim() === String(sid).trim()) {
+                parsed.ekskul = noteObj.ekskul;
+                localStorage.setItem(draftKey, JSON.stringify(parsed));
+              }
+            }
+          } catch {}
+        });
+      }
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat menyimpan nilai.");
     } finally {

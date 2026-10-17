@@ -477,6 +477,66 @@ app.delete("/api/students/:id", async (req, res) => {
 });
 
 // 4. Grades & Objectives Management
+// Helper to guarantee any description or note text strictly matches the target student's name
+function sanitizeServerStudentText(
+  text: string | undefined | null,
+  targetStudent: { id?: string; name?: string } | null | undefined,
+  allStudents: any[]
+): string {
+  if (!text || typeof text !== "string") return "";
+  let result = text.trim();
+  if (!result || !targetStudent || !targetStudent.name) return result;
+
+  const targetFullName = String(targetStudent.name).trim();
+
+  if (Array.isArray(allStudents) && allStudents.length > 0) {
+    const others = allStudents
+      .filter(
+        (s: any) =>
+          s &&
+          s.name &&
+          String(s.id || "").trim() !== String(targetStudent.id || "").trim() &&
+          String(s.name).trim().toLowerCase() !== targetFullName.toLowerCase()
+      )
+      .sort(
+        (a: any, b: any) =>
+          String(b.name || "").trim().length - String(a.name || "").trim().length
+      );
+
+    for (const other of others) {
+      const otherName = String(other.name).trim();
+      if (otherName.length < 3) continue;
+      const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escaped, "gi");
+      if (regex.test(result)) {
+        result = result.replace(regex, targetFullName);
+      }
+    }
+  }
+
+  const narrativePattern =
+    /(\bananda\s+)([^\.,;]+?)(?=\s+(?:dalam pembelajaran|menunjukkan|mudah bergaul|memiliki kepribadian|cukup baik|cukup kooperatif|memerlukan|terus meningkatkan|saat ini capaian pembelajaran))/gi;
+
+  result = result.replace(narrativePattern, (fullMatch, prefix, capturedName) => {
+    const cleanCaptured = String(capturedName || "").trim();
+    if (!cleanCaptured || cleanCaptured.toLowerCase() === targetFullName.toLowerCase()) {
+      return fullMatch;
+    }
+    return `${prefix}${targetFullName}`;
+  });
+
+  const achievementPattern = /(\bpencapaian luar biasa ananda\s+)([^\.]+?)(\.)/gi;
+  result = result.replace(achievementPattern, (fullMatch, prefix, capturedName, dot) => {
+    const cleanCaptured = String(capturedName || "").trim();
+    if (!cleanCaptured || cleanCaptured.toLowerCase() === targetFullName.toLowerCase()) {
+      return fullMatch;
+    }
+    return `${prefix}${targetFullName}${dot}`;
+  });
+
+  return result;
+}
+
 app.get("/api/grades", async (req, res) => {
   const db = await readDB();
   res.json(db.grades);
@@ -499,35 +559,29 @@ app.post("/api/grades", async (req, res) => {
   }
 
   const db = await readDB();
+  const cleanStudentId = String(studentId).trim();
 
   const normalizeSubj = (s: string) =>
     (s || "").toLowerCase().replace(/[’'"`]/g, "'").replace(/\s+/g, " ").trim();
   // Find if grade already exists for this student and subject
   const index = db.grades.findIndex(
     (g: any) =>
-      g.studentId === studentId &&
+      String(g.studentId).trim() === cleanStudentId &&
       normalizeSubj(g.subject) === normalizeSubj(subject),
   );
 
-  let safeDeskripsi = deskripsi || "";
   const currentStudent = Array.isArray(db.students)
-    ? db.students.find((s: any) => s && s.id === studentId)
+    ? db.students.find((s: any) => s && String(s.id).trim() === cleanStudentId)
     : null;
 
-  if (currentStudent && safeDeskripsi.trim() !== "") {
-    // Safety guard: Jika deskripsi berisi nama siswa lain dari rombel yang sama, otomatis selaraskan ke nama siswa saat ini
-    const otherStudents = db.students.filter(
-      (s: any) => s && s.id !== studentId && s.kelas === currentStudent.kelas,
-    );
-    for (const other of otherStudents) {
-      if (other && other.name && safeDeskripsi.includes(other.name)) {
-        safeDeskripsi = safeDeskripsi.split(other.name).join(currentStudent.name);
-      }
-    }
-  }
+  const safeDeskripsi = sanitizeServerStudentText(
+    deskripsi || "",
+    currentStudent,
+    db.students || [],
+  );
 
   const updatedGrade = {
-    studentId,
+    studentId: cleanStudentId,
     subject,
     score: Number(score),
     tps,
@@ -582,24 +636,55 @@ app.post("/api/walikelas/notes", async (req, res) => {
     db.walikelas_notes = {};
   }
 
-  db.walikelas_notes[studentId] = {
+  const cleanStudentId = String(studentId).trim();
+  const currentStudent = Array.isArray(db.students)
+    ? db.students.find((s: any) => s && String(s.id).trim() === cleanStudentId)
+    : null;
+
+  const safeCatatan = sanitizeServerStudentText(catatan || "", currentStudent, db.students || []);
+  const safeSpiritualDeskripsi = sanitizeServerStudentText(
+    spiritualDeskripsi || "",
+    currentStudent,
+    db.students || [],
+  );
+  const safeSosialDeskripsi = sanitizeServerStudentText(
+    sosialDeskripsi || "",
+    currentStudent,
+    db.students || [],
+  );
+
+  const existingEkskul = Array.isArray(db.walikelas_notes[cleanStudentId]?.ekskul)
+    ? db.walikelas_notes[cleanStudentId].ekskul
+    : [];
+  const incomingEkskul = Array.isArray(ekskul) ? ekskul : [];
+  const finalEkskul = (incomingEkskul.length > 0 ? incomingEkskul : existingEkskul)
+    .filter((item: any) => item && item.name && (!item.studentId || String(item.studentId).trim() === cleanStudentId))
+    .map((item: any) => ({
+      ...item,
+      studentId: cleanStudentId,
+      studentName: currentStudent?.name || item.studentName || "",
+      description: sanitizeServerStudentText(item.description || item.deskripsi || "", currentStudent, db.students || []),
+    }));
+
+  db.walikelas_notes[cleanStudentId] = {
+    studentId: cleanStudentId,
     sakit: Number(sakit || 0),
     izin: Number(izin || 0),
     alpa: Number(alpa || 0),
-    catatan: catatan || "",
+    catatan: safeCatatan,
     spiritualUsaha: spiritualUsaha || "B",
     spiritualProses: spiritualProses || "B",
     spiritualCapaian: spiritualCapaian || "B",
-    spiritualDeskripsi: spiritualDeskripsi || "",
+    spiritualDeskripsi: safeSpiritualDeskripsi,
     sosialUsaha: sosialUsaha || "B",
     sosialProses: sosialProses || "B",
     sosialCapaian: sosialCapaian || "B",
-    sosialDeskripsi: sosialDeskripsi || "",
-    ekskul: ekskul || [],
+    sosialDeskripsi: safeSosialDeskripsi,
+    ekskul: finalEkskul,
   };
 
   await writeDB(db);
-  res.json({ studentId, ...db.walikelas_notes[studentId] });
+  res.json({ studentId: cleanStudentId, ...db.walikelas_notes[cleanStudentId] });
 });
 
 // 6. Learning Objectives (TP) Templates CRUD
@@ -950,9 +1035,14 @@ app.post("/api/ekskul/grades/bulk", async (req, res) => {
   for (const item of grades) {
     const { studentId, ekskulId, name, type, usaha, proses, capaian, description, pembinaName, pembinaTeacherId, selected } = item;
     if (!studentId || !name) continue;
+    const cleanStudentId = String(studentId).trim();
+    const currentStudent = Array.isArray(db.students)
+      ? db.students.find((s: any) => s && String(s.id).trim() === cleanStudentId)
+      : null;
 
-    if (!db.walikelas_notes[studentId]) {
-      db.walikelas_notes[studentId] = {
+    if (!db.walikelas_notes[cleanStudentId]) {
+      db.walikelas_notes[cleanStudentId] = {
+        studentId: cleanStudentId,
         sakit: 0,
         izin: 0,
         alpa: 0,
@@ -969,7 +1059,8 @@ app.post("/api/ekskul/grades/bulk", async (req, res) => {
       };
     }
 
-    let currentEkskuls = Array.isArray(db.walikelas_notes[studentId].ekskul) ? db.walikelas_notes[studentId].ekskul : [];
+    let currentEkskuls = (Array.isArray(db.walikelas_notes[cleanStudentId].ekskul) ? db.walikelas_notes[cleanStudentId].ekskul : [])
+      .filter((e: any) => e && e.name && (!e.studentId || String(e.studentId).trim() === cleanStudentId));
     if (selected === false) {
       currentEkskuls = currentEkskuls.filter((e: any) => e.name !== name && e.ekskulId !== ekskulId);
     } else {
@@ -989,8 +1080,11 @@ app.post("/api/ekskul/grades/bulk", async (req, res) => {
       const uL = toLetter(usaha, fallbackL);
       const pL = toLetter(proses, fallbackL);
       const cL = toLetter(capaian, fallbackL);
+      const safeDescription = sanitizeServerStudentText(description || "", currentStudent, db.students || []);
 
       const newEkskulEntry = {
+        studentId: cleanStudentId,
+        studentName: currentStudent?.name || item.studentName || "",
         ekskulId: ekskulId || "",
         name,
         type: type || "Pilihan",
@@ -998,7 +1092,7 @@ app.post("/api/ekskul/grades/bulk", async (req, res) => {
         proses: pL,
         capaian: cL,
         predicate: cL,
-        description: description || "",
+        description: safeDescription,
         pembinaName: pembinaName || "",
         pembinaTeacherId: pembinaTeacherId || "",
         updatedAt: new Date().toISOString()
@@ -1009,7 +1103,7 @@ app.post("/api/ekskul/grades/bulk", async (req, res) => {
         currentEkskuls.push(newEkskulEntry);
       }
     }
-    db.walikelas_notes[studentId].ekskul = currentEkskuls;
+    db.walikelas_notes[cleanStudentId].ekskul = currentEkskuls;
   }
 
   await writeDB(db);

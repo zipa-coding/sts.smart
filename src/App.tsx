@@ -7,9 +7,10 @@ import TeacherPanel from "./components/TeacherPanel";
 import WaliKelasPanel from "./components/WaliKelasPanel";
 import EkskulPanel from "./components/EkskulPanel";
 import HalaqohRaportView from "./components/HalaqohRaportView";
+import AkumulasiNilaiPanel from "./components/AkumulasiNilaiPanel";
 import SmpIslamSmartLogo from "./components/SmpIslamSmartLogo";
 import { PWAInstallButton } from "./components/PWAInstallButton";
-import { BookOpen, LogOut, Key, BarChart3, Settings, ShieldAlert, GraduationCap, PenTool, Sun, Moon, Menu, X, LayoutDashboard, Sliders, Users, Award } from "lucide-react";
+import { BookOpen, LogOut, Key, BarChart3, Settings, ShieldAlert, GraduationCap, PenTool, Sun, Moon, Menu, X, LayoutDashboard, Sliders, Users, Award, Calculator } from "lucide-react";
 import { isFirebaseConfigured } from "./lib/firebase";
 
 export default function App() {
@@ -338,20 +339,37 @@ export default function App() {
 
           {/* If Subject Teacher OR Admin */}
           {(isSubjectTeacher || isSysAdmin) && (
-            <button
-              onClick={() => {
-                setActiveTab("grade_inputs");
-                setSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-left transition-all duration-200 cursor-pointer ${
-                activeTab === "grade_inputs"
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-900/50 font-bold border border-blue-400/40"
-                  : "text-slate-300 hover:bg-[#131f38] hover:text-white"
-              }`}
-            >
-              <PenTool className={`w-4 h-4 ${activeTab === "grade_inputs" ? "text-white" : "text-emerald-400"}`} />
-              <span>Input Nilai Mapel</span>
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  setActiveTab("grade_inputs");
+                  setSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-left transition-all duration-200 cursor-pointer ${
+                  activeTab === "grade_inputs"
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-900/50 font-bold border border-blue-400/40"
+                    : "text-slate-300 hover:bg-[#131f38] hover:text-white"
+                }`}
+              >
+                <PenTool className={`w-4 h-4 ${activeTab === "grade_inputs" ? "text-white" : "text-emerald-400"}`} />
+                <span>Input Nilai Mapel</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("akumulasi_nilai");
+                  setSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-left transition-all duration-200 cursor-pointer ${
+                  activeTab === "akumulasi_nilai"
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-900/50 font-bold border border-blue-400/40"
+                    : "text-slate-300 hover:bg-[#131f38] hover:text-white"
+                }`}
+              >
+                <Calculator className={`w-4 h-4 ${activeTab === "akumulasi_nilai" ? "text-white" : "text-sky-400"}`} />
+                <span>Akumulasi Nilai</span>
+              </button>
+            </>
           )}
 
           {/* If Wali Kelas OR Admin */}
@@ -571,6 +589,15 @@ export default function App() {
                 ) : (
                   <TeacherPanel user={currentUser} onRefreshTrigger={triggerProgressRefresh} />
                 )}
+              </div>
+            )}
+
+            {visitedTabs["akumulasi_nilai"] && (isSubjectTeacher || isSysAdmin) && (
+              <div className={activeTab === "akumulasi_nilai" ? "block animate-fade-in" : "hidden"}>
+                <AkumulasiNilaiPanel
+                  currentUser={currentUser}
+                  onRefreshTrigger={triggerProgressRefresh}
+                />
               </div>
             )}
 

@@ -187,6 +187,48 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // 9. AKUMULASI NILAI PER-BAB (akumulasiNilai)
+    // ==========================================
+    // Hak akses:
+    // - Admin: baca dan tulis semua dokumen
+    // - Guru: baca dan tulis untuk kelas dan mapel yang diampunya
+    function isAuthorizedTeacherOrAdminForMapel(data) {
+      return request.auth == null
+        || (exists(/databases/$(database)/documents/teachers/$(request.auth.uid))
+            && (
+              get(/databases/$(database)/documents/teachers/$(request.auth.uid)).data.subject == 'Admin'
+              || get(/databases/$(database)/documents/teachers/$(request.auth.uid)).data.subject == data.mapelId
+            ));
+    }
+
+    function isValidAkumulasiDoc(data) {
+      return (
+        isOptionalString(data, 'tahunAjaran', 30)
+        && isOptionalString(data, 'semester', 20)
+        && isOptionalString(data, 'kelas', 20)
+        && isOptionalString(data, 'mapelId', 100)
+        && isOptionalNumber(data, 'jumlahBab', 1, 7)
+        && isOptionalList(data, 'cakupanSTS')
+        && isOptionalList(data, 'cakupanSAS')
+        && isOptionalString(data, 'principalName', 200)
+        && isOptionalString(data, 'teacherName', 200)
+        && isOptionalString(data, 'signaturePlace', 100)
+        && isOptionalString(data, 'signatureDate', 100)
+        && isOptionalString(data, 'updatedAt', 100)
+        && isOptionalString(data, 'updatedBy', 200)
+        && (!('siswa' in data) || data.siswa is map)
+      );
+    }
+
+    match /akumulasiNilai/{docId} {
+      allow read: if isValidId(docId) && isAuthorizedTeacherOrAdminForMapel(resource.data);
+      allow create, update: if isValidId(docId)
+        && isValidAkumulasiDoc(request.resource.data)
+        && isAuthorizedTeacherOrAdminForMapel(request.resource.data);
+      allow delete: if isValidId(docId) && isAuthorizedTeacherOrAdminForMapel(resource.data);
+    }
+
+    // ==========================================
     // ⛔ DEFAULT DENY: Tolak akses dokumen lain di luar skema
     // ==========================================
     match /{document=**} {

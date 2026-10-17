@@ -19,7 +19,7 @@ import logoJsitUrl from "../assets/images/logo_jsit_indonesia_1783956323407.jpg"
 import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.jpg";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
-import { downloadClassRaportZip, ZipBatchProgress } from "../lib/raportPdfService";
+import { downloadClassRaportZip, ZipBatchProgress, sanitizeTextForStudent } from "../lib/raportPdfService";
 
 interface PrintRaportViewProps {
   student: Student;
@@ -49,16 +49,21 @@ export default function PrintRaportView({
   const [liveNote, setLiveNote] = useState<WaliKelasNote>(waliKelasNote);
 
   React.useEffect(() => {
-    setLiveGrades(grades || []);
-  }, [grades]);
+    setLiveGrades(
+      (grades || []).filter(
+        (g) => g && String(g.studentId).trim() === String(student?.id).trim()
+      )
+    );
+  }, [grades, student?.id]);
 
   React.useEffect(() => {
     setLiveNote(waliKelasNote);
-  }, [waliKelasNote]);
+  }, [waliKelasNote, student?.id]);
 
   // Synchronize live fresh data from DB on mount
   React.useEffect(() => {
     if (student?.id) {
+      const targetId = String(student.id).trim();
       Promise.all([
         fetch("/api/grades").then((r) => r.json()),
         fetch("/api/walikelas/notes").then((r) => r.json()),
@@ -66,14 +71,16 @@ export default function PrintRaportView({
         .then(([allG, allN]) => {
           if (Array.isArray(allG)) {
             const studentOnly = allG.filter(
-              (g: any) => String(g.studentId).trim() === String(student.id).trim()
+              (g: any) => g && String(g.studentId).trim() === targetId
             );
-            if (studentOnly.length > 0) {
-              setLiveGrades(studentOnly);
-            }
+            setLiveGrades(studentOnly);
           }
-          if (allN && typeof allN === "object" && allN[student.id]) {
-            setLiveNote(allN[student.id]);
+          if (allN && typeof allN === "object") {
+            if (allN[student.id]) {
+              setLiveNote(allN[student.id]);
+            } else {
+              setLiveNote(waliKelasNote);
+            }
           }
         })
         .catch((e) => console.error("Error refreshing live grades in raport:", e));
@@ -369,7 +376,12 @@ export default function PrintRaportView({
   };
 
   const getSubjectGradeObj = (sub: string) => {
-    return liveGrades.find((x) => isSameSubject(x.subject, sub));
+    return liveGrades.find(
+      (x) =>
+        x &&
+        String(x.studentId).trim() === String(student.id).trim() &&
+        isSameSubject(x.subject, sub)
+    );
   };
 
   const scoreToPredicate = (score: number | string | undefined | null): string => {
@@ -415,7 +427,9 @@ export default function PrintRaportView({
   const getSubjectDescription = (sub: string) => {
     const g = getSubjectGradeObj(sub);
     if (g) {
-      if (g.deskripsi && g.deskripsi.trim() !== "") return g.deskripsi.trim();
+      if (g.deskripsi && g.deskripsi.trim() !== "") {
+        return sanitizeTextForStudent(g.deskripsi.trim(), student, allClassStudents);
+      }
       const generated = generateDescription(g);
       if (generated) return generated;
     }
@@ -604,7 +618,11 @@ export default function PrintRaportView({
               </tr>
               <tr>
                 <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                  <strong>Deskripsi:</strong> ${liveNote.spiritualDeskripsi || `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`}
+                  <strong>Deskripsi:</strong> ${
+                    liveNote.spiritualDeskripsi
+                      ? sanitizeTextForStudent(liveNote.spiritualDeskripsi, student, allClassStudents)
+                      : `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`
+                  }
                 </td>
               </tr>
             </table>
@@ -640,7 +658,11 @@ export default function PrintRaportView({
               </tr>
               <tr>
                 <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                  <strong>Deskripsi:</strong> ${liveNote.sosialDeskripsi || `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`}
+                  <strong>Deskripsi:</strong> ${
+                    liveNote.sosialDeskripsi
+                      ? sanitizeTextForStudent(liveNote.sosialDeskripsi, student, allClassStudents)
+                      : `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`
+                  }
                 </td>
               </tr>
             </table>
@@ -791,9 +813,13 @@ export default function PrintRaportView({
             .join("")}
 
           <h4 class="pdf-heading">E. Ekstrakurikuler dan Keterampilan</h4>
-          ${
-            ((liveNote as any).ekskul || []).length === 0
-              ? `
+          ${(() => {
+            const cleanSid = String(student.id).trim();
+            const validEkskuls = (((liveNote as any).ekskul || []) as any[]).filter(
+              (e: any) => e && e.name && (!e.studentId || String(e.studentId).trim() === cleanSid)
+            );
+            if (validEkskuls.length === 0) {
+              return `
             <div class="pdf-table-block">
               <table class="pdf-box-table">
                 <tr>
@@ -803,11 +829,16 @@ export default function PrintRaportView({
                 </tr>
               </table>
             </div>
-          `
-              : ((liveNote as any).ekskul || [])
-                  .map((e: any, idx: number) => {
-                    const grades = getEkskulGrades(e);
-                    return `
+          `;
+            }
+            return validEkskuls
+              .map((e: any, idx: number) => {
+                const grades = getEkskulGrades(e);
+                const rawDesc = e.description || e.deskripsi || "";
+                const safeDesc = rawDesc
+                  ? sanitizeTextForStudent(rawDesc, student, allClassStudents)
+                  : "-";
+                return `
               <div class="pdf-table-block">
                 <table class="pdf-box-table">
                   <tr>
@@ -837,22 +868,22 @@ export default function PrintRaportView({
                   </tr>
                   <tr>
                     <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                      <strong>Deskripsi:</strong> ${e.description || e.deskripsi || "-"}
+                      <strong>Deskripsi:</strong> ${safeDesc}
                     </td>
                   </tr>
                 </table>
               </div>
             `;
-                  })
-                  .join("")
-          }
+              })
+              .join("");
+          })()}
 
           <h4 class="pdf-heading">F. Saran-Saran</h4>
           <div class="pdf-table-block">
             <table class="pdf-box-table">
               <tr>
                 <td style="padding: 5px 8px 6px 8px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                  ${liveNote.catatan || ""}
+                  ${liveNote.catatan ? sanitizeTextForStudent(liveNote.catatan, student, allClassStudents) : ""}
                 </td>
               </tr>
             </table>
@@ -1525,9 +1556,13 @@ export default function PrintRaportView({
         .join("")}
 
       <h4 style="margin: 15px 0 10px 0; text-transform: uppercase; font-size: 9.5pt; font-family: 'Times New Roman', Times, serif; font-weight: bold; color: #000000;">E. Ekstrakurikuler dan Keterampilan</h4>
-      ${
-        ((waliKelasNote as any).ekskul || []).length === 0
-          ? `
+      ${(() => {
+        const cleanSid = String(student.id).trim();
+        const validEkskuls = (((liveNote as any).ekskul || (waliKelasNote as any).ekskul || []) as any[]).filter(
+          (e: any) => e && e.name && (!e.studentId || String(e.studentId).trim() === cleanSid)
+        );
+        if (validEkskuls.length === 0) {
+          return `
         <table border="1" cellspacing="0" cellpadding="4" style="width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1.2px solid #000000; background-color: #ffffff; margin-left: auto; margin-right: auto; page-break-inside: avoid;">
           <tr>
             <td style="border: 1px solid #000000; text-align: center; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; padding: 6px; font-style: italic; color: #555555;">
@@ -1535,11 +1570,16 @@ export default function PrintRaportView({
             </td>
           </tr>
         </table>
-      `
-          : ((waliKelasNote as any).ekskul || [])
-              .map((e: any, idx: number) => {
-                const grades = getEkskulGrades(e);
-                return `
+      `;
+        }
+        return validEkskuls
+          .map((e: any, idx: number) => {
+            const grades = getEkskulGrades(e);
+            const rawDesc = e.description || e.deskripsi || "";
+            const safeDesc = rawDesc
+              ? sanitizeTextForStudent(rawDesc, student, allClassStudents)
+              : "-";
+            return `
           <table border="1" cellspacing="0" cellpadding="4" style="width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1.2px solid #000000; background-color: #ffffff; margin-left: auto; margin-right: auto; page-break-inside: avoid;">
             <tr>
               <td rowspan="2" style="width: 52%; border: 1px solid #000000; padding: 4px 6.5px; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #000000; vertical-align: middle;">
@@ -1568,14 +1608,14 @@ export default function PrintRaportView({
             </tr>
             <tr>
               <td colspan="4" style="border: 1px solid #000000; padding: 4px 6px 10px 6px; font-family: 'Times New Roman', Times, serif; font-size: ${format.descFontSize || "9.5pt"}; text-align: justify; line-height: 1.45; color: #000000;">
-                <strong>Deskripsi:</strong> ${e.description || e.deskripsi || "-"}
+                <strong>Deskripsi:</strong> ${safeDesc}
               </td>
             </tr>
           </table>
         `;
-              })
-              .join("")
-      }
+          })
+          .join("");
+      })()}
 
       <h4 style="margin: 15px 0 10px 0; text-transform: uppercase; font-size: 9.5pt; font-family: 'Times New Roman', Times, serif; font-weight: bold; color: #000000;">F. Saran-Saran</h4>
       <table border="1" cellspacing="0" cellpadding="4" style="width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1.2px solid #000000; background-color: #ffffff; margin-left: auto; margin-right: auto; page-break-inside: avoid;">
@@ -2220,7 +2260,9 @@ export default function PrintRaportView({
                         Deskripsi:
                       </strong>
                       <span className="text-black">
-                        {liveNote.spiritualDeskripsi || `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`}
+                        {liveNote.spiritualDeskripsi
+                          ? sanitizeTextForStudent(liveNote.spiritualDeskripsi, student, allClassStudents)
+                          : `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`}
                       </span>
                     </td>
                   </tr>
@@ -2267,7 +2309,9 @@ export default function PrintRaportView({
                         Deskripsi:
                       </strong>
                       <span className="text-black">
-                        {liveNote.sosialDeskripsi || `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`}
+                        {liveNote.sosialDeskripsi
+                          ? sanitizeTextForStudent(liveNote.sosialDeskripsi, student, allClassStudents)
+                          : `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`}
                       </span>
                     </td>
                   </tr>
@@ -2473,65 +2517,74 @@ export default function PrintRaportView({
             <h4 className="text-xs md:text-sm font-bold mb-2 uppercase tracking-wide text-black">
               E. Ekstrakurikuler dan Keterampilan
             </h4>
-            {((liveNote as any).ekskul || []).length === 0 ? (
-              <div className="page-break-avoid border border-black p-2.5 text-center text-black italic text-xs bg-white mb-2.5">
-                Tidak mengikuti kegiatan ekstrakurikuler.
-              </div>
-            ) : (
-              ((liveNote as any).ekskul || []).map(
-                (e: any, idx: number) => {
-                  const grades = getEkskulGrades(e);
-                  return (
-                    <div
-                      key={idx}
-                      className="page-break-avoid border border-black p-0 mb-2.5 bg-white text-black"
-                    >
-                      <table className="w-full border-collapse border-none mx-auto text-black">
-                        <tbody>
-                          <tr className="border-b border-black">
-                            <td rowSpan={2} className="w-[52%] py-1.5 px-3 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white leading-snug">
-                              {idx + 1}. Ekstrakurikuler {e.type || "Pilihan"}: {e.name}
-                            </td>
-                            <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                              <span className="inline-block relative -top-1">Usaha</span>
-                            </td>
-                            <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
-                              <span className="inline-block relative -top-1">Proses</span>
-                            </td>
-                            <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
-                              <span className="inline-block relative -top-1">Capaian</span>
-                            </td>
-                          </tr>
-                          <tr className="border-b border-black">
-                            <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                              <span className="inline-block relative -top-1">{grades.usaha}</span>
-                            </td>
-                            <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
-                              <span className="inline-block relative -top-1">{grades.proses}</span>
-                            </td>
-                            <td className="py-0 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
-                              <span className="inline-block relative -top-1">{grades.capaian}</span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="py-1.5 px-3 leading-relaxed text-justify text-black bg-white"
-                              style={{ fontSize: format.descFontSize || "9pt" }}
-                            >
-                              <strong className="font-bold mr-1 text-black">
-                                Deskripsi:
-                              </strong>
-                              <span className="text-black">{e.description || e.deskripsi || "-"}</span>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                },
-              )
-            )}
+            {(() => {
+              const cleanSid = String(student.id).trim();
+              const validEkskuls = (((liveNote as any).ekskul || []) as any[]).filter(
+                (e: any) => e && e.name && (!e.studentId || String(e.studentId).trim() === cleanSid)
+              );
+              if (validEkskuls.length === 0) {
+                return (
+                  <div className="page-break-avoid border border-black p-2.5 text-center text-black italic text-xs bg-white mb-2.5">
+                    Tidak mengikuti kegiatan ekstrakurikuler.
+                  </div>
+                );
+              }
+              return validEkskuls.map((e: any, idx: number) => {
+                const grades = getEkskulGrades(e);
+                const rawDesc = e.description || e.deskripsi || "";
+                const safeDesc = rawDesc
+                  ? sanitizeTextForStudent(rawDesc, student, allClassStudents)
+                  : "-";
+                return (
+                  <div
+                    key={idx}
+                    className="page-break-avoid border border-black p-0 mb-2.5 bg-white text-black"
+                  >
+                    <table className="w-full border-collapse border-none mx-auto text-black">
+                      <tbody>
+                        <tr className="border-b border-black">
+                          <td rowSpan={2} className="w-[52%] py-1.5 px-3 font-bold text-xs md:text-sm align-middle border-r border-black font-serif text-black bg-white leading-snug">
+                            {idx + 1}. Ekstrakurikuler {e.type || "Pilihan"}: {e.name}
+                          </td>
+                          <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                            <span className="inline-block relative -top-1">Usaha</span>
+                          </td>
+                          <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs border-r border-black bg-gray-100 text-black align-middle leading-tight">
+                            <span className="inline-block relative -top-1">Proses</span>
+                          </td>
+                          <td className="w-[16%] py-0 px-1 text-center font-bold text-[10px] md:text-xs bg-gray-100 text-black align-middle leading-tight">
+                            <span className="inline-block relative -top-1">Capaian</span>
+                          </td>
+                        </tr>
+                        <tr className="border-b border-black">
+                          <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                            <span className="inline-block relative -top-1">{grades.usaha}</span>
+                          </td>
+                          <td className="py-0 px-1 text-center font-bold text-sm md:text-base border-r border-black font-serif text-black bg-white align-middle leading-none">
+                            <span className="inline-block relative -top-1">{grades.proses}</span>
+                          </td>
+                          <td className="py-0 px-1 text-center font-bold text-sm md:text-base font-serif text-black bg-white align-middle leading-none">
+                            <span className="inline-block relative -top-1">{grades.capaian}</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="py-1.5 px-3 leading-relaxed text-justify text-black bg-white"
+                            style={{ fontSize: format.descFontSize || "9pt" }}
+                          >
+                            <strong className="font-bold mr-1 text-black">
+                              Deskripsi:
+                            </strong>
+                            <span className="text-black">{safeDesc}</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
           {/* SECTION F: SARAN-SARAN */}
@@ -2543,7 +2596,9 @@ export default function PrintRaportView({
               className="border py-1.5 px-3 text-xs leading-relaxed text-justify border-black text-slate-900 bg-transparent min-h-[38px]"
               style={{ fontSize: format.descFontSize || "9pt" }}
             >
-              {waliKelasNote.catatan || ""}
+              {liveNote.catatan
+                ? sanitizeTextForStudent(liveNote.catatan, student, allClassStudents)
+                : ""}
             </div>
           </div>
 
@@ -2582,8 +2637,8 @@ export default function PrintRaportView({
                     style={{ lineHeight: "1.1" }}
                   >
                     <span className="inline-block relative -top-1">
-                      {waliKelasNote.sakit && Number(waliKelasNote.sakit) > 0
-                        ? `${waliKelasNote.sakit} Hari`
+                      {liveNote.sakit && Number(liveNote.sakit) > 0
+                        ? `${liveNote.sakit} Hari`
                         : "- Hari"}
                     </span>
                   </td>
@@ -2592,8 +2647,8 @@ export default function PrintRaportView({
                     style={{ lineHeight: "1.1" }}
                   >
                     <span className="inline-block relative -top-1">
-                      {waliKelasNote.izin && Number(waliKelasNote.izin) > 0
-                        ? `${waliKelasNote.izin} Hari`
+                      {liveNote.izin && Number(liveNote.izin) > 0
+                        ? `${liveNote.izin} Hari`
                         : "- Hari"}
                     </span>
                   </td>
@@ -2602,8 +2657,8 @@ export default function PrintRaportView({
                     style={{ lineHeight: "1.1" }}
                   >
                     <span className="inline-block relative -top-1">
-                      {waliKelasNote.alpa && Number(waliKelasNote.alpa) > 0
-                        ? `${waliKelasNote.alpa} Hari`
+                      {liveNote.alpa && Number(liveNote.alpa) > 0
+                        ? `${liveNote.alpa} Hari`
                         : "- Hari"}
                     </span>
                   </td>

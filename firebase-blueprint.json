@@ -113,6 +113,28 @@
         "updatedAt": { "type": "string", "maxLength": 100 }
       },
       "required": ["name"]
+    },
+    "AkumulasiNilai": {
+      "title": "AkumulasiNilai",
+      "description": "Per-chapter student grade accumulation per academic year, semester, class, and subject",
+      "type": "object",
+      "properties": {
+        "tahunAjaran": { "type": "string", "maxLength": 30 },
+        "semester": { "type": "string", "maxLength": 20 },
+        "kelas": { "type": "string", "maxLength": 20 },
+        "mapelId": { "type": "string", "maxLength": 100 },
+        "jumlahBab": { "type": "number" },
+        "cakupanSTS": { "type": "array" },
+        "cakupanSAS": { "type": "array" },
+        "principalName": { "type": "string", "maxLength": 200 },
+        "teacherName": { "type": "string", "maxLength": 200 },
+        "signaturePlace": { "type": "string", "maxLength": 100 },
+        "signatureDate": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string", "maxLength": 100 },
+        "updatedBy": { "type": "string", "maxLength": 200 },
+        "siswa": { "type": "object" }
+      },
+      "required": ["tahunAjaran", "semester", "kelas", "mapelId", "jumlahBab"]
     }
   },
   "firestore": {
@@ -147,6 +169,10 @@
     "/halaqoh/{halaqohId}": {
       "schema": "Halaqoh",
       "description": "Halaqoh groups, mentors, and member students"
+    },
+    "/akumulasiNilai/{docId}": {
+      "schema": "AkumulasiNilai",
+      "description": "Per-chapter grade accumulation documents"
     }
   }
 }

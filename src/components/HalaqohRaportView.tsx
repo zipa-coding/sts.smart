@@ -26,6 +26,7 @@ import logoJsitUrl from "../assets/images/logo_jsit_indonesia_1783956323407.jpg"
 import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.jpg";
 import kopSuratBannerUrl from "../assets/images/kop_surat_banner.png";
 import { exportHalaqohToWord, exportAllHalaqohToZip, triggerBrowserDownload } from "../lib/wordExport";
+import { sanitizeTextForStudent } from "../lib/raportPdfService";
 import JSZip from "jszip";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
@@ -454,7 +455,7 @@ export default function HalaqohRaportView({
 
       let descContent = "";
       if (gradeObj?.deskripsi && gradeObj.deskripsi.trim()) {
-        descContent = gradeObj.deskripsi.trim();
+        descContent = sanitizeTextForStudent(gradeObj.deskripsi.trim(), student, students, true);
       } else {
         const studentFirstName = student.name.split(" ")[0] || student.name;
         descContent = `Alhamdulillah ananda ${studentFirstName} saat ini capaian pembelajaran ${subjectMeta.tableHeader} telah tuntas sesuai target. Harapannya ananda bisa terus istiqomah dan lancar.`;

@@ -32,7 +32,8 @@ import {
   downloadClassRaportZip,
   ZipBatchProgress,
   RaportFormatSettings,
-  RaportPrincipalSettings
+  RaportPrincipalSettings,
+  sanitizeTextForStudent
 } from "../lib/raportPdfService";
 
 interface WaliKelasPanelProps {
@@ -285,11 +286,11 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
 
       if (classStudents.length > 0) {
         if (!selectedStudent || !classStudents.some(s => s.id === selectedStudent.id)) {
-          loadStudentData(classStudents[0], notesObj);
+          loadStudentData(classStudents[0], notesObj, studentsArray);
         } else {
           // Re-sync selected student data
           const current = classStudents.find(s => s.id === selectedStudent.id) || classStudents[0];
-          loadStudentData(current, notesObj);
+          loadStudentData(current, notesObj, studentsArray);
         }
       } else {
         setSelectedStudent(null);
@@ -320,7 +321,11 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     return () => window.removeEventListener("keydown", handleKeyDown);
   });
 
-  const loadStudentData = (student: Student, notesMap: WaliKelasNotesMap = allClassNotes) => {
+  const loadStudentData = (
+    student: Student,
+    notesMap: WaliKelasNotesMap = allClassNotes,
+    studentsList: Student[] = students
+  ) => {
     setSelectedStudent(student);
     setSuccess("");
     setError("");
@@ -329,30 +334,45 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     const safeNotesMap = notesMap && typeof notesMap === "object" && !Array.isArray(notesMap) ? notesMap : {};
     const note = safeNotesMap[student.id];
 
-    // Check local draft fallback
-    let draft = null;
+    // Check local draft fallback — strictly validate that draft.studentId matches student.id
+    let draft: any = null;
     try {
       const rawDraft = localStorage.getItem(`walikelas_draft_${student.id}`);
-      if (rawDraft) draft = JSON.parse(rawDraft);
+      if (rawDraft) {
+        const parsed = JSON.parse(rawDraft);
+        if (parsed && String(parsed.studentId || "").trim() === String(student.id).trim()) {
+          draft = parsed;
+        }
+      }
     } catch {}
 
-    const source = draft || note;
+    const source = note || draft;
 
     if (source) {
+      const rawCatatan = source.catatan
+        ? sanitizeTextForStudent(source.catatan, student, studentsList)
+        : generateCatatanWaliKelas(student.name, 80);
+      const rawSpiritualDesc = source.spiritualDeskripsi
+        ? sanitizeTextForStudent(source.spiritualDeskripsi, student, studentsList)
+        : generateSpiritualNarrative(student.name, source.spiritualCapaian || "B");
+      const rawSosialDesc = source.sosialDeskripsi
+        ? sanitizeTextForStudent(source.sosialDeskripsi, student, studentsList)
+        : generateSosialNarrative(student.name, source.sosialCapaian || "B");
+
       setSakit(String(source.sakit ?? "0"));
       setIzin(String(source.izin ?? "0"));
       setAlpa(String(source.alpa ?? "0"));
-      setCatatan(source.catatan || generateCatatanWaliKelas(student.name, 80));
+      setCatatan(rawCatatan);
 
       setSpiritualUsaha(source.spiritualUsaha || "B");
       setSpiritualProses(source.spiritualProses || "B");
       setSpiritualCapaian(source.spiritualCapaian || "B");
-      setSpiritualDeskripsi(source.spiritualDeskripsi || generateSpiritualNarrative(student.name, source.spiritualCapaian || "B"));
+      setSpiritualDeskripsi(rawSpiritualDesc);
 
       setSosialUsaha(source.sosialUsaha || "B");
       setSosialProses(source.sosialProses || "B");
       setSosialCapaian(source.sosialCapaian || "B");
-      setSosialDeskripsi(source.sosialDeskripsi || generateSosialNarrative(student.name, source.sosialCapaian || "B"));
+      setSosialDeskripsi(rawSosialDesc);
     } else {
       setSakit("0");
       setIzin("0");
@@ -371,61 +391,80 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     }
   };
 
-  // Auto-save draft before switching student
-  const handleStudentSelect = (student: Student) => {
-    if (selectedStudent && selectedStudent.id !== student.id && isDirtyRef.current) {
-      // Background auto-save previous student's edits so nothing is lost
-      saveNotesForStudent(selectedStudent.id, {
-        sakit: Number(sakit || 0),
-        izin: Number(izin || 0),
-        alpa: Number(alpa || 0),
-        catatan,
-        spiritualUsaha,
-        spiritualProses,
-        spiritualCapaian,
-        spiritualDeskripsi,
-        sosialUsaha,
-        sosialProses,
-        sosialCapaian,
-        sosialDeskripsi
-      });
-    }
+  const buildSanitizedNotePayload = (targetStudent: Student, data: any, baseNotesMap: WaliKelasNotesMap = allClassNotes) => {
+    const cleanSid = String(targetStudent.id).trim();
+    const currentStudentNote = baseNotesMap[cleanSid] || baseNotesMap[targetStudent.id];
+    const existingEkskul = (currentStudentNote && Array.isArray(currentStudentNote.ekskul)
+      ? currentStudentNote.ekskul
+      : []
+    )
+      .filter((item: any) => item && item.name && (!item.studentId || String(item.studentId).trim() === cleanSid))
+      .map((item: any) => ({
+        ...item,
+        studentId: cleanSid,
+        studentName: targetStudent.name || item.studentName || "",
+        description: sanitizeTextForStudent(item.description || item.deskripsi || "", targetStudent, students),
+      }));
 
-    loadStudentData(student, allClassNotes);
+    return {
+      studentId: cleanSid,
+      sakit: Number(data.sakit || 0),
+      izin: Number(data.izin || 0),
+      alpa: Number(data.alpa || 0),
+      catatan: sanitizeTextForStudent(data.catatan || "", targetStudent, students),
+      spiritualUsaha: data.spiritualUsaha || "B",
+      spiritualProses: data.spiritualProses || "B",
+      spiritualCapaian: data.spiritualCapaian || "B",
+      spiritualDeskripsi: sanitizeTextForStudent(data.spiritualDeskripsi || "", targetStudent, students),
+      sosialUsaha: data.sosialUsaha || "B",
+      sosialProses: data.sosialProses || "B",
+      sosialCapaian: data.sosialCapaian || "B",
+      sosialDeskripsi: sanitizeTextForStudent(data.sosialDeskripsi || "", targetStudent, students),
+      ekskul: existingEkskul,
+      updatedAt: new Date().toISOString()
+    };
   };
 
-  const saveNotesForStudent = async (studentId: string, data: any) => {
+  // Auto-save draft before switching student with synchronous in-memory map update
+  const handleStudentSelect = (student: Student) => {
+    let nextNotesMap = { ...allClassNotes };
+
+    if (selectedStudent && selectedStudent.id !== student.id && isDirtyRef.current) {
+      const savedPayload = buildSanitizedNotePayload(
+        selectedStudent,
+        {
+          sakit: Number(sakit || 0),
+          izin: Number(izin || 0),
+          alpa: Number(alpa || 0),
+          catatan,
+          spiritualUsaha,
+          spiritualProses,
+          spiritualCapaian,
+          spiritualDeskripsi,
+          sosialUsaha,
+          sosialProses,
+          sosialCapaian,
+          sosialDeskripsi
+        },
+        nextNotesMap
+      );
+      nextNotesMap[selectedStudent.id] = savedPayload;
+      saveNotesForStudent(selectedStudent, savedPayload);
+    }
+
+    loadStudentData(student, nextNotesMap, students);
+  };
+
+  const saveNotesForStudent = async (targetStudent: Student, payload: any) => {
     try {
-      const currentStudentNote = allClassNotes[studentId];
-      const existingEkskul = currentStudentNote && Array.isArray(currentStudentNote.ekskul)
-        ? currentStudentNote.ekskul
-        : [];
-
-      const payload = {
-        studentId,
-        sakit: Number(data.sakit || 0),
-        izin: Number(data.izin || 0),
-        alpa: Number(data.alpa || 0),
-        catatan: data.catatan || "",
-        spiritualUsaha: data.spiritualUsaha || "B",
-        spiritualProses: data.spiritualProses || "B",
-        spiritualCapaian: data.spiritualCapaian || "B",
-        spiritualDeskripsi: data.spiritualDeskripsi || "",
-        sosialUsaha: data.sosialUsaha || "B",
-        sosialProses: data.sosialProses || "B",
-        sosialCapaian: data.sosialCapaian || "B",
-        sosialDeskripsi: data.sosialDeskripsi || "",
-        ekskul: existingEkskul,
-        updatedAt: new Date().toISOString()
-      };
-
+      const studentId = targetStudent.id;
       // Update in-memory state immediately
       setAllClassNotes(prev => ({
         ...prev,
         [studentId]: payload
       }));
 
-      // Cache draft in localStorage
+      // Cache draft in localStorage keyed strictly by studentId
       localStorage.setItem(`walikelas_draft_${studentId}`, JSON.stringify(payload));
 
       await fetch("/api/walikelas/notes", {
@@ -438,43 +477,73 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     }
   };
 
+  const getEffectiveNotesMap = (): WaliKelasNotesMap => {
+    const map = { ...allClassNotes };
+    if (selectedStudent && isDirtyRef.current) {
+      const activePayload = buildSanitizedNotePayload(
+        selectedStudent,
+        {
+          sakit,
+          izin,
+          alpa,
+          catatan,
+          spiritualUsaha,
+          spiritualProses,
+          spiritualCapaian,
+          spiritualDeskripsi,
+          sosialUsaha,
+          sosialProses,
+          sosialCapaian,
+          sosialDeskripsi,
+        },
+        map
+      );
+      map[selectedStudent.id] = activePayload;
+      saveNotesForStudent(selectedStudent, activePayload);
+      setIsDirty(false);
+    }
+    return map;
+  };
+
   const saveCurrentNotes = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!selectedStudent) return;
+    const targetStudent = selectedStudent;
     setError("");
     setSuccess("");
     setSaveLoading(true);
 
     try {
-      const currentStudentNote = allClassNotes[selectedStudent.id];
-      const existingEkskul = currentStudentNote && Array.isArray(currentStudentNote.ekskul)
-        ? currentStudentNote.ekskul
-        : [];
+      const payload = buildSanitizedNotePayload(
+        targetStudent,
+        {
+          sakit,
+          izin,
+          alpa,
+          catatan,
+          spiritualUsaha,
+          spiritualProses,
+          spiritualCapaian,
+          spiritualDeskripsi,
+          sosialUsaha,
+          sosialProses,
+          sosialCapaian,
+          sosialDeskripsi,
+        },
+        allClassNotes
+      );
 
-      const payload = {
-        studentId: selectedStudent.id,
-        sakit: Number(sakit || 0),
-        izin: Number(izin || 0),
-        alpa: Number(alpa || 0),
-        catatan: catatan || "",
-        spiritualUsaha: spiritualUsaha || "B",
-        spiritualProses: spiritualProses || "B",
-        spiritualCapaian: spiritualCapaian || "B",
-        spiritualDeskripsi: spiritualDeskripsi || "",
-        sosialUsaha: sosialUsaha || "B",
-        sosialProses: sosialProses || "B",
-        sosialCapaian: sosialCapaian || "B",
-        sosialDeskripsi: sosialDeskripsi || "",
-        ekskul: existingEkskul,
-        updatedAt: new Date().toISOString()
-      };
+      // Keep local form fields synced with sanitized text
+      setCatatan(payload.catatan);
+      setSpiritualDeskripsi(payload.spiritualDeskripsi);
+      setSosialDeskripsi(payload.sosialDeskripsi);
 
       // Optimistic update
       setAllClassNotes(prev => ({
         ...prev,
-        [selectedStudent.id]: payload
+        [targetStudent.id]: payload
       }));
-      localStorage.setItem(`walikelas_draft_${selectedStudent.id}`, JSON.stringify(payload));
+      localStorage.setItem(`walikelas_draft_${targetStudent.id}`, JSON.stringify(payload));
 
       const response = await fetch("/api/walikelas/notes", {
         method: "POST",
@@ -488,7 +557,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       }
 
       setIsDirty(false);
-      setSuccess(`Data Presensi, Evaluasi Sikap & Catatan Wali Kelas untuk ${selectedStudent.name} berhasil disimpan!`);
+      setSuccess(`Data Presensi, Evaluasi Sikap & Catatan Wali Kelas untuk ${targetStudent.name} berhasil disimpan!`);
       onRefreshTrigger();
 
       setTimeout(() => setSuccess(""), 4000);
@@ -530,10 +599,11 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     if (!studentToDownload) return;
     setIsDownloadingSingleId(studentToDownload.id);
     try {
+      const effectiveNotes = getEffectiveNotesMap();
       const sGrades = grades.filter(
-        (g) => String(g.studentId).trim() === String(studentToDownload.id).trim()
+        (g) => g && String(g.studentId).trim() === String(studentToDownload.id).trim()
       );
-      const sNote = allClassNotes[studentToDownload.id] || {
+      const sNote = effectiveNotes[studentToDownload.id] || {
         sakit: 0,
         izin: 0,
         alpa: 0,
@@ -556,6 +626,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
         waliKelas: user,
         principal: raportSettings.principal,
         format: raportSettings.format,
+        allStudents: students,
       });
 
       setSuccess(`Rapor ${studentToDownload.name} berhasil diunduh dalam format PDF!`);
@@ -571,6 +642,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
 
   // Open ZIP Download Modal with all students selected by default
   const handleOpenZipModal = () => {
+    getEffectiveNotesMap();
     const ids = currentClassStudents.map((s) => s.id);
     setSelectedStudentIdsForZip(ids);
     setZipProgress({
@@ -614,6 +686,8 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       return;
     }
 
+    const effectiveNotes = getEffectiveNotesMap();
+
     setIsGeneratingZip(true);
     zipCancelRef.current = false;
     setZipProgress({
@@ -628,7 +702,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       const result = await downloadClassRaportZip({
         students: studentsToDownload,
         allGrades: grades,
-        allNotes: allClassNotes,
+        allNotes: effectiveNotes,
         waliKelas: user,
         principal: raportSettings.principal,
         format: raportSettings.format,
@@ -654,12 +728,15 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   };
 
   const studentGrades = selectedStudent
-    ? grades.filter((g) => String(g.studentId).trim() === String(selectedStudent.id).trim())
+    ? grades.filter((g) => g && String(g.studentId).trim() === String(selectedStudent.id).trim())
     : [];
   const gradesCount = studentGrades.length;
 
-  if (raportPrintTarget && selectedStudent) {
-    const studentNote = allClassNotes[selectedStudent.id] || {
+  if (raportPrintTarget) {
+    const targetGrades = grades.filter(
+      (g) => g && String(g.studentId).trim() === String(raportPrintTarget.id).trim()
+    );
+    const studentNote = allClassNotes[raportPrintTarget.id] || {
       sakit: 0,
       izin: 0,
       alpa: 0,
@@ -675,8 +752,8 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     };
     return (
       <PrintRaportView
-        student={selectedStudent}
-        grades={studentGrades}
+        student={raportPrintTarget}
+        grades={targetGrades}
         waliKelasNote={studentNote}
         waliKelas={user}
         allClassStudents={currentClassStudents}
@@ -803,9 +880,17 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
               const isSelected = selectedStudent?.id === s.id;
 
               return (
-                <button
+                <div
                   key={s.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleStudentSelect(s)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleStudentSelect(s);
+                    }
+                  }}
                   className={`w-full p-2.5 rounded-xl text-left text-xs transition flex flex-col gap-1 border-2 cursor-pointer ${
                     isSelected
                       ? "bg-[#0b291d] border-emerald-400 font-black text-white shadow-lg ring-2 ring-emerald-400/40"
@@ -816,6 +901,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                     <span className="font-black block truncate leading-tight text-white">{s.name}</span>
                     <div className="flex items-center gap-1">
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDownloadSingleStudent(s);
@@ -849,7 +935,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                       </span>
                     )}
                   </div>
-                </button>
+                </div>
               );
             })
           )}
@@ -929,7 +1015,10 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
 
                 {/* View / Print Full Raport */}
                 <button
-                  onClick={() => setRaportPrintTarget(selectedStudent)}
+                  onClick={() => {
+                    getEffectiveNotesMap();
+                    setRaportPrintTarget(selectedStudent);
+                  }}
                   className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow-lg border border-emerald-300 cursor-pointer"
                   id="view-raport-trigger"
                   title="Buka tampilan cetak & pratinjau rapor lengkap"
@@ -1316,8 +1405,16 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                 </div>
 
                 {(() => {
-                  const studentNote = allClassNotes[selectedStudent.id];
-                  const studentEkskuls: any[] = studentNote && Array.isArray(studentNote.ekskul) ? studentNote.ekskul : [];
+                  const cleanSid = String(selectedStudent.id).trim();
+                  const studentNote = allClassNotes[cleanSid] || allClassNotes[selectedStudent.id];
+                  const studentEkskuls: any[] = (
+                    studentNote && Array.isArray(studentNote.ekskul) ? studentNote.ekskul : []
+                  ).filter(
+                    (eks: any) =>
+                      eks &&
+                      eks.name &&
+                      (!eks.studentId || String(eks.studentId).trim() === cleanSid)
+                  );
 
                   if (studentEkskuls.length === 0) {
                     return (
@@ -1344,6 +1441,10 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                         const usahaVal = toLetter(eks.usaha, fallbackLetter);
                         const prosesVal = toLetter(eks.proses, fallbackLetter);
                         const capaianVal = toLetter(eks.capaian, fallbackLetter);
+                        const rawEkskulDesc = eks.description || eks.deskripsi || "";
+                        const safeEkskulDesc = rawEkskulDesc
+                          ? sanitizeTextForStudent(rawEkskulDesc, selectedStudent, students)
+                          : "";
 
                         return (
                           <div
@@ -1391,9 +1492,9 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                               </div>
                             </div>
 
-                            {(eks.description || eks.deskripsi) && (
+                            {safeEkskulDesc && (
                               <div className="text-[11px] text-slate-200 bg-[#090f1d] p-2 rounded-lg border border-[#203254] leading-relaxed italic">
-                                "{eks.description || eks.deskripsi}"
+                                "{safeEkskulDesc}"
                               </div>
                             )}
                           </div>

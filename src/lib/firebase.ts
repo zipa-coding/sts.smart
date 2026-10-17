@@ -597,17 +597,137 @@ export const firebaseApi = {
     const localNotes = (dbDataAny && typeof dbDataAny === 'object' && dbDataAny.walikelas_notes) ? { ...dbDataAny.walikelas_notes } : {};
     if (!db) return localNotes;
     try {
-      const snap = await withTimeout(getDocs(collection(db, "walikelas_notes")), 6000).catch(() => null);
-      if (snap && !snap.empty) {
-        const notes: any = { ...localNotes };
-        snap.docs.forEach(docSnap => {
-          notes[docSnap.id] = { ...notes[docSnap.id], ...docSnap.data() };
+      const [snap, ekskulBackupSnap, studentsList] = await Promise.all([
+        withTimeout(getDocs(collection(db, "walikelas_notes")), 8000).catch(() => null),
+        withTimeout(getDoc(doc(db, "settings", "ekskul_grades")), 5000).catch(() => null),
+        firebaseApi.getStudents().catch(() => [] as any[]),
+      ]);
+
+      const studentMap = new Map<string, any>();
+      if (Array.isArray(studentsList)) {
+        studentsList.forEach((s: any) => {
+          if (s && s.id) studentMap.set(String(s.id).trim(), s);
         });
-        if (dbDataAny) {
-          dbDataAny.walikelas_notes = notes;
-        }
-        return notes;
       }
+
+      const sanitizeStudentEkskuls = (rawList: any[], targetStudentId: string): any[] => {
+        if (!Array.isArray(rawList)) return [];
+        const cleanSid = String(targetStudentId).trim();
+        const targetStudent = studentMap.get(cleanSid);
+        const targetName = targetStudent?.name ? String(targetStudent.name).trim() : "";
+
+        return rawList
+          .filter((item: any) => {
+            if (!item || !item.name) return false;
+            // Reject any ekskul item that explicitly belongs to a different studentId
+            if (item.studentId && String(item.studentId).trim() !== "" && String(item.studentId).trim() !== cleanSid) {
+              return false;
+            }
+            return true;
+          })
+          .map((item: any) => {
+            let desc = String(item.description || item.deskripsi || "").trim();
+            if (desc && targetName && Array.isArray(studentsList) && studentsList.length > 0) {
+              const others = studentsList
+                .filter(
+                  (s: any) =>
+                    s &&
+                    s.name &&
+                    String(s.id || "").trim() !== cleanSid &&
+                    String(s.name).trim().toLowerCase() !== targetName.toLowerCase()
+                )
+                .sort((a: any, b: any) => String(b.name || "").trim().length - String(a.name || "").trim().length);
+
+              for (const other of others) {
+                const otherName = String(other.name).trim();
+                if (otherName.length < 3) continue;
+                const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                const regex = new RegExp(escaped, "gi");
+                if (regex.test(desc)) {
+                  desc = desc.replace(regex, targetName);
+                }
+              }
+            }
+            return {
+              ...item,
+              studentId: cleanSid,
+              studentName: targetName || item.studentName || "",
+              description: desc,
+            };
+          });
+      };
+
+      const notes: any = { ...localNotes };
+      if (snap && !snap.empty) {
+        snap.docs.forEach(docSnap => {
+          const sid = String(docSnap.id).trim();
+          const data = docSnap.data() || {};
+          const existingLocalEkskul = Array.isArray(notes[sid]?.ekskul) ? notes[sid].ekskul : [];
+          const cloudEkskul = Array.isArray(data.ekskul) ? data.ekskul : [];
+          const mergedEkskul = cloudEkskul.length > 0 ? cloudEkskul : existingLocalEkskul;
+          notes[sid] = {
+            ...notes[sid],
+            ...data,
+            studentId: sid,
+            ekskul: sanitizeStudentEkskuls(mergedEkskul, sid),
+          };
+        });
+      }
+
+      // Also merge from settings/ekskul_grades master backup so no ekskul grade is ever lost
+      if (ekskulBackupSnap && ekskulBackupSnap.exists()) {
+        const backupMap = ekskulBackupSnap.data()?.map;
+        if (backupMap && typeof backupMap === "object") {
+          for (const [sid, backupEkskulList] of Object.entries(backupMap)) {
+            const cleanSid = String(sid).trim();
+            if (!Array.isArray(backupEkskulList)) continue;
+            const sanitizedBackup = sanitizeStudentEkskuls(backupEkskulList, cleanSid);
+            if (!notes[cleanSid]) {
+              notes[cleanSid] = {
+                studentId: cleanSid,
+                sakit: 0,
+                izin: 0,
+                alpa: 0,
+                catatan: "",
+                spiritualUsaha: "B",
+                spiritualProses: "B",
+                spiritualCapaian: "B",
+                spiritualDeskripsi: "",
+                sosialUsaha: "B",
+                sosialProses: "B",
+                sosialCapaian: "B",
+                sosialDeskripsi: "",
+                ekskul: sanitizedBackup,
+              };
+            } else {
+              const currentEkskuls: any[] = Array.isArray(notes[cleanSid].ekskul) ? [...notes[cleanSid].ekskul] : [];
+              if (currentEkskuls.length === 0 && sanitizedBackup.length > 0) {
+                notes[cleanSid].ekskul = sanitizedBackup;
+              } else if (sanitizedBackup.length > 0) {
+                // Merge by ekskulId / name
+                for (const bItem of sanitizedBackup) {
+                  const idx = currentEkskuls.findIndex(
+                    (e: any) =>
+                      (bItem.ekskulId && e.ekskulId === bItem.ekskulId) ||
+                      (e.name && bItem.name && String(e.name).toLowerCase() === String(bItem.name).toLowerCase())
+                  );
+                  if (idx === -1) {
+                    currentEkskuls.push(bItem);
+                  } else if (bItem.updatedAt && (!currentEkskuls[idx].updatedAt || bItem.updatedAt > currentEkskuls[idx].updatedAt)) {
+                    currentEkskuls[idx] = bItem;
+                  }
+                }
+                notes[cleanSid].ekskul = sanitizeStudentEkskuls(currentEkskuls, cleanSid);
+              }
+            }
+          }
+        }
+      }
+
+      if (dbDataAny) {
+        dbDataAny.walikelas_notes = notes;
+      }
+      return notes;
     } catch (e) {
       console.warn("Failed to fetch walikelas_notes from firestore, using cached:", e);
     }
@@ -616,8 +736,35 @@ export const firebaseApi = {
   postWaliKelasNotes: async (body: any) => {
     const { studentId, sakit, izin, alpa, catatan, spiritualUsaha, spiritualProses, spiritualCapaian, spiritualDeskripsi, sosialUsaha, sosialProses, sosialCapaian, sosialDeskripsi, ekskul, updatedAt } = body;
     if (!studentId) throw new Error("ID Siswa wajib diisi.");
+    const cleanStudentId = String(studentId).trim();
+
+    // Preserve existing ekskul from Firestore or memory so Wali Kelas saving never wipes out Pembina Ekskul grades
+    let preservedEkskul: any[] = Array.isArray(ekskul) ? ekskul : [];
+    const memoryEkskul = dbDataAny?.walikelas_notes?.[cleanStudentId]?.ekskul;
+    if (preservedEkskul.length === 0 && Array.isArray(memoryEkskul) && memoryEkskul.length > 0) {
+      preservedEkskul = memoryEkskul;
+    }
+
+    if (db) {
+      const existingSnap = await withTimeout(getDoc(doc(db, "walikelas_notes", cleanStudentId)), 4000).catch(() => null);
+      if (existingSnap && existingSnap.exists()) {
+        const cloudEkskul = existingSnap.data()?.ekskul;
+        if (Array.isArray(cloudEkskul) && cloudEkskul.length > 0) {
+          // Always prefer cloudEkskul if local payload had empty ekskul or fewer items
+          if (preservedEkskul.length === 0 || cloudEkskul.length >= preservedEkskul.length) {
+            preservedEkskul = cloudEkskul;
+          }
+        }
+      }
+    }
+
+    // Filter out any foreign studentId from preservedEkskul
+    preservedEkskul = preservedEkskul
+      .filter((item: any) => item && item.name && (!item.studentId || String(item.studentId).trim() === cleanStudentId))
+      .map((item: any) => ({ ...item, studentId: cleanStudentId }));
+
     const note = {
-      studentId,
+      studentId: cleanStudentId,
       sakit: Number(sakit || 0),
       izin: Number(izin || 0),
       alpa: Number(alpa || 0),
@@ -630,17 +777,17 @@ export const firebaseApi = {
       sosialProses: sosialProses || "B",
       sosialCapaian: sosialCapaian || "B",
       sosialDeskripsi: sosialDeskripsi || "",
-      ekskul: Array.isArray(ekskul) ? ekskul : [],
+      ekskul: preservedEkskul,
       updatedAt: updatedAt || new Date().toISOString()
     };
 
     if (dbDataAny) {
       if (!dbDataAny.walikelas_notes) dbDataAny.walikelas_notes = {};
-      dbDataAny.walikelas_notes[studentId] = note;
+      dbDataAny.walikelas_notes[cleanStudentId] = note;
     }
 
     if (db) {
-      await withTimeout(setDoc(doc(db, "walikelas_notes", studentId), note), 6000).catch(err => {
+      await withTimeout(setDoc(doc(db, "walikelas_notes", cleanStudentId), note, { merge: true }), 6000).catch(err => {
         console.warn("Firestore setDoc walikelas_notes warning:", err);
       });
     }
@@ -1015,35 +1162,130 @@ export const firebaseApi = {
       return { success: true, count: 0 };
     }
 
+    // 1. Load all existing notes, ekskul backup map, and students once up-front
+    // so we NEVER overwrite a student's other ekskuls if a single read times out!
+    const [existingNotesMap, backupSnap, studentsList] = await Promise.all([
+      firebaseApi.getWaliKelasNotes().catch(() => ({} as Record<string, any>)),
+      withTimeout(getDoc(doc(db, "settings", "ekskul_grades")), 5000).catch(() => null),
+      firebaseApi.getStudents().catch(() => [] as any[]),
+    ]);
+
+    const studentMap = new Map<string, any>();
+    if (Array.isArray(studentsList)) {
+      studentsList.forEach((s: any) => {
+        if (s && s.id) studentMap.set(String(s.id).trim(), s);
+      });
+    }
+
+    const masterEkskulMap: Record<string, any[]> =
+      backupSnap && backupSnap.exists() && backupSnap.data()?.map && typeof backupSnap.data().map === "object"
+        ? { ...backupSnap.data().map }
+        : {};
+
+    const toLetter = (val: any, fallback = "B") => {
+      if (!val) return fallback;
+      const s = String(val).trim().toUpperCase();
+      if (s === "A" || s === "SANGAT BAIK" || s === "SB" || s.startsWith("A ") || s.startsWith("A(")) return "A";
+      if (s === "B" || s === "BAIK" || s.startsWith("B ") || s.startsWith("B(")) return "B";
+      if (s === "C" || s === "CUKUP" || s === "CB" || s.startsWith("C ") || s.startsWith("C(")) return "C";
+      if (s === "D" || s === "KURANG" || s === "KB" || s.startsWith("D ") || s.startsWith("D(")) return "D";
+      if (s.length === 1 && ["A", "B", "C", "D"].includes(s)) return s;
+      return fallback;
+    };
+
+    const sanitizeDescForStudent = (rawDesc: string, cleanStudentId: string, targetName: string): string => {
+      let desc = String(rawDesc || "").trim();
+      if (!desc || !targetName || !Array.isArray(studentsList) || studentsList.length === 0) return desc;
+      const others = studentsList
+        .filter(
+          (s: any) =>
+            s &&
+            s.name &&
+            String(s.id || "").trim() !== cleanStudentId &&
+            String(s.name).trim().toLowerCase() !== targetName.toLowerCase()
+        )
+        .sort((a: any, b: any) => String(b.name || "").trim().length - String(a.name || "").trim().length);
+
+      for (const other of others) {
+        const otherName = String(other.name).trim();
+        if (otherName.length < 3) continue;
+        const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(escaped, "gi");
+        if (regex.test(desc)) {
+          desc = desc.replace(regex, targetName);
+        }
+      }
+      return desc;
+    };
+
+    const docsToUpdate: Array<{ studentId: string; noteData: any }> = [];
+    const nowIso = new Date().toISOString();
+
     for (const item of gradesList) {
       const { studentId, ekskulId, name, type, usaha, proses, capaian, description, pembinaName, pembinaTeacherId, selected } = item;
       if (!studentId || !name) continue;
+      const cleanStudentId = String(studentId).trim();
+      const studentObj = studentMap.get(cleanStudentId);
+      const studentName = studentObj?.name ? String(studentObj.name).trim() : String(item.studentName || "").trim();
 
-      const noteRef = doc(db, "walikelas_notes", studentId);
-      const noteSnap = await withTimeout(getDoc(noteRef), 3000).catch(() => null);
-      let currentNote: any = {};
-      if (noteSnap && noteSnap.exists()) {
-        currentNote = noteSnap.data();
-      }
+      const currentNote: any = existingNotesMap[cleanStudentId] || {
+        studentId: cleanStudentId,
+        sakit: 0,
+        izin: 0,
+        alpa: 0,
+        catatan: "",
+        spiritualUsaha: "B",
+        spiritualProses: "B",
+        spiritualCapaian: "B",
+        spiritualDeskripsi: "",
+        sosialUsaha: "B",
+        sosialProses: "B",
+        sosialCapaian: "B",
+        sosialDeskripsi: "",
+        ekskul: [],
+      };
 
-      let currentEkskuls: any[] = Array.isArray(currentNote.ekskul) ? currentNote.ekskul : [];
+      // Filter current ekskuls to strictly this studentId
+      let currentEkskuls: any[] = (Array.isArray(currentNote.ekskul) ? [...currentNote.ekskul] : []).filter(
+        (e: any) => e && e.name && (!e.studentId || String(e.studentId).trim() === cleanStudentId)
+      );
+
+      const matchesTargetEkskul = (e: any) =>
+        (ekskulId && e.ekskulId === ekskulId) ||
+        (e.name && String(e.name).trim().toLowerCase() === String(name).trim().toLowerCase());
+
+      const existIdx = currentEkskuls.findIndex(matchesTargetEkskul);
+
       if (selected === false) {
-        currentEkskuls = currentEkskuls.filter((e: any) => e.name !== name && e.ekskulId !== ekskulId);
+        // If student wasn't enrolled in this ekskul anyway, skip writing to Firestore for this student!
+        if (existIdx === -1) {
+          masterEkskulMap[cleanStudentId] = currentEkskuls;
+          continue;
+        }
+        currentEkskuls = currentEkskuls.filter((e: any) => !matchesTargetEkskul(e));
       } else {
-        const existIdx = currentEkskuls.findIndex((e: any) => e.name === name || (ekskulId && e.ekskulId === ekskulId));
+        const fallbackL = toLetter(capaian, "B");
+        const uL = toLetter(usaha, fallbackL);
+        const pL = toLetter(proses, fallbackL);
+        const cL = toLetter(capaian, fallbackL);
+        const safeDesc = sanitizeDescForStudent(description || "", cleanStudentId, studentName);
+
         const newEkskulEntry = {
+          studentId: cleanStudentId,
+          studentName,
           ekskulId: ekskulId || "",
-          name,
+          name: String(name).trim(),
           type: type || "Pilihan",
-          usaha: usaha || "B",
-          proses: proses || "B",
-          capaian: capaian || "B",
-          predicate: capaian || "Baik",
-          description: description || "",
+          usaha: uL,
+          proses: pL,
+          capaian: cL,
+          predicate: cL,
+          description: safeDesc,
           pembinaName: pembinaName || "",
           pembinaTeacherId: pembinaTeacherId || "",
-          updatedAt: new Date().toISOString()
+          updatedAt: nowIso,
         };
+
         if (existIdx !== -1) {
           currentEkskuls[existIdx] = { ...currentEkskuls[existIdx], ...newEkskulEntry };
         } else {
@@ -1051,9 +1293,54 @@ export const firebaseApi = {
         }
       }
 
-      await withTimeout(setDoc(noteRef, { ...currentNote, ekskul: currentEkskuls }, { merge: true }), 3000);
+      const updatedNote = {
+        ...currentNote,
+        studentId: cleanStudentId,
+        ekskul: currentEkskuls,
+        updatedAt: nowIso,
+      };
+
+      existingNotesMap[cleanStudentId] = updatedNote;
+      masterEkskulMap[cleanStudentId] = currentEkskuls;
+      if (dbDataAny) {
+        if (!dbDataAny.walikelas_notes) dbDataAny.walikelas_notes = {};
+        dbDataAny.walikelas_notes[cleanStudentId] = updatedNote;
+      }
+
+      docsToUpdate.push({ studentId: cleanStudentId, noteData: updatedNote });
     }
-    return { success: true, count: gradesList.length };
+
+    // 2. Write updated student notes in parallel batches of 15 for fast, reliable execution
+    const BATCH_SIZE = 15;
+    for (let i = 0; i < docsToUpdate.length; i += BATCH_SIZE) {
+      const chunk = docsToUpdate.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        chunk.map(({ studentId: sid, noteData }) =>
+          withTimeout(setDoc(doc(db!, "walikelas_notes", sid), noteData, { merge: true }), 6000).catch((err) => {
+            console.warn(`Failed to save ekskul note for ${sid}:`, err);
+          })
+        )
+      );
+    }
+
+    // 3. Also save master ekskul backup in settings/ekskul_grades (allowed by firestore.rules settings/{settingId})
+    await withTimeout(
+      setDoc(
+        doc(db, "settings", "ekskul_grades"),
+        {
+          principalName: "Ari Gunawan, S.Kom.",
+          principalNip: "",
+          map: masterEkskulMap,
+          updatedAt: nowIso,
+        },
+        { merge: true }
+      ),
+      6000
+    ).catch((err) => {
+      console.warn("Failed to save master ekskul backup:", err);
+    });
+
+    return { success: true, count: docsToUpdate.length, notes: existingNotesMap };
   },
 
   // 10. GET, POST, PUT, DELETE /api/halaqoh (Cloud Firestore Persistence)

@@ -199,6 +199,76 @@ export const generateDescription = (g: Grade | undefined, studentName: string) =
   return desc.trim();
 };
 
+/**
+ * Ensures any narrative description or note strictly belongs to the target student
+ * and never contains another student's name due to copy-paste or stale state.
+ */
+export function sanitizeTextForStudent(
+  text: string | undefined | null,
+  targetStudent: { id?: string; name?: string } | null | undefined,
+  allStudents?: { id?: string; name?: string }[],
+  useFirstNameInFallback: boolean = false
+): string {
+  if (!text || typeof text !== "string") return "";
+  let result = text.trim();
+  if (!result || !targetStudent || !targetStudent.name) return result;
+
+  const targetFullName = targetStudent.name.trim();
+  const targetFirstName = targetFullName.split(/\s+/)[0] || targetFullName;
+  const replacementName = useFirstNameInFallback ? targetFirstName : targetFullName;
+
+  // 1. Replace any other registered student's full name (sorted longest first to avoid partial token issues)
+  if (Array.isArray(allStudents) && allStudents.length > 0) {
+    const others = allStudents
+      .filter(
+        (s) =>
+          s &&
+          s.name &&
+          String(s.id || "").trim() !== String(targetStudent.id || "").trim() &&
+          s.name.trim().toLowerCase() !== targetFullName.toLowerCase()
+      )
+      .sort((a, b) => (b.name?.trim().length || 0) - (a.name?.trim().length || 0));
+
+    for (const other of others) {
+      const otherName = other.name!.trim();
+      if (otherName.length < 3) continue;
+      const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escaped, "gi");
+      if (regex.test(result)) {
+        result = result.replace(regex, replacementName);
+      }
+    }
+  }
+
+  // 2. Pattern-based guard for standard raport narrative templates ("ananda [Nama] dalam pembelajaran / menunjukkan / dll.")
+  const narrativePattern =
+    /(\bananda\s+)([^\.,;]+?)(?=\s+(?:dalam pembelajaran|menunjukkan|mudah bergaul|memiliki kepribadian|cukup baik|cukup kooperatif|memerlukan|terus meningkatkan|saat ini capaian pembelajaran))/gi;
+
+  result = result.replace(narrativePattern, (fullMatch, prefix, capturedName) => {
+    const cleanCaptured = String(capturedName || "").trim();
+    if (!cleanCaptured) return fullMatch;
+    if (
+      cleanCaptured.toLowerCase() === targetFullName.toLowerCase() ||
+      (useFirstNameInFallback && cleanCaptured.toLowerCase() === targetFirstName.toLowerCase())
+    ) {
+      return fullMatch;
+    }
+    return `${prefix}${replacementName}`;
+  });
+
+  // 3. Pattern-based guard for homeroom high-achievement template ("pencapaian luar biasa ananda [Nama].")
+  const achievementPattern = /(\bpencapaian luar biasa ananda\s+)([^\.]+?)(\.)/gi;
+  result = result.replace(achievementPattern, (fullMatch, prefix, capturedName, dot) => {
+    const cleanCaptured = String(capturedName || "").trim();
+    if (!cleanCaptured || cleanCaptured.toLowerCase() === targetFullName.toLowerCase()) {
+      return fullMatch;
+    }
+    return `${prefix}${targetFullName}${dot}`;
+  });
+
+  return result;
+}
+
 export function getTransparentWatermarkBase64(
   url: string,
   opacity: number = 0.05
@@ -239,6 +309,7 @@ export function buildStudentRaportHtml({
   waliKelas,
   principal,
   format,
+  allStudents,
 }: {
   student: Student;
   grades: Grade[];
@@ -246,6 +317,7 @@ export function buildStudentRaportHtml({
   waliKelas: Teacher | null;
   principal: RaportPrincipalSettings;
   format: RaportFormatSettings;
+  allStudents?: Student[];
 }): string {
   const note = waliKelasNote || {
     sakit: 0,
@@ -263,8 +335,14 @@ export function buildStudentRaportHtml({
     ekskul: [],
   };
 
+  // Strictly match both student.id AND subject so another student's grade can never leak in
   const getSubjectGradeObj = (sub: string) => {
-    return (grades || []).find((x) => isSameSubject(x.subject, sub));
+    return (grades || []).find(
+      (x) =>
+        x &&
+        String(x.studentId).trim() === String(student.id).trim() &&
+        isSameSubject(x.subject, sub)
+    );
   };
 
   const getSubjectUsaha = (sub: string) => {
@@ -297,7 +375,9 @@ export function buildStudentRaportHtml({
   const getSubjectDescription = (sub: string) => {
     const g = getSubjectGradeObj(sub);
     if (g) {
-      if (g.deskripsi && g.deskripsi.trim() !== "") return g.deskripsi.trim();
+      if (g.deskripsi && g.deskripsi.trim() !== "") {
+        return sanitizeTextForStudent(g.deskripsi.trim(), student, allStudents);
+      }
       const generated = generateDescription(g, student.name);
       if (generated) return generated;
     }
@@ -577,7 +657,11 @@ export function buildStudentRaportHtml({
           </tr>
           <tr>
             <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-              <strong>Deskripsi:</strong> ${note.spiritualDeskripsi || `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`}
+              <strong>Deskripsi:</strong> ${
+                note.spiritualDeskripsi
+                  ? sanitizeTextForStudent(note.spiritualDeskripsi, student, allStudents)
+                  : `Alhamdulillah ananda ${student.name} menunjukkan perkembangan spiritual yang baik. Ia telah memahami tata cara beribadah harian dengan rajin serta menjaga adab ketertiban.`
+              }
             </td>
           </tr>
         </table>
@@ -613,7 +697,11 @@ export function buildStudentRaportHtml({
           </tr>
           <tr>
             <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-              <strong>Deskripsi:</strong> ${note.sosialDeskripsi || `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`}
+              <strong>Deskripsi:</strong> ${
+                note.sosialDeskripsi
+                  ? sanitizeTextForStudent(note.sosialDeskripsi, student, allStudents)
+                  : `Alhamdulillah ananda ${student.name} mudah bergaul, memiliki rasa empati tinggi, serta sopan santun dalam berkata kata kepada guru maupun sesama kawan.`
+              }
             </td>
           </tr>
         </table>
@@ -629,9 +717,13 @@ export function buildStudentRaportHtml({
       ${KEISLAMAN_SUBJECTS.map((sub, idx) => renderSubjectBlock(sub, idx)).join("")}
 
       <h4 class="pdf-heading">E. Ekstrakurikuler dan Keterampilan</h4>
-      ${
-        ((note as any).ekskul || []).length === 0
-          ? `
+      ${(() => {
+        const cleanSid = String(student.id).trim();
+        const validEkskuls = (((note as any).ekskul || []) as any[]).filter(
+          (e: any) => e && e.name && (!e.studentId || String(e.studentId).trim() === cleanSid)
+        );
+        if (validEkskuls.length === 0) {
+          return `
         <div class="pdf-table-block">
           <table class="pdf-box-table">
             <tr>
@@ -641,11 +733,16 @@ export function buildStudentRaportHtml({
             </tr>
           </table>
         </div>
-      `
-          : ((note as any).ekskul || [])
-              .map((e: any, idx: number) => {
-                const gradesE = getEkskulGrades(e);
-                return `
+      `;
+        }
+        return validEkskuls
+          .map((e: any, idx: number) => {
+            const gradesE = getEkskulGrades(e);
+            const rawEkskulDesc = e.description || e.deskripsi || "";
+            const safeEkskulDesc = rawEkskulDesc
+              ? sanitizeTextForStudent(rawEkskulDesc, student, allStudents)
+              : "-";
+            return `
           <div class="pdf-table-block">
             <table class="pdf-box-table">
               <tr>
@@ -675,22 +772,22 @@ export function buildStudentRaportHtml({
               </tr>
               <tr>
                 <td colspan="4" style="padding: 3.5px 6px 4.5px 6px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-                  <strong>Deskripsi:</strong> ${e.description || e.deskripsi || "-"}
+                  <strong>Deskripsi:</strong> ${safeEkskulDesc}
                 </td>
               </tr>
             </table>
           </div>
         `;
               })
-              .join("")
-      }
+              .join("");
+      })()}
 
       <h4 class="pdf-heading">F. Saran-Saran</h4>
       <div class="pdf-table-block">
         <table class="pdf-box-table">
           <tr>
             <td style="padding: 5px 8px 6px 8px; font-size: ${format.descFontSize || "8.8pt"}; text-align: justify; line-height: 1.35;">
-              ${note.catatan || "-"}
+              ${note.catatan ? sanitizeTextForStudent(note.catatan, student, allStudents) : "-"}
             </td>
           </tr>
         </table>
@@ -761,6 +858,7 @@ export async function generateStudentRaportPdfBlob({
   principal,
   format,
   watermarkBase64,
+  allStudents,
 }: {
   student: Student;
   grades: Grade[];
@@ -769,6 +867,7 @@ export async function generateStudentRaportPdfBlob({
   principal: RaportPrincipalSettings;
   format: RaportFormatSettings;
   watermarkBase64?: string;
+  allStudents?: Student[];
 }): Promise<Blob> {
   const runner = await getHtml2PdfRunner();
 
@@ -777,8 +876,20 @@ export async function generateStudentRaportPdfBlob({
     wmBase64 = await getTransparentWatermarkBase64(logoUrl, format.watermarkOpacity || 0.05);
   }
 
-  // Create isolated off-screen wrapper
+  // Strictlyfilter grades to this exact student ID
+  const studentOnlyGrades = (grades || []).filter(
+    (g) => g && String(g.studentId).trim() === String(student.id).trim()
+  );
+
+  // Clean up any stale off-screen wrappers before creating a new isolated one
+  document
+    .querySelectorAll(".pdf-isolated-offscreen-wrapper")
+    .forEach((el) => el.parentNode?.removeChild(el));
+
+  // Create isolated off-screen wrapper dedicated solely to this student
   const wrapper = document.createElement("div");
+  wrapper.className = "pdf-isolated-offscreen-wrapper";
+  wrapper.setAttribute("data-student-id", String(student.id));
   wrapper.style.position = "fixed";
   wrapper.style.left = "-9999px";
   wrapper.style.top = "-9999px";
@@ -795,11 +906,12 @@ export async function generateStudentRaportPdfBlob({
 
   pdfContainer.innerHTML = buildStudentRaportHtml({
     student,
-    grades,
+    grades: studentOnlyGrades,
     waliKelasNote,
     waliKelas,
     principal,
     format,
+    allStudents,
   });
 
   wrapper.appendChild(pdfContainer);
@@ -872,6 +984,7 @@ export async function downloadSingleStudentRaportPdf({
   principal,
   format,
   watermarkBase64,
+  allStudents,
 }: {
   student: Student;
   grades: Grade[];
@@ -880,6 +993,7 @@ export async function downloadSingleStudentRaportPdf({
   principal: RaportPrincipalSettings;
   format: RaportFormatSettings;
   watermarkBase64?: string;
+  allStudents?: Student[];
 }): Promise<void> {
   const blob = await generateStudentRaportPdfBlob({
     student,
@@ -889,6 +1003,7 @@ export async function downloadSingleStudentRaportPdf({
     principal,
     format,
     watermarkBase64,
+    allStudents,
   });
 
   const safeName = student.name.trim().replace(/[/\\?%*:|"<>]/g, "_");
@@ -953,7 +1068,7 @@ export async function downloadClassRaportZip({
 
     const currentStudent = students[i];
     const sGrades = (allGrades || []).filter(
-      (g) => String(g.studentId).trim() === String(currentStudent.id).trim()
+      (g) => g && String(g.studentId).trim() === String(currentStudent.id).trim()
     );
     const sNote = allNotes[currentStudent.id] || {
       sakit: 0,
@@ -988,6 +1103,7 @@ export async function downloadClassRaportZip({
       principal,
       format,
       watermarkBase64,
+      allStudents: students,
     });
 
     const numPrefix = String(i + 1).padStart(2, "0");
