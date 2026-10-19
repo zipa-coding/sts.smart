@@ -3,6 +3,13 @@ import { Student, Teacher, SUBJECT_LIST } from "../types";
 import {
   SemesterType,
   HasilHitungSiswa,
+  KonfigurasiRumus,
+  ModeRataKomponen,
+  PerlakuanKosongUjian,
+  DEFAULT_KONFIGURASI_RUMUS,
+  normalizeKonfigurasiRumus,
+  formatRumusNilaiAkhirText,
+  formatRumusRataKomponenLabel,
   hitungAkumulasiSiswa,
   hitungLeggerSiswa,
   hitungRingkasanKelas,
@@ -44,6 +51,13 @@ import {
   Search,
   Info,
   RotateCcw,
+  Calculator,
+  Lock,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Pin,
 } from "lucide-react";
 
 interface AkumulasiNilaiPanelProps {
@@ -88,6 +102,7 @@ export default function AkumulasiNilaiPanel({
   const [focusedBab, setFocusedBab] = useState<number | "all">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showSettingsPanel, setShowSettingsPanel] = useState<boolean>(false);
+  const [showFormulaPanel, setShowFormulaPanel] = useState<boolean>(false);
   const [paperSize, setPaperSize] = useState<PaperSizeOption>("F4");
   const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
@@ -129,6 +144,45 @@ export default function AkumulasiNilaiPanel({
 
   // Refs for keyboard navigation across spreadsheet cells: key = `${rowIdx}_${colIdx}`
   const cellInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+
+  // Refs & states for horizontal scroll controls (Geser Kanan - Kiri)
+  const spreadsheetScrollRef = useRef<HTMLDivElement | null>(null);
+  const leggerScrollRef = useRef<HTMLDivElement | null>(null);
+  const [scrollPos, setScrollPos] = useState<number>(0);
+  const [maxScrollPos, setMaxScrollPos] = useState<number>(0);
+  const [pinNilaiRapor, setPinNilaiRapor] = useState<boolean>(false);
+
+  const syncScrollMetrics = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const max = Math.max(0, el.scrollWidth - el.clientWidth);
+    setScrollPos(Math.round(el.scrollLeft));
+    setMaxScrollPos(Math.round(max));
+  }, []);
+
+  const scrollHorizontalBy = (delta: number) => {
+    const activeEl =
+      activeSubView === "spreadsheet"
+        ? spreadsheetScrollRef.current
+        : leggerScrollRef.current;
+    if (!activeEl) return;
+    activeEl.scrollBy({ left: delta, behavior: "smooth" });
+  };
+
+  const scrollHorizontalTo = (target: "start" | "end" | number) => {
+    const activeEl =
+      activeSubView === "spreadsheet"
+        ? spreadsheetScrollRef.current
+        : leggerScrollRef.current;
+    if (!activeEl) return;
+    if (target === "start") {
+      activeEl.scrollTo({ left: 0, behavior: "smooth" });
+    } else if (target === "end") {
+      activeEl.scrollTo({ left: activeEl.scrollWidth, behavior: "smooth" });
+    } else {
+      activeEl.scrollTo({ left: target, behavior: "auto" });
+      setScrollPos(target);
+    }
+  };
 
   // Available subjects based on role (Admin: all subjects; Guru: their assigned subject)
   const availableSubjects = useMemo<string[]>(() => {
@@ -335,6 +389,17 @@ export default function AkumulasiNilaiPanel({
     return [focusedBab];
   }, [focusedBab, jumlahBab, activeBabNumbers]);
 
+  useEffect(() => {
+    const activeEl =
+      activeSubView === "spreadsheet"
+        ? spreadsheetScrollRef.current
+        : leggerScrollRef.current;
+    syncScrollMetrics(activeEl);
+    const onResize = () => syncScrollMetrics(activeEl);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [activeSubView, displayedBabNumbers, filteredStudents.length, syncScrollMetrics]);
+
   // Ordered input columns for keyboard navigation & Excel multi-cell paste
   // Per bab: T, SH, P (3 input columns per bab), followed by STS, SAT
   const inputColumns = useMemo<InputColumnDescriptor[]>(() => {
@@ -350,6 +415,11 @@ export default function AkumulasiNilaiPanel({
     return cols;
   }, [jumlahBab]);
 
+  const activeRumus = useMemo<KonfigurasiRumus>(
+    () => normalizeKonfigurasiRumus(docData.rumus),
+    [docData.rumus]
+  );
+
   // Real-time calculation for every student in the class
   const hasilPerSiswaMap = useMemo<Record<string, HasilHitungSiswa>>(() => {
     const map: Record<string, HasilHitungSiswa> = {};
@@ -357,12 +427,20 @@ export default function AkumulasiNilaiPanel({
       jumlahBab,
       cakupanSTS: docData.cakupanSTS,
       cakupanSAS: docData.cakupanSAS,
+      rumus: activeRumus,
     };
     for (const s of classStudents) {
       map[s.id] = hitungAkumulasiSiswa(docData.siswa[s.id], config);
     }
     return map;
-  }, [classStudents, docData.siswa, jumlahBab, docData.cakupanSTS, docData.cakupanSAS]);
+  }, [
+    classStudents,
+    docData.siswa,
+    jumlahBab,
+    docData.cakupanSTS,
+    docData.cakupanSAS,
+    activeRumus,
+  ]);
 
   // Class summary statistics
   const ringkasanKelas = useMemo(() => {
@@ -686,6 +764,21 @@ export default function AkumulasiNilaiPanel({
     }
   };
 
+  // Update partial formula configuration (KonfigurasiRumus)
+  const updateRumusConfig = (partialRumus: Partial<KonfigurasiRumus>) => {
+    const mergedRumus = normalizeKonfigurasiRumus({
+      ...activeRumus,
+      ...partialRumus,
+    });
+    void updateMetadataConfig({ rumus: mergedRumus });
+  };
+
+  const resetDefaultRumus = () => {
+    void updateMetadataConfig({
+      rumus: { ...DEFAULT_KONFIGURASI_RUMUS },
+    });
+  };
+
   // Export to Excel (.xlsx) with live formulas
   const handleExportExcel = async () => {
     setIsExportingExcel(true);
@@ -845,6 +938,20 @@ export default function AkumulasiNilaiPanel({
               )}
             </div>
 
+            {/* Pengaturan Rumus Perhitungan Nilai Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowFormulaPanel((prev) => !prev)}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold border transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                showFormulaPanel
+                  ? "bg-amber-600 text-white border-amber-400"
+                  : "bg-[#131f38] text-amber-300 border-amber-500/40 hover:bg-[#1a2c4a]"
+              }`}
+            >
+              <Calculator className="w-3.5 h-3.5" />
+              <span>Pengaturan Rumus Nilai</span>
+            </button>
+
             {/* Settings Toggle Button */}
             <button
               type="button"
@@ -990,6 +1097,406 @@ export default function AkumulasiNilaiPanel({
             </select>
           </div>
         </div>
+
+        {/* Panel Pengaturan Rumus Perhitungan Nilai */}
+        {showFormulaPanel && (
+          <div className="bg-[#10192d] border border-amber-500/40 rounded-xl p-4 md:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1e3152] pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-amber-300 flex items-center gap-2">
+                  <Calculator className="w-4 h-4" />
+                  <span>Pengaturan Rumus Perhitungan Nilai</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Atur rumus Rata-rata Tugas, Rata-rata Sumatif Harian, Rata-rata Praktek, serta rumus Nilai Akhir Siswa. Nilai STS &amp; SAT merupakan nilai murni.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={resetDefaultRumus}
+                className="px-3 py-1.5 rounded-lg bg-[#162440] hover:bg-[#1e3156] border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer self-start"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset ke Rumus Standar</span>
+              </button>
+            </div>
+
+            {/* 1. Rumus Rata-rata Tugas, Sumatif Harian, dan Praktek */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              {/* Rata-rata Tugas (Rata T) */}
+              <div className="bg-[#0c1322] border border-[#223559] rounded-lg p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-sky-300">
+                    1. Rumus Rata-Rata Tugas (Rata T)
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-500/30">
+                    Tugas (T)
+                  </span>
+                </div>
+                <select
+                  value={activeRumus.modeRataT}
+                  onChange={(e) =>
+                    updateRumusConfig({
+                      modeRataT: e.target.value as ModeRataKomponen,
+                    })
+                  }
+                  className="w-full bg-[#131f38] border border-[#253e66] rounded-lg px-2.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-sky-400"
+                >
+                  <option value="bab_terisi">
+                    Jumlah Nilai Tugas ÷ Jumlah Bab yang Diisi (Default)
+                  </option>
+                  <option value="semua_bab_cakupan">
+                    Jumlah Nilai Tugas ÷ Total Bab Cakupan ({docData.cakupanSAS.length} Bab)
+                  </option>
+                  <option value="pembagi_tetap">
+                    Jumlah Nilai Tugas ÷ Pembagi Tetap Pilihan Guru
+                  </option>
+                </select>
+                {activeRumus.modeRataT === "pembagi_tetap" && (
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <span className="text-[11px] text-slate-300">
+                      Dibagi dengan jumlah bab tetap:
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={activeRumus.pembagiTetapT}
+                      onChange={(e) =>
+                        updateRumusConfig({
+                          pembagiTetapT: Math.max(1, Math.min(10, Number(e.target.value) || 1)),
+                        })
+                      }
+                      className="w-16 bg-[#131f38] border border-sky-400/50 rounded px-2 py-1 text-center font-mono text-xs text-white"
+                    />
+                  </div>
+                )}
+                <div className="text-[11px] font-mono text-slate-400 bg-[#111c33] rounded px-2.5 py-1.5 border border-[#1e2f50]">
+                  Rumus: <strong className="text-sky-200">{formatRumusRataKomponenLabel("Tugas (T)", activeRumus.modeRataT, activeRumus.pembagiTetapT, docData.cakupanSAS.length)}</strong>
+                </div>
+              </div>
+
+              {/* Rata-rata Sumatif Harian (Rata SH) */}
+              <div className="bg-[#0c1322] border border-[#223559] rounded-lg p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-teal-300">
+                    2. Rumus Rata-Rata Sumatif Harian (Rata SH)
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-500/30">
+                    Sumatif (SH)
+                  </span>
+                </div>
+                <select
+                  value={activeRumus.modeRataSH}
+                  onChange={(e) =>
+                    updateRumusConfig({
+                      modeRataSH: e.target.value as ModeRataKomponen,
+                    })
+                  }
+                  className="w-full bg-[#131f38] border border-[#253e66] rounded-lg px-2.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-teal-400"
+                >
+                  <option value="bab_terisi">
+                    Jumlah Nilai SH ÷ Jumlah Bab yang Diisi (Default)
+                  </option>
+                  <option value="semua_bab_cakupan">
+                    Jumlah Nilai SH ÷ Total Bab Cakupan ({docData.cakupanSAS.length} Bab)
+                  </option>
+                  <option value="pembagi_tetap">
+                    Jumlah Nilai SH ÷ Pembagi Tetap Pilihan Guru
+                  </option>
+                </select>
+                {activeRumus.modeRataSH === "pembagi_tetap" && (
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <span className="text-[11px] text-slate-300">
+                      Dibagi dengan jumlah bab tetap:
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={activeRumus.pembagiTetapSH}
+                      onChange={(e) =>
+                        updateRumusConfig({
+                          pembagiTetapSH: Math.max(1, Math.min(10, Number(e.target.value) || 1)),
+                        })
+                      }
+                      className="w-16 bg-[#131f38] border border-teal-400/50 rounded px-2 py-1 text-center font-mono text-xs text-white"
+                    />
+                  </div>
+                )}
+                <div className="text-[11px] font-mono text-slate-400 bg-[#111c33] rounded px-2.5 py-1.5 border border-[#1e2f50]">
+                  Rumus: <strong className="text-teal-200">{formatRumusRataKomponenLabel("SH", activeRumus.modeRataSH, activeRumus.pembagiTetapSH, docData.cakupanSAS.length)}</strong>
+                </div>
+              </div>
+
+              {/* Rata-rata Praktek (Rata P) */}
+              <div className="bg-[#0c1322] border border-[#223559] rounded-lg p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-300">
+                    3. Rumus Rata-Rata Praktek (Rata P)
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                    Praktek (P)
+                  </span>
+                </div>
+                <select
+                  value={activeRumus.modeRataP}
+                  onChange={(e) =>
+                    updateRumusConfig({
+                      modeRataP: e.target.value as ModeRataKomponen,
+                    })
+                  }
+                  className="w-full bg-[#131f38] border border-[#253e66] rounded-lg px-2.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-400"
+                >
+                  <option value="bab_terisi">
+                    Jumlah Nilai Praktek ÷ Jumlah Bab yang Diisi (Default)
+                  </option>
+                  <option value="semua_bab_cakupan">
+                    Jumlah Nilai Praktek ÷ Total Bab Cakupan ({docData.cakupanSAS.length} Bab)
+                  </option>
+                  <option value="pembagi_tetap">
+                    Jumlah Nilai Praktek ÷ Pembagi Tetap Pilihan Guru
+                  </option>
+                </select>
+                {activeRumus.modeRataP === "pembagi_tetap" && (
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <span className="text-[11px] text-slate-300">
+                      Dibagi dengan jumlah bab tetap:
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={activeRumus.pembagiTetapP}
+                      onChange={(e) =>
+                        updateRumusConfig({
+                          pembagiTetapP: Math.max(1, Math.min(10, Number(e.target.value) || 1)),
+                        })
+                      }
+                      className="w-16 bg-[#131f38] border border-emerald-400/50 rounded px-2 py-1 text-center font-mono text-xs text-white"
+                    />
+                  </div>
+                )}
+                <div className="text-[11px] font-mono text-slate-400 bg-[#111c33] rounded px-2.5 py-1.5 border border-[#1e2f50]">
+                  Rumus: <strong className="text-emerald-200">{formatRumusRataKomponenLabel("Praktek (P)", activeRumus.modeRataP, activeRumus.pembagiTetapP, docData.cakupanSAS.length)}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Keterangan Nilai Murni STS & SAT */}
+            <div className="bg-[#0c1322] border border-[#223559] rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <div className="text-xs font-bold text-white">
+                    4. Nilai STS &amp; Nilai SAT — Nilai Murni (Tidak Ada Rumus)
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    Nilai <strong className="text-amber-300">STS (Sumatif Tengah Semester)</strong> dan{" "}
+                    <strong className="text-amber-300">SAT (Sumatif Akhir Semester)</strong> merupakan{" "}
+                    <strong>Nilai Murni</strong> hasil ujian (0–100) yang diinput langsung oleh guru tanpa rumus rata-rata.
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-md bg-amber-950/80 border border-amber-500/40 text-amber-300 text-[11px] font-mono font-bold whitespace-nowrap self-start sm:self-center">
+                STS &amp; SAT = Nilai Murni
+              </span>
+            </div>
+
+            {/* 3. Pengaturan Rumus Nilai Akhir Siswa */}
+            <div className="bg-[#0c1322] border border-amber-500/40 rounded-lg p-4 space-y-3.5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-bold text-amber-300">
+                    5. Rumus Nilai Akhir Siswa
+                  </div>
+                  <div className="text-[11px] text-slate-300 mt-0.5">
+                    Rumus standar: <strong className="text-white font-mono">((2 × Rata-rata Sumatif Harian) + Rata-rata Tugas + Nilai SAT + Nilai STS) / 5</strong>
+                  </div>
+                </div>
+                <div className="px-3 py-1.5 rounded-lg bg-[#162742] border border-amber-400/40 text-xs font-mono font-bold text-amber-200">
+                  Nilai Akhir = {formatRumusNilaiAkhirText(activeRumus)}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    Bobot Rata SH
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    step="0.5"
+                    value={activeRumus.bobotRataSH}
+                    onChange={(e) =>
+                      updateRumusConfig({
+                        bobotRataSH: Math.max(0, Number(e.target.value) || 0),
+                      })
+                    }
+                    className="w-full bg-[#131f38] border border-[#2c4878] rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-white text-center focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="block text-[10px] text-slate-400 mt-0.5 text-center">
+                    Default: 2× Rata SH
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    Bobot Rata Tugas (T)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    step="0.5"
+                    value={activeRumus.bobotRataT}
+                    onChange={(e) =>
+                      updateRumusConfig({
+                        bobotRataT: Math.max(0, Number(e.target.value) || 0),
+                      })
+                    }
+                    className="w-full bg-[#131f38] border border-[#2c4878] rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-white text-center focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="block text-[10px] text-slate-400 mt-0.5 text-center">
+                    Default: 1× Rata Tugas
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    Bobot Nilai SAT (Murni)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    step="0.5"
+                    value={activeRumus.bobotSAT}
+                    onChange={(e) =>
+                      updateRumusConfig({
+                        bobotSAT: Math.max(0, Number(e.target.value) || 0),
+                      })
+                    }
+                    className="w-full bg-[#131f38] border border-[#2c4878] rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-white text-center focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="block text-[10px] text-slate-400 mt-0.5 text-center">
+                    Default: 1× Nilai SAT
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    Bobot Nilai STS (Murni)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    step="0.5"
+                    value={activeRumus.bobotSTS}
+                    onChange={(e) =>
+                      updateRumusConfig({
+                        bobotSTS: Math.max(0, Number(e.target.value) || 0),
+                      })
+                    }
+                    className="w-full bg-[#131f38] border border-[#2c4878] rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-white text-center focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="block text-[10px] text-slate-400 mt-0.5 text-center">
+                    Default: 1× Nilai STS
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    Bobot Rata Praktek (P)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    step="0.5"
+                    value={activeRumus.bobotRataP}
+                    onChange={(e) =>
+                      updateRumusConfig({
+                        bobotRataP: Math.max(0, Number(e.target.value) || 0),
+                      })
+                    }
+                    className="w-full bg-[#131f38] border border-[#2c4878] rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-white text-center focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="block text-[10px] text-slate-400 mt-0.5 text-center">
+                    Default: 0 (Tidak Ikut)
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-amber-300 mb-1">
+                    Angka Pembagi (/ N)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={25}
+                    step="0.5"
+                    value={activeRumus.pembagiNilaiAkhir}
+                    onChange={(e) =>
+                      updateRumusConfig({
+                        gunakanPembagiOtomatis: false,
+                        pembagiNilaiAkhir: Math.max(1, Number(e.target.value) || 5),
+                      })
+                    }
+                    className="w-full bg-[#1a2942] border border-amber-400/70 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-amber-200 text-center focus:outline-none focus:border-amber-300"
+                  />
+                  <span className="block text-[10px] text-amber-300/80 mt-0.5 text-center">
+                    Default: Dibagi 5
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t border-[#1e3152] pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <span className="text-[11px] font-semibold text-slate-300">
+                    Jika Nilai SAT / STS Belum Diinput:
+                  </span>
+                  <select
+                    value={activeRumus.perlakuanKosongUjian}
+                    onChange={(e) =>
+                      updateRumusConfig({
+                        perlakuanKosongUjian: e.target.value as PerlakuanKosongUjian,
+                      })
+                    }
+                    className="bg-[#131f38] border border-[#253e66] rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="proporsional">
+                      Proporsional (Saat SAT kosong gunakan Nilai Akhir STS, saat SAT diisi bagi {activeRumus.pembagiNilaiAkhir})
+                    </option>
+                    <option value="kosong_jadi_nol">
+                      Langsung Bagi {activeRumus.pembagiNilaiAkhir} (Nilai STS/SAT yang belum diisi dihitung 0)
+                    </option>
+                    <option value="wajib_lengkap">
+                      Tampilkan &quot;-&quot; sampai Rata T, Rata SH, STS, dan SAT terisi lengkap
+                    </option>
+                  </select>
+                </div>
+
+                <label className="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={activeRumus.gunakanPembagiOtomatis}
+                    onChange={(e) =>
+                      updateRumusConfig({
+                        gunakanPembagiOtomatis: e.target.checked,
+                      })
+                    }
+                    className="rounded border-slate-600 text-amber-500 focus:ring-amber-400"
+                  />
+                  <span>Pembagi otomatis mengikuti jumlah bobot</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Collapsible Cakupan Bab (STS/SAS) & Pengaturan Penandatangan */}
         {showSettingsPanel && (
@@ -1301,28 +1808,162 @@ export default function AkumulasiNilaiPanel({
             <div className="text-slate-400">
               Ketik langsung nilai <strong className="text-white">T</strong> (Tugas),{" "}
               <strong className="text-white">SH</strong> (Sumatif Harian),{" "}
-              <strong className="text-white">P</strong> (Praktek),{" "}
-              <strong className="text-white">STS</strong>, dan{" "}
-              <strong className="text-white">SAT</strong> pada kotak input di tabel di bawah (atau <strong className="text-white">Ctrl+V</strong> dari Excel).
+              <strong className="text-white">P</strong> (Praktek), serta nilai murni{" "}
+              <strong className="text-amber-300">STS</strong> dan{" "}
+              <strong className="text-amber-300">SAT</strong>.
             </div>
           </div>
 
-          <div className="overflow-x-auto max-h-[68vh] overflow-y-auto relative">
+          {/* Info Ringkasan Rumus Aktif */}
+          <div className="px-4 py-2 bg-[#0d182c] border-b border-[#1a2948] flex flex-wrap items-center justify-between gap-2 text-[11px]">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-300 font-mono">
+              <span>
+                <strong className="text-sky-300">Rata T:</strong>{" "}
+                {activeRumus.modeRataT === "bab_terisi"
+                  ? "ΣT ÷ Bab Terisi"
+                  : activeRumus.modeRataT === "semua_bab_cakupan"
+                  ? `ΣT ÷ ${docData.cakupanSAS.length} Bab`
+                  : `ΣT ÷ ${activeRumus.pembagiTetapT}`}
+              </span>
+              <span>
+                <strong className="text-teal-300">Rata SH:</strong>{" "}
+                {activeRumus.modeRataSH === "bab_terisi"
+                  ? "ΣSH ÷ Bab Terisi"
+                  : activeRumus.modeRataSH === "semua_bab_cakupan"
+                  ? `ΣSH ÷ ${docData.cakupanSAS.length} Bab`
+                  : `ΣSH ÷ ${activeRumus.pembagiTetapSH}`}
+              </span>
+              <span>
+                <strong className="text-emerald-300">Rata P:</strong>{" "}
+                {activeRumus.modeRataP === "bab_terisi"
+                  ? "ΣP ÷ Bab Terisi"
+                  : activeRumus.modeRataP === "semua_bab_cakupan"
+                  ? `ΣP ÷ ${docData.cakupanSAS.length} Bab`
+                  : `ΣP ÷ ${activeRumus.pembagiTetapP}`}
+              </span>
+              <span>
+                <strong className="text-amber-300">STS &amp; SAT:</strong> Nilai Murni
+              </span>
+              <span>
+                <strong className="text-amber-200">Nilai Akhir Siswa:</strong>{" "}
+                {formatRumusNilaiAkhirText(activeRumus)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFormulaPanel((prev) => !prev)}
+              className="text-amber-300 hover:text-amber-200 underline font-semibold cursor-pointer flex items-center gap-1"
+            >
+              <Calculator className="w-3 h-3" />
+              <span>{showFormulaPanel ? "Tutup Pengaturan Rumus" : "Ubah Rumus"}</span>
+            </button>
+          </div>
+
+          {/* Bar Navigasi Geser Kanan-Kiri & Sematkan Nilai Rapor */}
+          <div className="px-4 py-2.5 bg-[#101c34] border-b border-[#253e66] flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-bold text-sky-300 mr-1">
+                Geser Tabel (Kiri / Kanan):
+              </span>
+              <button
+                type="button"
+                onClick={() => scrollHorizontalTo("start")}
+                className="px-2.5 py-1.5 rounded-lg bg-[#162647] hover:bg-[#1f3460] border border-[#2c4878] text-xs font-semibold text-slate-200 flex items-center gap-1 cursor-pointer transition"
+                title="Geser ke Paling Kiri (Bab 1)"
+              >
+                <ChevronsLeft className="w-3.5 h-3.5 text-sky-400" />
+                <span>Awal (Bab 1)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollHorizontalBy(-360)}
+                className="px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 border border-blue-400/50 text-xs font-bold text-white flex items-center gap-1 cursor-pointer transition shadow-xs"
+                title="Geser Tabel ke Kiri"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Geser Kiri</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollHorizontalBy(360)}
+                className="px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 border border-blue-400/50 text-xs font-bold text-white flex items-center gap-1 cursor-pointer transition shadow-xs"
+                title="Geser Tabel ke Kanan"
+              >
+                <span>Geser Kanan</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollHorizontalTo("end")}
+                className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 border border-amber-300/60 text-xs font-bold text-white flex items-center gap-1 cursor-pointer transition shadow-xs"
+                title="Langsung Geser ke Kolom Paling Kanan (Nilai Akhir, Nilai Rapor & Predikat)"
+              >
+                <span>Lihat Nilai Rapor (Kanan)</span>
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Slider Geser Cepat */}
+              {maxScrollPos > 0 && (
+                <div className="flex items-center gap-2 bg-[#0b1324] border border-[#253e66] rounded-lg px-2.5 py-1">
+                  <span className="text-[10px] font-mono text-slate-400">Kiri</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={maxScrollPos}
+                    value={Math.min(scrollPos, maxScrollPos)}
+                    onChange={(e) => scrollHorizontalTo(Number(e.target.value))}
+                    aria-label="Slider Geser Tabel Kiri Kanan"
+                    className="w-28 sm:w-40 accent-amber-400 cursor-pointer h-1.5"
+                  />
+                  <span className="text-[10px] font-mono text-amber-300 font-bold">
+                    Nilai Rapor
+                  </span>
+                </div>
+              )}
+
+              {/* Tombol Sematkan (Pin) Nilai Rapor & Predikat agar selalu terlihat di kanan */}
+              <button
+                type="button"
+                onClick={() => setPinNilaiRapor((prev) => !prev)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition flex items-center gap-1.5 cursor-pointer ${
+                  pinNilaiRapor
+                    ? "bg-emerald-700 text-white border-emerald-400 shadow-xs"
+                    : "bg-[#162647] text-emerald-300 border-emerald-500/40 hover:bg-[#1f3460]"
+                }`}
+                title="Kunci kolom Nilai Rapor & Predikat agar selalu menempel dan terlihat di sisi kanan layar"
+              >
+                <Pin className="w-3.5 h-3.5" />
+                <span>
+                  {pinNilaiRapor
+                    ? "Nilai Rapor Terkunci di Kanan ✓"
+                    : "Sematkan Nilai Rapor di Kanan"}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            ref={spreadsheetScrollRef}
+            onScroll={(e) => syncScrollMetrics(e.currentTarget)}
+            className="akumulasi-scroll-container overflow-x-auto max-h-[68vh] overflow-y-auto relative scroll-smooth"
+          >
             <table
-              className="w-full border-collapse text-xs font-mono tabular-nums"
+              className="w-max min-w-full border-collapse text-xs font-mono tabular-nums"
               id="akumulasi-spreadsheet-table"
             >
               <thead className="sticky top-0 z-30">
-                <tr className="bg-[#111c33] text-slate-100 border-b border-[#253e66]">
+                <tr className="bg-[#111c33] text-slate-100 border-b border-[#253e66] text-[11px]">
                   <th
                     rowSpan={2}
-                    className="sticky left-0 z-40 bg-[#111c33] border-r border-[#253e66] px-2.5 py-2 text-center font-bold w-11 min-w-[44px]"
+                    className="sticky left-0 z-40 bg-[#111c33] border-r border-[#253e66] px-1 py-1.5 text-center font-bold w-8 min-w-[32px]"
                   >
                     No
                   </th>
                   <th
                     rowSpan={2}
-                    className="sticky left-[44px] z-40 bg-[#111c33] border-r-2 border-[#315182] px-3 py-2 text-left font-bold min-w-[210px] max-w-[240px]"
+                    className="sticky left-[32px] z-40 bg-[#111c33] border-r-2 border-[#315182] px-2.5 py-1.5 text-left font-bold min-w-[165px] max-w-[185px]"
                   >
                     Nama Siswa
                   </th>
@@ -1333,11 +1974,11 @@ export default function AkumulasiNilaiPanel({
                       <th
                         key={`header-bab-${b}`}
                         colSpan={4}
-                        className="border-r border-[#253e66] px-2 py-1.5 text-center font-bold bg-[#152340]"
+                        className="border-r border-[#253e66] px-1 py-1 text-center font-bold bg-[#152340]"
                       >
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex items-center justify-center gap-1 leading-tight">
                           <span>BAB {b}</span>
-                          <span className="text-[9px] font-normal text-slate-400">
+                          <span className="text-[8px] font-normal text-slate-400">
                             ({inSTS ? "STS" : ""}
                             {inSTS && inSAS ? "·" : ""}
                             {inSAS ? "SAS" : ""})
@@ -1348,84 +1989,102 @@ export default function AkumulasiNilaiPanel({
                   })}
                   <th
                     rowSpan={2}
-                    className="border-r border-[#253e66] px-2 py-2 text-center font-bold bg-[#172847] min-w-[64px]"
+                    className="border-r border-[#253e66] px-1 py-1.5 text-center font-bold bg-[#172847] w-[46px] min-w-[46px]"
+                    title="Nilai Murni Sumatif Tengah Semester (Tanpa Rumus)"
                   >
-                    STS
+                    <div>STS</div>
+                    <div className="text-[8px] font-normal text-amber-300">Murni</div>
                   </th>
                   <th
                     rowSpan={2}
-                    className="border-r-2 border-[#315182] px-2 py-2 text-center font-bold bg-[#172847] min-w-[64px]"
+                    className="border-r-2 border-[#315182] px-1 py-1.5 text-center font-bold bg-[#172847] w-[46px] min-w-[46px]"
+                    title="Nilai Murni Sumatif Akhir Semester (Tanpa Rumus)"
                   >
-                    SAT
+                    <div>SAT</div>
+                    <div className="text-[8px] font-normal text-amber-300">Murni</div>
                   </th>
                   <th
                     rowSpan={2}
-                    className="border-r border-[#253e66] px-2.5 py-2 text-center font-bold bg-[#0f293a] text-sky-200 min-w-[68px]"
+                    className="border-r border-[#253e66] px-1.5 py-1.5 text-center font-bold bg-[#0f293a] text-sky-200 min-w-[54px]"
+                    title="Rata-rata Tugas"
                   >
-                    Rata T
+                    <div>Rata T</div>
+                    <div className="text-[8px] font-normal text-sky-300/80">Tugas</div>
                   </th>
                   <th
                     rowSpan={2}
-                    className="border-r border-[#253e66] px-2.5 py-2 text-center font-bold bg-[#0f293a] text-sky-200 min-w-[68px]"
+                    className="border-r border-[#253e66] px-1.5 py-1.5 text-center font-bold bg-[#0f293a] text-sky-200 min-w-[54px]"
+                    title="Rata-rata Sumatif Harian"
                   >
-                    Rata SH
+                    <div>Rata SH</div>
+                    <div className="text-[8px] font-normal text-sky-300/80">Sumatif</div>
                   </th>
                   <th
                     rowSpan={2}
-                    className="border-r border-[#253e66] px-2.5 py-2 text-center font-bold bg-[#0f293a] text-sky-200 min-w-[68px]"
+                    className="border-r border-[#253e66] px-1.5 py-1.5 text-center font-bold bg-[#0f293a] text-sky-200 min-w-[54px]"
+                    title="Rata-rata Praktek"
                   >
-                    Rata P
+                    <div>Rata P</div>
+                    <div className="text-[8px] font-normal text-sky-300/80">Praktek</div>
                   </th>
                   <th
                     rowSpan={2}
-                    className="border-r border-[#253e66] px-2.5 py-2 text-center font-bold bg-[#102d38] text-teal-200 min-w-[74px]"
+                    className="border-r border-[#253e66] px-1.5 py-1.5 text-center font-bold bg-[#102d38] text-teal-200 min-w-[56px]"
                   >
                     Peng STS
                   </th>
                   <th
                     rowSpan={2}
-                    className="border-r border-[#253e66] px-2.5 py-2 text-center font-bold bg-[#102d38] text-teal-200 min-w-[74px]"
+                    className="border-r border-[#253e66] px-1.5 py-1.5 text-center font-bold bg-[#102d38] text-teal-200 min-w-[56px]"
                   >
                     Peng SAS
                   </th>
                   <th
                     rowSpan={2}
-                    className="border-r border-[#253e66] px-2.5 py-2 text-center font-bold bg-[#11302e] text-emerald-200 min-w-[74px]"
+                    className="border-r border-[#253e66] px-1.5 py-1.5 text-center font-bold bg-[#11302e] text-emerald-200 min-w-[58px]"
                   >
-                    Nilai Akhir STS
+                    NA STS
                   </th>
                   <th
                     rowSpan={2}
-                    className="border-r border-[#253e66] px-2.5 py-2 text-center font-bold bg-[#11302e] text-emerald-200 min-w-[74px]"
+                    className="border-r border-[#253e66] px-1.5 py-1.5 text-center font-bold bg-[#11302e] text-emerald-200 min-w-[66px]"
+                    title={`Rumus Nilai Akhir Siswa: ${formatRumusNilaiAkhirText(activeRumus)}`}
                   >
-                    Nilai Akhir SAS
+                    <div>Nilai Akhir</div>
+                    <div className="text-[8px] font-normal text-emerald-300/90">Siswa</div>
                   </th>
                   <th
                     rowSpan={2}
-                    className="border-r border-[#253e66] px-2.5 py-2 text-center font-bold bg-[#16382c] text-amber-300 min-w-[72px]"
+                    className={`${
+                      pinNilaiRapor
+                        ? "sticky right-[56px] z-40 border-l-2 border-l-amber-400/70 shadow-[-4px_0_10px_rgba(0,0,0,0.45)]"
+                        : ""
+                    } border-r border-[#253e66] px-2 py-1.5 text-center font-extrabold bg-[#16382c] text-amber-300 min-w-[64px] w-[64px]`}
                   >
                     Nilai Rapor
                   </th>
                   <th
                     rowSpan={2}
-                    className="px-2.5 py-2 text-center font-bold bg-[#16382c] text-amber-300 min-w-[64px]"
+                    className={`${
+                      pinNilaiRapor ? "sticky right-0 z-40" : ""
+                    } px-2 pr-2.5 py-1.5 text-center font-extrabold bg-[#16382c] text-amber-300 min-w-[56px] w-[56px]`}
                   >
                     Predikat
                   </th>
                 </tr>
-                <tr className="bg-[#0f172a] text-slate-300 border-b-2 border-[#315182]">
+                <tr className="bg-[#0f172a] text-slate-300 border-b-2 border-[#315182] text-[10px]">
                   {displayedBabNumbers.map((b) => (
                     <React.Fragment key={`sub-bab-${b}`}>
-                      <th className="border-r border-[#1e293b] px-1.5 py-1 text-center font-semibold min-w-[64px]">
+                      <th className="border-r border-[#1e293b] px-0.5 py-1 text-center font-semibold w-[42px] min-w-[42px]">
                         T
                       </th>
-                      <th className="border-r border-[#1e293b] px-1.5 py-1 text-center font-semibold min-w-[64px]">
+                      <th className="border-r border-[#1e293b] px-0.5 py-1 text-center font-semibold w-[42px] min-w-[42px]">
                         SH
                       </th>
-                      <th className="border-r border-[#1e293b] px-1.5 py-1 text-center font-semibold bg-[#162238] text-sky-300 min-w-[64px]">
-                        Rata Bab
+                      <th className="border-r border-[#1e293b] px-1 py-1 text-center font-semibold bg-[#162238] text-sky-300 w-[46px] min-w-[46px]">
+                        Rata
                       </th>
-                      <th className="border-r border-[#253e66] px-1.5 py-1 text-center font-semibold min-w-[64px]">
+                      <th className="border-r border-[#253e66] px-0.5 py-1 text-center font-semibold w-[42px] min-w-[42px]">
                         P
                       </th>
                     </React.Fragment>
@@ -1488,14 +2147,14 @@ export default function AkumulasiNilaiPanel({
                           onBlur={() => handleCellBlur(student.id, field, bab)}
                           onKeyDown={(e) => handleCellKeyDown(e, rowIdx, colIdx)}
                           onPaste={(e) => handleCellPaste(e, rowIdx, colIdx)}
-                          className={`w-full h-8 px-1.5 text-center font-mono text-xs rounded transition focus:outline-none focus:ring-2 ${
+                          className={`w-[38px] h-6 px-0.5 text-center font-mono text-[11px] rounded transition focus:outline-none focus:ring-1 ${
                             errText
                               ? "bg-rose-950/90 text-rose-200 border border-rose-400 focus:ring-rose-400"
                               : "bg-[#14223d] text-white border border-[#2c4878] hover:border-blue-400 focus:bg-[#1a2e52] focus:border-blue-400 focus:ring-blue-400/50 placeholder-slate-500"
                           }`}
                         />
                         {errText && (
-                          <div className="text-[9px] leading-tight text-rose-300 bg-rose-950 border border-rose-500/50 rounded px-1 py-0.5 mt-0.5 whitespace-nowrap">
+                          <div className="text-[8px] leading-tight text-rose-300 bg-rose-950 border border-rose-500/50 rounded px-1 py-0.5 mt-0.5 whitespace-nowrap">
                             {errText}
                           </div>
                         )}
@@ -1509,28 +2168,28 @@ export default function AkumulasiNilaiPanel({
                   return (
                     <tr
                       key={student.id}
-                      className={`border-b border-[#1a2948] transition-colors ${rowBgClass}`}
+                      className={`border-b border-[#1a2948] transition-colors text-[11px] ${rowBgClass}`}
                     >
                       {/* Sticky No */}
                       <td
-                        className={`sticky left-0 z-20 ${stickyBgClass} border-r border-[#253e66] px-2 py-1 text-center font-semibold text-slate-400`}
+                        className={`sticky left-0 z-20 ${stickyBgClass} border-r border-[#253e66] px-1 py-0.5 text-center font-semibold text-slate-400 w-8 min-w-[32px]`}
                       >
                         {rowIdx + 1}
                       </td>
 
                       {/* Sticky Nama Siswa */}
                       <td
-                        className={`sticky left-[44px] z-20 ${stickyBgClass} border-r-2 border-[#315182] px-3 py-1.5 text-left font-sans font-semibold ${
+                        className={`sticky left-[32px] z-20 ${stickyBgClass} border-r-2 border-[#315182] px-2.5 py-1 text-left font-sans font-semibold min-w-[165px] max-w-[185px] ${
                           isBelow ? "text-rose-200" : "text-slate-100"
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-1.5">
-                          <span className="truncate max-w-[180px]" title={student.name}>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="truncate max-w-[145px]" title={student.name}>
                             {student.name}
                           </span>
                           {isBelow && (
                             <span
-                              className="text-[10px] font-mono font-bold text-rose-300 shrink-0"
+                              className="text-[9px] font-mono font-bold text-rose-300 shrink-0"
                               title="Nilai Rapor di bawah 73 (KKM)"
                             >
                               &lt;73
@@ -1545,16 +2204,16 @@ export default function AkumulasiNilaiPanel({
                         const rataBabVal = hasil?.perBab[b]?.rataBab ?? null;
                         return (
                           <React.Fragment key={`${student.id}-bab-${b}`}>
-                            <td className="border-r border-[#1a2948] p-1">
+                            <td className="border-r border-[#1a2948] p-0.5 text-center w-[42px] min-w-[42px]">
                               {renderInputCell("t", baseInputCol, b)}
                             </td>
-                            <td className="border-r border-[#1a2948] p-1">
+                            <td className="border-r border-[#1a2948] p-0.5 text-center w-[42px] min-w-[42px]">
                               {renderInputCell("sh", baseInputCol + 1, b)}
                             </td>
-                            <td className="border-r border-[#1a2948] px-2 py-1 text-center font-semibold bg-[#131f38]/80 text-sky-300 select-none">
+                            <td className="border-r border-[#1a2948] px-1 py-0.5 text-center font-semibold bg-[#131f38]/80 text-sky-300 select-none w-[46px] min-w-[46px]">
                               {formatScore2(rataBabVal)}
                             </td>
-                            <td className="border-r border-[#253e66] p-1">
+                            <td className="border-r border-[#253e66] p-0.5 text-center w-[42px] min-w-[42px]">
                               {renderInputCell("p", baseInputCol + 2, b)}
                             </td>
                           </React.Fragment>
@@ -1562,51 +2221,57 @@ export default function AkumulasiNilaiPanel({
                       })}
 
                       {/* STS & SAT */}
-                      <td className="border-r border-[#253e66] p-0.5 bg-[#111c33]/40">
+                      <td className="border-r border-[#253e66] p-0.5 text-center bg-[#111c33]/40 w-[46px] min-w-[46px]">
                         {renderInputCell("sts", stsColIdx)}
                       </td>
-                      <td className="border-r-2 border-[#315182] p-0.5 bg-[#111c33]/40">
+                      <td className="border-r-2 border-[#315182] p-0.5 text-center bg-[#111c33]/40 w-[46px] min-w-[46px]">
                         {renderInputCell("sat", satColIdx)}
                       </td>
 
                       {/* Read-only Calculated Columns */}
-                      <td className="border-r border-[#1e3152] px-2 py-1 text-center font-semibold bg-[#0f2236] text-sky-200 select-none">
+                      <td className="border-r border-[#1e3152] px-1.5 py-0.5 text-center font-semibold bg-[#0f2236] text-sky-200 select-none">
                         {formatScore2(hasil?.rataT)}
                       </td>
-                      <td className="border-r border-[#1e3152] px-2 py-1 text-center font-semibold bg-[#0f2236] text-sky-200 select-none">
+                      <td className="border-r border-[#1e3152] px-1.5 py-0.5 text-center font-semibold bg-[#0f2236] text-sky-200 select-none">
                         {formatScore2(hasil?.rataSH)}
                       </td>
-                      <td className="border-r border-[#1e3152] px-2 py-1 text-center font-semibold bg-[#0f2236] text-sky-200 select-none">
+                      <td className="border-r border-[#1e3152] px-1.5 py-0.5 text-center font-semibold bg-[#0f2236] text-sky-200 select-none">
                         {formatScore2(hasil?.rataP)}
                       </td>
-                      <td className="border-r border-[#1e3152] px-2 py-1 text-center font-semibold bg-[#0e2632] text-teal-200 select-none">
+                      <td className="border-r border-[#1e3152] px-1.5 py-0.5 text-center font-semibold bg-[#0e2632] text-teal-200 select-none">
                         {formatScore2(hasil?.pengetahuanSTS)}
                       </td>
-                      <td className="border-r border-[#1e3152] px-2 py-1 text-center font-semibold bg-[#0e2632] text-teal-200 select-none">
+                      <td className="border-r border-[#1e3152] px-1.5 py-0.5 text-center font-semibold bg-[#0e2632] text-teal-200 select-none">
                         {formatScore2(hasil?.pengetahuanSAS)}
                       </td>
-                      <td className="border-r border-[#1e3152] px-2 py-1 text-center font-bold bg-[#0f292a] text-emerald-200 select-none">
+                      <td className="border-r border-[#1e3152] px-1.5 py-0.5 text-center font-bold bg-[#0f292a] text-emerald-200 select-none">
                         {formatScore2(hasil?.nilaiAkhirSTS)}
                       </td>
-                      <td className="border-r border-[#1e3152] px-2 py-1 text-center font-bold bg-[#0f292a] text-emerald-200 select-none">
+                      <td className="border-r border-[#1e3152] px-1.5 py-0.5 text-center font-bold bg-[#0f292a] text-emerald-200 select-none">
                         {formatScore2(hasil?.nilaiAkhirSAS)}
                       </td>
 
                       {/* Nilai Rapor (Bulat) & Predikat */}
                       <td
-                        className={`border-r border-[#1e3152] px-2 py-1 text-center font-bold select-none ${
+                        className={`${
+                          pinNilaiRapor
+                            ? "sticky right-[56px] z-20 border-l-2 border-l-amber-400/60 shadow-[-4px_0_10px_rgba(0,0,0,0.45)]"
+                            : ""
+                        } border-r border-[#1e3152] px-2 py-0.5 text-center text-xs font-extrabold select-none min-w-[64px] w-[64px] ${
                           isBelow
-                            ? "bg-rose-900/80 text-rose-100"
-                            : "bg-[#14332a] text-amber-300"
+                            ? "bg-[#5c1324] text-rose-100"
+                            : "bg-[#14382c] text-amber-300"
                         }`}
                       >
                         {formatIntegerScore(hasil?.nilaiRapor)}
                       </td>
                       <td
-                        className={`px-2 py-1 text-center font-bold select-none ${
+                        className={`${
+                          pinNilaiRapor ? "sticky right-0 z-20" : ""
+                        } px-2 pr-2.5 py-0.5 text-center text-xs font-extrabold select-none min-w-[56px] w-[56px] ${
                           isBelow
-                            ? "bg-rose-900/80 text-rose-100"
-                            : "bg-[#14332a] text-amber-300"
+                            ? "bg-[#5c1324] text-rose-100"
+                            : "bg-[#14382c] text-amber-300"
                         }`}
                       >
                         {hasil?.predikat ?? "-"}
@@ -1670,7 +2335,11 @@ export default function AkumulasiNilaiPanel({
                   </td>
                   <td
                     colSpan={2}
-                    className="px-2 py-2 text-center font-bold text-amber-300 bg-[#16382c]"
+                    className={`${
+                      pinNilaiRapor
+                        ? "sticky right-0 z-20 border-l-2 border-l-amber-400/70"
+                        : ""
+                    } px-3 pr-4 py-2 text-center text-sm font-extrabold text-amber-300 bg-[#16382c]`}
                   >
                     {formatScore2(ringkasanKelas.rataRataNilaiRapor)}
                   </td>
@@ -1773,11 +2442,49 @@ export default function AkumulasiNilaiPanel({
               (Keterampilan) bab ke-x. Hanya menampilkan{" "}
               <strong>{jumlahBab} bab aktif</strong>.
             </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => scrollHorizontalTo("start")}
+                className="px-2.5 py-1 rounded-md bg-[#162647] hover:bg-[#1f3460] border border-[#2c4878] text-xs font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
+              >
+                <ChevronsLeft className="w-3.5 h-3.5 text-sky-400" />
+                <span>Awal</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollHorizontalBy(-320)}
+                className="px-2.5 py-1 rounded-md bg-blue-700 hover:bg-blue-600 text-xs font-bold text-white flex items-center gap-1 cursor-pointer"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Geser Kiri</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollHorizontalBy(320)}
+                className="px-2.5 py-1 rounded-md bg-blue-700 hover:bg-blue-600 text-xs font-bold text-white flex items-center gap-1 cursor-pointer"
+              >
+                <span>Geser Kanan</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollHorizontalTo("end")}
+                className="px-2.5 py-1 rounded-md bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white flex items-center gap-1 cursor-pointer"
+              >
+                <span>Lihat Nilai Rapor</span>
+                <ChevronsRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
-          <div className="overflow-x-auto max-h-[68vh] overflow-y-auto">
+          <div
+            ref={leggerScrollRef}
+            onScroll={(e) => syncScrollMetrics(e.currentTarget)}
+            className="akumulasi-scroll-container overflow-x-auto max-h-[68vh] overflow-y-auto scroll-smooth"
+          >
             <table
-              className="w-full border-collapse text-xs font-mono tabular-nums"
+              className="w-max min-w-full border-collapse text-xs font-mono tabular-nums"
               id="akumulasi-legger-table"
             >
               <thead className="sticky top-0 z-30 bg-[#111c33] text-slate-100 border-b-2 border-[#315182]">

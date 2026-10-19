@@ -10,7 +10,10 @@ import db, { isFirebaseConfigured, withTimeout } from "./firebase";
 import {
   NilaiSiswaInput,
   SemesterType,
+  KonfigurasiRumus,
+  DEFAULT_KONFIGURASI_RUMUS,
   normalizeCakupan,
+  normalizeKonfigurasiRumus,
 } from "./hitungNilai";
 
 export interface AkumulasiNilaiMetadata {
@@ -21,6 +24,7 @@ export interface AkumulasiNilaiMetadata {
   jumlahBab: number; // 1..7, default 6
   cakupanSTS: number[]; // default [1, 2, 3]
   cakupanSAS: number[]; // default [1..jumlahBab]
+  rumus: KonfigurasiRumus;
   principalName: string;
   teacherName: string;
   signaturePlace: string;
@@ -125,6 +129,7 @@ export function createDefaultAkumulasiDoc(params: {
     jumlahBab,
     cakupanSTS: [1, 2, 3],
     cakupanSAS: [1, 2, 3, 4, 5, 6],
+    rumus: { ...DEFAULT_KONFIGURASI_RUMUS },
     principalName: params.principalName || "Ari Gunawan, S.Kom.",
     teacherName: params.teacherName || params.updatedBy || "Guru Mata Pelajaran",
     signaturePlace: "Pangkalpinang",
@@ -179,6 +184,7 @@ function normalizeRawDoc(
         : Array.from({ length: jumlahBab }, (_, i) => i + 1),
       jumlahBab
     ),
+    rumus: normalizeKonfigurasiRumus(raw.rumus),
     principalName: raw.principalName || fallback.principalName,
     teacherName: raw.teacherName || fallback.teacherName,
     signaturePlace: raw.signaturePlace || fallback.signaturePlace,
@@ -335,6 +341,7 @@ async function executeDotNotationUpdate(
         jumlahBab: docData.jumlahBab,
         cakupanSTS: docData.cakupanSTS,
         cakupanSAS: docData.cakupanSAS,
+        rumus: normalizeKonfigurasiRumus(docData.rumus),
         teacherName: docData.teacherName,
         signaturePlace: docData.signaturePlace,
         signatureDate: docData.signatureDate,
@@ -452,6 +459,7 @@ export async function saveMetadataToFirestore(
     jumlahBab: docData.jumlahBab,
     cakupanSTS: docData.cakupanSTS,
     cakupanSAS: docData.cakupanSAS,
+    rumus: normalizeKonfigurasiRumus(docData.rumus),
     teacherName: docData.teacherName,
     signaturePlace: docData.signaturePlace,
     signatureDate: docData.signatureDate,

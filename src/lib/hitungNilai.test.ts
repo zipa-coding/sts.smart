@@ -1,6 +1,7 @@
 import {
   hitungRataBab,
   hitungRataRataTerisi,
+  hitungRataKomponenDenganRumus,
   hitungPengetahuanSTS,
   hitungPengetahuanSAS,
   hitungNilaiAkhir,
@@ -30,14 +31,14 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   };
 
   // =========================================================================
-  // KASUS UJI 1 (Siswa A - sesuai spesifikasi):
+  // KASUS UJI 1 (Siswa A - STS saja terisi, SAT kosong):
   // T bab 1–3 = 79, 90, 85; SH bab 1–3 = 85, 86, 88; P bab 1–3 = 80, 87, 87;
-  // STS = 79; SAT kosong; cakupan STS = bab 1–3.
+  // STS = 79 (Nilai Murni); SAT kosong; cakupan STS = bab 1–3.
   // - Rata T = 84,67
   // - Rata SH = 86,33
   // - Rata P = 84,67
-  // - Pengetahuan STS = (84,67 + 2×86,33 + 79) / 4 = 84,08
-  // - Nilai Akhir STS = (84,08 + 84,67) / 2 = 84,38, Nilai Rapor 84, Predikat B
+  // - Nilai Akhir STS = ((2×86,33) + 84,67 + 79) / 4 = 84,08
+  // - Nilai Rapor = 84, Predikat = B
   // =========================================================================
   const hasilSiswaA = hitungAkumulasiSiswa(
     {
@@ -55,15 +56,16 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   assertEqual(hasilSiswaA.rataT, 84.67, "Siswa A - Rata T");
   assertEqual(hasilSiswaA.rataSH, 86.33, "Siswa A - Rata SH");
   assertEqual(hasilSiswaA.rataP, 84.67, "Siswa A - Rata P");
+  assertEqual(hasilSiswaA.sts, 79, "Siswa A - STS Nilai Murni");
   assertEqual(hasilSiswaA.pengetahuanSTS, 84.08, "Siswa A - Pengetahuan STS");
-  assertEqual(hasilSiswaA.nilaiAkhirSTS, 84.38, "Siswa A - Nilai Akhir STS");
+  assertEqual(hasilSiswaA.nilaiAkhirSTS, 84.08, "Siswa A - Nilai Akhir STS");
   assertEqual(hasilSiswaA.nilaiRapor, 84, "Siswa A - Nilai Rapor");
   assertEqual(hasilSiswaA.predikat, "B", "Siswa A - Predikat");
   assertEqual(hasilSiswaA.pengetahuanSAS, null, "Siswa A - Pengetahuan SAS harus null karena SAT kosong");
   assertEqual(hasilSiswaA.nilaiAkhirSAS, null, "Siswa A - Nilai Akhir SAS harus null karena SAT kosong");
   assertEqual(hasilSiswaA.isBelowKKM, false, "Siswa A - Tidak di bawah KKM");
-  passed += 10;
-  details.push("PASS: Kasus Uji Siswa A (Rata T=84,67; Rata SH=86,33; Rata P=84,67; Peng STS=84,08; NA STS=84,38; Rapor=84; Predikat=B)");
+  passed += 11;
+  details.push("PASS: Kasus Uji Siswa A (Rata T=84,67; Rata SH=86,33; Rata P=84,67; STS=79 Murni; NA STS=84,08; Rapor=84; Predikat=B)");
 
   // =========================================================================
   // KASUS UJI 2 (Siswa B - semua nilai kosong, semua hasil tampil "-"):
@@ -114,19 +116,43 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   details.push("PASS: Kasus Uji Siswa C (Nilai 70 menghasilkan Rapor=70, Predikat=D, isBelowKKM=true)");
 
   // =========================================================================
-  // KASUS UJI 4: Perbedaan Sel Kosong vs Nilai 0
+  // KASUS UJI 4: Rumus Nilai Akhir Siswa = ((2 × Rata SH) + Rata T + Nilai SAT + Nilai STS) / 5
+  // Contoh: Rata T = 80, Rata SH = 85, Rata P = 95, STS = 80, SAT = 90
+  // Nilai Akhir Siswa = ((2 × 85) + 80 + 90 + 80) / 5 = 420 / 5 = 84
+  // =========================================================================
+  const hasilSiswaD = hitungAkumulasiSiswa(
+    {
+      bab: {
+        "1": { t: 80, sh: 85, p: 95 },
+        "2": { t: 80, sh: 85, p: 95 },
+      },
+      sts: 80,
+      sat: 90,
+    },
+    defaultConfig
+  );
+  assertEqual(hasilSiswaD.rataT, 80, "Siswa D - Rata T = 80");
+  assertEqual(hasilSiswaD.rataSH, 85, "Siswa D - Rata SH = 85");
+  assertEqual(hasilSiswaD.rataP, 95, "Siswa D - Rata P = 95");
+  assertEqual(hasilSiswaD.sts, 80, "Siswa D - STS Murni = 80");
+  assertEqual(hasilSiswaD.sat, 90, "Siswa D - SAT Murni = 90");
+  assertEqual(hasilSiswaD.nilaiAkhirSAS, 84, "Siswa D - Nilai Akhir = ((2*85)+80+90+80)/5 = 84");
+  assertEqual(hasilSiswaD.nilaiRapor, 84, "Siswa D - Nilai Rapor = 84");
+  assertEqual(hitungRataKomponenDenganRumus([80, 100, null], "bab_terisi", 6), 90, "Rata bab_terisi = 180/2 = 90");
+  assertEqual(hitungRataKomponenDenganRumus([80, 100, null], "semua_bab_cakupan", 6), 60, "Rata semua_bab_cakupan = 180/3 = 60");
+  assertEqual(hitungRataKomponenDenganRumus([80, 100, null], "pembagi_tetap", 4), 45, "Rata pembagi_tetap = 180/4 = 45");
+  passed += 10;
+  details.push("PASS: Kasus Uji Rumus Nilai Akhir Siswa ((2×Rata SH + Rata T + SAT + STS) / 5) & Pengaturan Rumus Rata-rata");
+
+  // =========================================================================
+  // KASUS UJI 5: Perbedaan Sel Kosong vs Nilai 0 & Legger & Validasi
   // =========================================================================
   assertEqual(hitungRataBab(80, null), 80, "Rata Bab jika SH kosong memakai T saja");
   assertEqual(hitungRataBab(null, 90), 90, "Rata Bab jika T kosong memakai SH saja");
   assertEqual(hitungRataBab(80, 0), 40, "Rata Bab jika SH bernilai 0 ikut dihitung (80+0)/2 = 40");
   assertEqual(hitungRataRataTerisi([80, null, 100]), 90, "Rata-rata mengabaikan null");
   assertEqual(hitungRataRataTerisi([80, 0, 100]), 60, "Rata-rata menyertakan angka 0");
-  passed += 5;
-  details.push("PASS: Kasus Uji Sel Kosong vs Nilai 0");
 
-  // =========================================================================
-  // KASUS UJI 5: Legger (3.x dan 4.x) & Ringkasan Kelas & Validasi Input
-  // =========================================================================
   const leggerA = hitungLeggerSiswa(hasilSiswaA, 4);
   assertEqual(leggerA.length, 4, "Jumlah item legger sesuai jumlahBab aktif (4)");
   assertEqual(leggerA[0].kodePengetahuan, "3.1", "Kode pengetahuan bab 1");
@@ -146,8 +172,8 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   assertEqual(parseAndValidateCellInput("105").valid, false, "Input > 100 ditolak");
   assertEqual(parseAndValidateCellInput("-5").valid, false, "Input < 0 ditolak");
   assertEqual(parseAndValidateCellInput("abc").valid, false, "Input huruf ditolak");
-  passed += 15;
-  details.push("PASS: Kasus Uji Legger, Ringkasan Kelas, dan Validasi Input");
+  passed += 20;
+  details.push("PASS: Kasus Uji Sel Kosong vs 0, Legger, Ringkasan Kelas, dan Validasi Input");
 
   return { passed, details };
 }

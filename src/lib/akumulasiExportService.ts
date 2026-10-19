@@ -7,6 +7,8 @@ import {
   hitungRingkasanKelas,
   formatScore2,
   formatIntegerScore,
+  normalizeKonfigurasiRumus,
+  formatRumusNilaiAkhirText,
   KKM_DEFAULT,
 } from "./hitungNilai";
 import {
@@ -153,15 +155,15 @@ export async function exportAkumulasiToExcel(params: {
   const predikatColLetter = colIndexToLetter(predikatColIdx);
 
   const singleHeaders: Array<{ col: number; label: string }> = [
-    { col: stsColIdx, label: "STS" },
-    { col: satColIdx, label: "SAT" },
-    { col: rataTColIdx, label: "Rata T" },
+    { col: stsColIdx, label: "STS (Murni)" },
+    { col: satColIdx, label: "SAT (Murni)" },
+    { col: rataTColIdx, label: "Rata Tugas (T)" },
     { col: rataSHColIdx, label: "Rata SH" },
-    { col: rataPColIdx, label: "Rata P" },
+    { col: rataPColIdx, label: "Rata Praktek (P)" },
     { col: pengSTSColIdx, label: "Pengetahuan STS" },
     { col: pengSASColIdx, label: "Pengetahuan SAS" },
     { col: naSTSColIdx, label: "Nilai Akhir STS" },
-    { col: naSASColIdx, label: "Nilai Akhir SAS" },
+    { col: naSASColIdx, label: "Nilai Akhir Siswa" },
     { col: raporColIdx, label: "Nilai Rapor" },
     { col: predikatColIdx, label: "Predikat" },
   ];
@@ -199,6 +201,7 @@ export async function exportAkumulasiToExcel(params: {
     docData.cakupanSAS.length > 0
       ? docData.cakupanSAS
       : Array.from({ length: jumlahBab }, (_, i) => i + 1);
+  const rumus = normalizeKonfigurasiRumus(docData.rumus);
 
   const firstStudentRow = 8;
   const hasilAllStudents: HasilHitungSiswa[] = [];
@@ -210,6 +213,7 @@ export async function exportAkumulasiToExcel(params: {
       jumlahBab,
       cakupanSTS,
       cakupanSAS,
+      rumus,
     });
     hasilAllStudents.push(hasil);
 
@@ -250,7 +254,7 @@ export async function exportAkumulasiToExcel(params: {
       pCell.numFmt = "0.##";
     }
 
-    // STS & SAT
+    // STS & SAT (Nilai Murni)
     const stsCell = ws.getCell(rowNum, stsColIdx);
     if (hasil.sts !== null) stsCell.value = hasil.sts;
     stsCell.numFmt = "0.##";
@@ -261,36 +265,38 @@ export async function exportAkumulasiToExcel(params: {
 
     // Daftar referensi sel bab dalam cakupan untuk rumus Rata T, Rata SH, Rata P
     const activeCakupan = hasil.sat !== null ? cakupanSAS : cakupanSTS;
-    const tRefs = activeCakupan
-      .filter((b) => b >= 1 && b <= jumlahBab)
-      .map((b) => `${tColLettersByBab[b]}${rowNum}`)
-      .join(",");
-    const shRefs = activeCakupan
-      .filter((b) => b >= 1 && b <= jumlahBab)
-      .map((b) => `${shColLettersByBab[b]}${rowNum}`)
-      .join(",");
-    const pRefs = activeCakupan
-      .filter((b) => b >= 1 && b <= jumlahBab)
-      .map((b) => `${pColLettersByBab[b]}${rowNum}`)
-      .join(",");
+    const validCakupan = activeCakupan.filter((b) => b >= 1 && b <= jumlahBab);
+    const tRefs = validCakupan.map((b) => `${tColLettersByBab[b]}${rowNum}`).join(",");
+    const shRefs = validCakupan.map((b) => `${shColLettersByBab[b]}${rowNum}`).join(",");
+    const pRefs = validCakupan.map((b) => `${pColLettersByBab[b]}${rowNum}`).join(",");
+
+    const buildRataFormula = (refs: string, mode: string, pembagiTetap: number) => {
+      if (mode === "semua_bab_cakupan") {
+        return `IF(COUNTA(${refs})=0,"",ROUND(SUM(${refs})/${Math.max(1, validCakupan.length)},2))`;
+      }
+      if (mode === "pembagi_tetap") {
+        return `IF(COUNTA(${refs})=0,"",ROUND(SUM(${refs})/${Math.max(1, pembagiTetap)},2))`;
+      }
+      return `IF(COUNTA(${refs})=0,"",ROUND(AVERAGE(${refs}),2))`;
+    };
 
     const rataTCell = ws.getCell(rowNum, rataTColIdx);
     rataTCell.value = {
-      formula: `IF(COUNTA(${tRefs})=0,"",ROUND(AVERAGE(${tRefs}),2))`,
+      formula: buildRataFormula(tRefs, rumus.modeRataT, rumus.pembagiTetapT),
       result: hasil.rataT ?? "",
     };
     rataTCell.numFmt = "0.00";
 
     const rataSHCell = ws.getCell(rowNum, rataSHColIdx);
     rataSHCell.value = {
-      formula: `IF(COUNTA(${shRefs})=0,"",ROUND(AVERAGE(${shRefs}),2))`,
+      formula: buildRataFormula(shRefs, rumus.modeRataSH, rumus.pembagiTetapSH),
       result: hasil.rataSH ?? "",
     };
     rataSHCell.numFmt = "0.00";
 
     const rataPCell = ws.getCell(rowNum, rataPColIdx);
     rataPCell.value = {
-      formula: `IF(COUNTA(${pRefs})=0,"",ROUND(AVERAGE(${pRefs}),2))`,
+      formula: buildRataFormula(pRefs, rumus.modeRataP, rumus.pembagiTetapP),
       result: hasil.rataP ?? "",
     };
     rataPCell.numFmt = "0.00";
@@ -314,28 +320,51 @@ export async function exportAkumulasiToExcel(params: {
     };
     pengSTSCell.numFmt = "0.00";
 
-    // Pengetahuan SAS = (Rata T + 2 * Rata SH + STS + SAT) / 5
+    // Pengetahuan SAS = ((2 * Rata SH) + Rata T + SAT + STS) / 5
     const pengSASCell = ws.getCell(rowNum, pengSASColIdx);
     pengSASCell.value = {
-      formula: `IF(OR(${rtRef}="",${rshRef}="",${stsRef}="",${satRef}=""),"",ROUND((${rtRef}+2*${rshRef}+${stsRef}+${satRef})/5,2))`,
+      formula: `IF(OR(${rtRef}="",${rshRef}="",${stsRef}="",${satRef}=""),"",ROUND(((2*${rshRef})+${rtRef}+${satRef}+${stsRef})/5,2))`,
       result: hasil.pengetahuanSAS ?? "",
     };
     pengSASCell.numFmt = "0.00";
 
-    // Nilai Akhir STS = (Pengetahuan STS + Rata P) / 2
+    // Nilai Akhir STS & Nilai Akhir Siswa (SAS) sesuai pengaturan rumus
     const naSTSCell = ws.getCell(rowNum, naSTSColIdx);
-    naSTSCell.value = {
-      formula: `IF(OR(${pengSTSRef}="",${rpRef}=""),"",ROUND((${pengSTSRef}+${rpRef})/2,2))`,
-      result: hasil.nilaiAkhirSTS ?? "",
-    };
-    naSTSCell.numFmt = "0.00";
-
-    // Nilai Akhir SAS = (Pengetahuan SAS + Rata P) / 2
     const naSASCell = ws.getCell(rowNum, naSASColIdx);
-    naSASCell.value = {
-      formula: `IF(OR(${pengSASRef}="",${rpRef}=""),"",ROUND((${pengSASRef}+${rpRef})/2,2))`,
-      result: hasil.nilaiAkhirSAS ?? "",
-    };
+
+    if (rumus.modeNilaiAkhir === "gabungan_praktek") {
+      naSTSCell.value = {
+        formula: `IF(OR(${pengSTSRef}="",${rpRef}=""),"",ROUND((${pengSTSRef}+${rpRef})/2,2))`,
+        result: hasil.nilaiAkhirSTS ?? "",
+      };
+      naSASCell.value = {
+        formula: `IF(OR(${pengSASRef}="",${rpRef}=""),"",ROUND((${pengSASRef}+${rpRef})/2,2))`,
+        result: hasil.nilaiAkhirSAS ?? "",
+      };
+    } else {
+      const bSH = rumus.bobotRataSH;
+      const bT = rumus.bobotRataT;
+      const bP = rumus.bobotRataP;
+      const bSTS = rumus.bobotSTS;
+      const bSAT = rumus.bobotSAT;
+      const divSTS = Math.max(1, bSH + bT + bP + bSTS);
+      const divSAS = rumus.gunakanPembagiOtomatis
+        ? Math.max(1, bSH + bT + bP + bSAT + bSTS)
+        : Math.max(1, rumus.pembagiNilaiAkhir);
+
+      const numSTS = `(${bSH}*${rshRef})+(${bT}*${rtRef})${bP > 0 ? `+(${bP}*${rpRef})` : ""}+(${bSTS}*${stsRef})`;
+      const numSAS = `(${bSH}*${rshRef})+(${bT}*${rtRef})${bP > 0 ? `+(${bP}*${rpRef})` : ""}+(${bSAT}*${satRef})+(${bSTS}*${stsRef})`;
+
+      naSTSCell.value = {
+        formula: `IF(OR(${rtRef}="",${rshRef}="",${stsRef}=""),"",ROUND((${numSTS})/${divSTS},2))`,
+        result: hasil.nilaiAkhirSTS ?? "",
+      };
+      naSASCell.value = {
+        formula: `IF(OR(${rtRef}="",${rshRef}="",${stsRef}="",${satRef}=""),"",ROUND((${numSAS})/${divSAS},2))`,
+        result: hasil.nilaiAkhirSAS ?? "",
+      };
+    }
+    naSTSCell.numFmt = "0.00";
     naSASCell.numFmt = "0.00";
 
     // Nilai Rapor = pembulatan ke bilangan bulat terdekat dari Nilai Akhir
@@ -657,9 +686,11 @@ export function buildAkumulasiPrintHtml(params: {
       jumlahBab,
       cakupanSTS,
       cakupanSAS,
+      rumus: docData.rumus,
     })
   );
   const ringkasan = hitungRingkasanKelas(hasilList);
+  const rumusAktifText = formatRumusNilaiAkhirText(docData.rumus);
 
   const pageCssSize = paperSize === "F4" ? "330mm 215mm" : "A4 landscape";
 
@@ -926,6 +957,7 @@ export function buildAkumulasiPrintHtml(params: {
 
       <div class="footer-grid">
         <div class="predikat-box">
+          <strong>Rumus Nilai Akhir Siswa:</strong> ${rumusAktifText}<br/>
           <strong>Keterangan Rentang Nilai Rapor &amp; Predikat:</strong><br/>
           • 91 – 100 = <strong>A</strong> (Sangat Baik) &nbsp;&nbsp; • 81 – 90 = <strong>B</strong> (Baik)<br/>
           • 73 – 80 = <strong>C</strong> (Cukup) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; • &lt; 73 = <strong>D</strong> (Di Bawah KKM / Perlu Bimbingan)
