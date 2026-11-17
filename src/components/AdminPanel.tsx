@@ -37,6 +37,7 @@ import {
   UploadCloud,
   RefreshCw,
 } from "lucide-react";
+import AuditDataPanel from "./AuditDataPanel";
 
 interface AdminPanelProps {
   onRefreshTrigger: () => void;
@@ -45,7 +46,7 @@ interface AdminPanelProps {
 export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<
-    "teachers" | "students" | "tps" | "settings" | "ekskul" | "halaqoh" | "backup"
+    "teachers" | "students" | "tps" | "settings" | "ekskul" | "halaqoh" | "backup" | "audit"
   >("teachers");
 
   // State arrays fetched from API
@@ -1845,6 +1846,12 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           className={`py-1.5 px-3.5 text-xs font-bold tracking-wider uppercase border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeTab === "backup" ? "border-blue-600 text-blue-600 bg-blue-50/40 font-extrabold" : "border-transparent text-slate-500 hover:text-slate-805"}`}
         >
           <Database className="w-3.5 h-3.5 text-blue-500" /> Cadangkan & Pulihkan Data
+        </button>
+        <button
+          onClick={() => setActiveTab("audit")}
+          className={`py-1.5 px-3.5 text-xs font-bold tracking-wider uppercase border-b-2 transition flex items-center gap-1.5 cursor-pointer ${activeTab === "audit" ? "border-amber-600 text-amber-700 bg-amber-50/40 font-extrabold" : "border-transparent text-slate-500 hover:text-slate-805"}`}
+        >
+          <ShieldAlert className="w-3.5 h-3.5 text-amber-500" /> Audit Integritas Data
         </button>
       </div>
 
@@ -5388,6 +5395,9 @@ export default function AdminPanel({ onRefreshTrigger }: AdminPanelProps) {
           </div>
         </div>
       )}
+
+      {/* AUDIT INTEGRITAS DATA TAB (READ-ONLY) */}
+      {activeTab === "audit" && <AuditDataPanel />}
 
       {/* HALAQOH FORM MODAL */}
       {isHalaqohModalOpen && (

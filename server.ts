@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs/promises";
 import { createServer as createViteServer } from "vite";
+import { tentukanPredikatLabel } from "./src/lib/predikat";
 
 const app = express();
 const PORT = 3000;
@@ -1232,11 +1233,10 @@ app.get("/api/summary", async (req, res) => {
         ? Math.round((totalScore / filledSubjectsCount) * 10) / 10
         : 0;
 
-    let predikat = "C (Cukup)";
-    if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
-    else if (averageScore > 91) predikat = "A (Sangat Baik)";
-    else if (averageScore >= 80) predikat = "B (Baik)";
-    else predikat = "C (Cukup)";
+    const predikat =
+      filledSubjectsCount === 0
+        ? "Belum Ada Nilai"
+        : tentukanPredikatLabel(averageScore, "Belum Ada Nilai");
 
     return {
       studentId: s.id,
@@ -1437,7 +1437,7 @@ async function startServer() {
       server: {
         middlewareMode: true,
         allowedHosts: true,
-        hmr: process.env.DISABLE_HMR === "true" ? false : undefined,
+        hmr: false,
       },
       appType: "spa",
     });
@@ -1450,9 +1450,31 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  const listenWithRetry = (retriesLeft = 3) => {
+    const httpServer = app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+
+    httpServer.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        if (retriesLeft > 0) {
+          setTimeout(() => {
+            try {
+              httpServer.close();
+            } catch {}
+            listenWithRetry(retriesLeft - 1);
+          }, 500);
+        } else {
+          console.log(`Port ${PORT} is already serving requests.`);
+        }
+      } else {
+        console.error("Server error:", err);
+      }
+    });
+  };
+
+  listenWithRetry();
 }
 
 startServer();
+

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Teacher, Student, Grade, WaliKelasNotesMap } from "../types";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Teacher, Student, Grade, WaliKelasNotesMap, WaliKelasNote } from "../types";
 import {
   Printer,
   ChevronRight,
@@ -24,7 +24,8 @@ import {
   FileArchive,
   FileDown,
   CheckSquare,
-  Square
+  Square,
+  WifiOff,
 } from "lucide-react";
 import PrintRaportView from "./PrintRaportView";
 import {
@@ -33,8 +34,11 @@ import {
   ZipBatchProgress,
   RaportFormatSettings,
   RaportPrincipalSettings,
-  sanitizeTextForStudent
+  detectForeignStudentNamesInDescription
 } from "../lib/raportPdfService";
+import { isFirebaseConfigured } from "../lib/firebase";
+import { useRealtimeData } from "../hooks/useRealtimeData";
+import { KKM_DEFAULT, BATAS_UNGGUL } from "../lib/predikat";
 
 interface WaliKelasPanelProps {
   user: Teacher;
@@ -52,9 +56,17 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   const [selectedClass, setSelectedClass] = useState(initialClass);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [students, setStudents] = useState<Student[]>([]);
-  const [grades, setGrades] = useState<Grade[]>([]);
-  const [allClassNotes, setAllClassNotes] = useState<WaliKelasNotesMap>({});
+  const {
+    students = [],
+    grades = [],
+    walikelasNotes: allClassNotes = {},
+    ekskul: activeEkskulList = [],
+    settings: realtimeSettings,
+    loading,
+    error: realtimeLoadError,
+    isOffline,
+    refresh: fetchData,
+  } = useRealtimeData(["students", "grades", "walikelas_notes", "ekskul", "settings"]);
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
@@ -76,20 +88,27 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   const [sosialCapaian, setSosialCapaian] = useState<string>("B");
   const [sosialDeskripsi, setSosialDeskripsi] = useState<string>("");
 
-  // Form dirty tracking
+  // Form dirty tracking & concurrent remote update protection (Task 3)
   const [isDirty, setIsDirty] = useState(false);
   const isDirtyRef = useRef(false);
   isDirtyRef.current = isDirty;
+  const loadedNoteSignatureRef = useRef<string>("empty");
+  const isSavingRef = useRef<boolean>(false);
+  const [remoteUpdateBanner, setRemoteUpdateBanner] = useState<{
+    updatedBy: string;
+    note: WaliKelasNote;
+  } | null>(null);
 
   // Sub-navigation view state
   const [raportPrintTarget, setRaportPrintTarget] = useState<Student | null>(null);
 
-  const [loading, setLoading] = useState(false);
+  const loadError = Boolean(realtimeLoadError);
   const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  const [activeEkskulList, setActiveEkskulList] = useState<{ id: string; name: string; type: "Wajib" | "Pilihan" }[]>([]);
+  const [foreignNameWarning, setForeignNameWarning] = useState<{
+    names: string[];
+  } | null>(null);
 
   // Quick Add Student Modal State
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
@@ -98,28 +117,31 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   const [isAddingStudent, setIsAddingStudent] = useState(false);
   const [addStudentError, setAddStudentError] = useState("");
 
-  // Raport Settings State (Loaded from server for PDF generation)
-  const [raportSettings, setRaportSettings] = useState<{
+  // Raport Settings derived from realtime settings store
+  const raportSettings = useMemo<{
     principal: RaportPrincipalSettings;
     format: RaportFormatSettings;
-  }>({
-    principal: { name: "Ari Gunawan, S.Kom.", nip: "" },
-    format: {
-      semesterName: "Ganjil",
-      tahunPelajaran: "2026/2027",
-      showLogo: true,
-      paperSize: "A4",
-      tanggalRaport: "17 Juni 2026",
-      signatureCity: "Pangkal Pinang",
-      principalTitle: "Kepala Sekolah",
-      principalSignaturePosition: "bottom_center",
-      showPrincipalNip: false,
-      showParentSignature: true,
-      watermarkOpacity: 0.05,
-      watermarkSize: 440,
-      descFontSize: "9pt",
+  }>(() => ({
+    principal: {
+      name: "Ari Gunawan, S.Kom.",
+      nip: realtimeSettings?.principalNip || "",
     },
-  });
+    format: {
+      semesterName: realtimeSettings?.format?.semesterName || "Ganjil",
+      tahunPelajaran: realtimeSettings?.format?.tahunPelajaran || "2026/2027",
+      showLogo: realtimeSettings?.format?.showLogo !== undefined ? !!realtimeSettings.format.showLogo : true,
+      paperSize: (realtimeSettings?.format?.paperSize as any) || "A4",
+      tanggalRaport: realtimeSettings?.format?.tanggalRaport || "17 Juni 2026",
+      signatureCity: realtimeSettings?.format?.signatureCity || "Pangkal Pinang",
+      principalTitle: realtimeSettings?.format?.principalTitle || "Kepala Sekolah",
+      principalSignaturePosition: (realtimeSettings?.format?.principalSignaturePosition as any) || "bottom_center",
+      showPrincipalNip: false,
+      showParentSignature: realtimeSettings?.format?.showParentSignature !== false,
+      watermarkOpacity: realtimeSettings?.format?.watermarkOpacity || 0.05,
+      watermarkSize: realtimeSettings?.format?.watermarkSize || 440,
+      descFontSize: realtimeSettings?.format?.descFontSize || "9pt",
+    },
+  }), [realtimeSettings]);
 
   // Single & Batch ZIP Download states
   const [isDownloadingSingleId, setIsDownloadingSingleId] = useState<string | null>(null);
@@ -135,37 +157,13 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   const [selectedStudentIdsForZip, setSelectedStudentIdsForZip] = useState<string[]>([]);
   const zipCancelRef = useRef(false);
 
-  // Fetch report settings on mount
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data) {
-          setRaportSettings({
-            principal: {
-              name: "Ari Gunawan, S.Kom.",
-              nip: data.principalNip || "",
-            },
-            format: {
-              semesterName: data.format?.semesterName || "Ganjil",
-              tahunPelajaran: data.format?.tahunPelajaran || "2026/2027",
-              showLogo: data.format?.showLogo !== undefined ? !!data.format.showLogo : true,
-              paperSize: data.format?.paperSize || "A4",
-              tanggalRaport: data.format?.tanggalRaport || "",
-              signatureCity: data.format?.signatureCity || "Pangkal Pinang",
-              principalTitle: data.format?.principalTitle || "Kepala Sekolah",
-              principalSignaturePosition: data.format?.principalSignaturePosition || "bottom_center",
-              showPrincipalNip: data.format?.showPrincipalNip !== false,
-              showParentSignature: data.format?.showParentSignature !== false,
-              watermarkOpacity: data.format?.watermarkOpacity || 0.05,
-              watermarkSize: data.format?.watermarkSize || 440,
-              descFontSize: data.format?.descFontSize || "9pt",
-            },
-          });
-        }
-      })
-      .catch((err) => console.error("Error loading raport settings:", err));
-  }, []);
+  const computeNoteSignature = (n: WaliKelasNote | undefined | null): string => {
+    if (!n) return "empty";
+    const eksSig = Array.isArray(n.ekskul)
+      ? n.ekskul.map((e: any) => `${e.name}:${e.usaha}:${e.proses}:${e.capaian}:${e.description || ""}`).join("|")
+      : "";
+    return `${n.sakit ?? 0}_${n.izin ?? 0}_${n.alpa ?? 0}_${n.catatan ?? ""}_${n.spiritualUsaha ?? "B"}_${n.spiritualProses ?? "B"}_${n.spiritualCapaian ?? "B"}_${n.spiritualDeskripsi ?? ""}_${n.sosialUsaha ?? "B"}_${n.sosialProses ?? "B"}_${n.sosialCapaian ?? "B"}_${n.sosialDeskripsi ?? ""}_${eksSig}_${(n as any).updatedAt ?? ""}`;
+  };
 
   // Helper generators for professional religious & character descriptions
   const generateSpiritualNarrative = (name: string, pred: string) => {
@@ -196,9 +194,9 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
 
   const generateCatatanWaliKelas = (name: string, avgScore: number) => {
     const sName = name || "Ananda";
-    if (avgScore >= 85) {
+    if (avgScore > BATAS_UNGGUL) {
       return `Selamat atas pencapaian luar biasa ananda ${sName}. Prestasi akademik dan karakter ananda sangat membanggakan. Teruslah istiqomah dan rendah hati.`;
-    } else if (avgScore >= 75) {
+    } else if (avgScore >= KKM_DEFAULT) {
       return `Alhamdulillah ananda ${sName} menunjukkan perkembangan yang baik dan semangat belajar yang konsisten. Terus tingkatkan ikhtiar dan doa untuk hasil yang lebih gemilang.`;
     } else {
       return `Kami berharap ananda ${sName} terus meningkatkan fokus, ketekunan, dan manajemen waktu dalam belajar agar potensi yang dimiliki dapat berkembang optimal.`;
@@ -239,7 +237,6 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
         throw new Error(data.error || "Gagal menambahkan siswa.");
       }
 
-      await fetchData();
       onRefreshTrigger();
       setIsAddStudentOpen(false);
       setNewStudentName("");
@@ -253,66 +250,57 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     }
   };
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [resS, resG, resN, resE] = await Promise.all([
-        fetch("/api/students"),
-        fetch("/api/grades"),
-        fetch("/api/walikelas/notes"),
-        fetch("/api/ekskul")
-      ]);
+  // Realtime student selection and concurrent update protection (Task 3)
+  useEffect(() => {
+    const classStudents = (Array.isArray(students) ? students : [])
+      .filter((s: Student) => String(s.kelas).trim() === String(selectedClass).trim())
+      .sort((a: Student, b: Student) =>
+        (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" })
+      );
 
-      const sData = await resS.json();
-      const gData = await resG.json();
-      const nData = await resN.json();
-      const eData = await resE.json();
+    if (classStudents.length === 0) {
+      if (selectedStudent && String(selectedStudent.kelas).trim() !== String(selectedClass).trim()) {
+        setSelectedStudent(null);
+        setIsDirty(false);
+        setRemoteUpdateBanner(null);
+      }
+      return;
+    }
 
-      const studentsArray = Array.isArray(sData) ? sData : [];
-      const gradesArray = Array.isArray(gData) ? gData : [];
-      const notesObj = nData && typeof nData === "object" && !Array.isArray(nData) ? nData : {};
-      const ekskulArray = Array.isArray(eData) ? eData : [];
+    if (
+      !selectedStudent ||
+      String(selectedStudent.kelas).trim() !== String(selectedClass).trim() ||
+      !classStudents.some((s) => s.id === selectedStudent.id)
+    ) {
+      loadStudentData(classStudents[0], allClassNotes, students);
+      return;
+    }
 
-      setStudents(studentsArray);
-      setGrades(gradesArray);
-      setAllClassNotes(notesObj);
-      setActiveEkskulList(ekskulArray);
-
-      // Select student
-      const classStudents = studentsArray
-        .filter((s: Student) => String(s.kelas).trim() === String(selectedClass).trim())
-        .sort((a: Student, b: Student) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
-
-      if (classStudents.length > 0) {
-        if (!selectedStudent || !classStudents.some(s => s.id === selectedStudent.id)) {
-          loadStudentData(classStudents[0], notesObj, studentsArray);
-        } else {
-          // Re-sync selected student data
-          const current = classStudents.find(s => s.id === selectedStudent.id) || classStudents[0];
-          loadStudentData(current, notesObj, studentsArray);
+    // Check if the currently selected student's note changed remotely
+    const remoteNote = allClassNotes[selectedStudent.id];
+    const nextSig = computeNoteSignature(remoteNote);
+    if (nextSig !== loadedNoteSignatureRef.current && !isSavingRef.current) {
+      if (isDirtyRef.current) {
+        // Wali Kelas is actively editing -> DO NOT overwrite! Show banner (Task 3)
+        if (remoteNote) {
+          setRemoteUpdateBanner({
+            updatedBy: (remoteNote as any).lastUpdatedBy || "Guru / Wali Kelas lain",
+            note: remoteNote,
+          });
         }
       } else {
-        setSelectedStudent(null);
+        // Form is clean -> apply realtime update automatically
+        loadStudentData(selectedStudent, allClassNotes, students);
       }
-    } catch (err) {
-      console.error("Error loading data:", err);
-      setError("Gagal memuat sinkronisasi data wali kelas.");
-    } finally {
-      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [selectedClass]);
+  }, [students, allClassNotes, selectedClass]);
 
   // Keyboard shortcut Ctrl+S / Cmd+S
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        if (selectedStudent && !saveLoading) {
+        if (selectedStudent && !saveLoading && !loadError && !isOffline) {
           saveCurrentNotes();
         }
       }
@@ -324,39 +312,48 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
   const loadStudentData = (
     student: Student,
     notesMap: WaliKelasNotesMap = allClassNotes,
-    studentsList: Student[] = students
+    _studentsList: Student[] = students
   ) => {
     setSelectedStudent(student);
     setSuccess("");
-    setError("");
+    setForeignNameWarning(null);
+    setRemoteUpdateBanner(null);
+    if (!loadError) {
+      setError("");
+    }
     setIsDirty(false);
+    isDirtyRef.current = false;
 
     const safeNotesMap = notesMap && typeof notesMap === "object" && !Array.isArray(notesMap) ? notesMap : {};
     const note = safeNotesMap[student.id];
+    loadedNoteSignatureRef.current = computeNoteSignature(note);
 
-    // Check local draft fallback — strictly validate that draft.studentId matches student.id
+    // Local draft is ONLY used when Firebase is NOT configured
     let draft: any = null;
-    try {
-      const rawDraft = localStorage.getItem(`walikelas_draft_${student.id}`);
-      if (rawDraft) {
-        const parsed = JSON.parse(rawDraft);
-        if (parsed && String(parsed.studentId || "").trim() === String(student.id).trim()) {
-          draft = parsed;
+    if (!isFirebaseConfigured) {
+      try {
+        const rawDraft = localStorage.getItem(`walikelas_draft_${student.id}`);
+        if (rawDraft) {
+          const parsed = JSON.parse(rawDraft);
+          if (parsed && String(parsed.studentId || "").trim() === String(student.id).trim()) {
+            draft = parsed;
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    }
 
     const source = note || draft;
 
     if (source) {
+      // Teks TIDAK diubah otomatis saat pemuatan (Task 4)
       const rawCatatan = source.catatan
-        ? sanitizeTextForStudent(source.catatan, student, studentsList)
+        ? String(source.catatan).trim()
         : generateCatatanWaliKelas(student.name, 80);
       const rawSpiritualDesc = source.spiritualDeskripsi
-        ? sanitizeTextForStudent(source.spiritualDeskripsi, student, studentsList)
+        ? String(source.spiritualDeskripsi).trim()
         : generateSpiritualNarrative(student.name, source.spiritualCapaian || "B");
       const rawSosialDesc = source.sosialDeskripsi
-        ? sanitizeTextForStudent(source.sosialDeskripsi, student, studentsList)
+        ? String(source.sosialDeskripsi).trim()
         : generateSosialNarrative(student.name, source.sosialCapaian || "B");
 
       setSakit(String(source.sakit ?? "0"));
@@ -372,7 +369,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       setSosialUsaha(source.sosialUsaha || "B");
       setSosialProses(source.sosialProses || "B");
       setSosialCapaian(source.sosialCapaian || "B");
-      setSosialDeskripsi(rawSosialDesc);
+      setSosialDeskripsi(rawSosialDeskripsiOrFallback(rawSosialDesc));
     } else {
       setSakit("0");
       setIzin("0");
@@ -391,6 +388,10 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     }
   };
 
+  function rawSosialDeskripsiOrFallback(val: string) {
+    return val;
+  }
+
   const buildSanitizedNotePayload = (targetStudent: Student, data: any, baseNotesMap: WaliKelasNotesMap = allClassNotes) => {
     const cleanSid = String(targetStudent.id).trim();
     const currentStudentNote = baseNotesMap[cleanSid] || baseNotesMap[targetStudent.id];
@@ -403,7 +404,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
         ...item,
         studentId: cleanSid,
         studentName: targetStudent.name || item.studentName || "",
-        description: sanitizeTextForStudent(item.description || item.deskripsi || "", targetStudent, students),
+        description: String(item.description || item.deskripsi || "").trim(),
       }));
 
     return {
@@ -411,61 +412,78 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
       sakit: Number(data.sakit || 0),
       izin: Number(data.izin || 0),
       alpa: Number(data.alpa || 0),
-      catatan: sanitizeTextForStudent(data.catatan || "", targetStudent, students),
+      catatan: String(data.catatan || "").trim(),
       spiritualUsaha: data.spiritualUsaha || "B",
       spiritualProses: data.spiritualProses || "B",
       spiritualCapaian: data.spiritualCapaian || "B",
-      spiritualDeskripsi: sanitizeTextForStudent(data.spiritualDeskripsi || "", targetStudent, students),
+      spiritualDeskripsi: String(data.spiritualDeskripsi || "").trim(),
       sosialUsaha: data.sosialUsaha || "B",
       sosialProses: data.sosialProses || "B",
       sosialCapaian: data.sosialCapaian || "B",
-      sosialDeskripsi: sanitizeTextForStudent(data.sosialDeskripsi || "", targetStudent, students),
+      sosialDeskripsi: String(data.sosialDeskripsi || "").trim(),
       ekskul: existingEkskul,
+      lastUpdatedBy: user.name || "Wali Kelas",
       updatedAt: new Date().toISOString()
     };
+  };
+
+  const getDetectedForeignNamesInNotes = (
+    targetStudent: Student,
+    catatanVal: string,
+    spiritualVal: string,
+    sosialVal: string
+  ): string[] => {
+    const combined = `${catatanVal || ""}\n${spiritualVal || ""}\n${sosialVal || ""}`;
+    return detectForeignStudentNamesInDescription(combined, targetStudent, students);
   };
 
   // Auto-save draft before switching student with synchronous in-memory map update
   const handleStudentSelect = (student: Student) => {
     let nextNotesMap = { ...allClassNotes };
 
-    if (selectedStudent && selectedStudent.id !== student.id && isDirtyRef.current) {
-      const savedPayload = buildSanitizedNotePayload(
+    if (selectedStudent && selectedStudent.id !== student.id && isDirtyRef.current && !loadError && !isOffline) {
+      const detected = getDetectedForeignNamesInNotes(
         selectedStudent,
-        {
-          sakit: Number(sakit || 0),
-          izin: Number(izin || 0),
-          alpa: Number(alpa || 0),
-          catatan,
-          spiritualUsaha,
-          spiritualProses,
-          spiritualCapaian,
-          spiritualDeskripsi,
-          sosialUsaha,
-          sosialProses,
-          sosialCapaian,
-          sosialDeskripsi
-        },
-        nextNotesMap
+        catatan,
+        spiritualDeskripsi,
+        sosialDeskripsi
       );
-      nextNotesMap[selectedStudent.id] = savedPayload;
-      saveNotesForStudent(selectedStudent, savedPayload);
+      if (detected.length === 0) {
+        const savedPayload = buildSanitizedNotePayload(
+          selectedStudent,
+          {
+            sakit: Number(sakit || 0),
+            izin: Number(izin || 0),
+            alpa: Number(alpa || 0),
+            catatan,
+            spiritualUsaha,
+            spiritualProses,
+            spiritualCapaian,
+            spiritualDeskripsi,
+            sosialUsaha,
+            sosialProses,
+            sosialCapaian,
+            sosialDeskripsi
+          },
+          nextNotesMap
+        );
+        nextNotesMap[selectedStudent.id] = savedPayload;
+        saveNotesForStudent(selectedStudent, savedPayload);
+      }
     }
 
     loadStudentData(student, nextNotesMap, students);
   };
 
   const saveNotesForStudent = async (targetStudent: Student, payload: any) => {
+    if (loadError || isOffline) return;
     try {
       const studentId = targetStudent.id;
-      // Update in-memory state immediately
-      setAllClassNotes(prev => ({
-        ...prev,
-        [studentId]: payload
-      }));
 
-      // Cache draft in localStorage keyed strictly by studentId
-      localStorage.setItem(`walikelas_draft_${studentId}`, JSON.stringify(payload));
+      // Only cache draft in localStorage when Firebase is NOT configured
+      if (!isFirebaseConfigured) {
+        localStorage.setItem(`walikelas_draft_${studentId}`, JSON.stringify(payload));
+      }
 
       await fetch("/api/walikelas/notes", {
         method: "POST",
@@ -479,39 +497,63 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
 
   const getEffectiveNotesMap = (): WaliKelasNotesMap => {
     const map = { ...allClassNotes };
-    if (selectedStudent && isDirtyRef.current) {
-      const activePayload = buildSanitizedNotePayload(
+    if (selectedStudent && isDirtyRef.current && !loadError && !isOffline) {
+      const detected = getDetectedForeignNamesInNotes(
         selectedStudent,
-        {
-          sakit,
-          izin,
-          alpa,
-          catatan,
-          spiritualUsaha,
-          spiritualProses,
-          spiritualCapaian,
-          spiritualDeskripsi,
-          sosialUsaha,
-          sosialProses,
-          sosialCapaian,
-          sosialDeskripsi,
-        },
-        map
+        catatan,
+        spiritualDeskripsi,
+        sosialDeskripsi
       );
-      map[selectedStudent.id] = activePayload;
-      saveNotesForStudent(selectedStudent, activePayload);
-      setIsDirty(false);
+      if (detected.length === 0) {
+        const activePayload = buildSanitizedNotePayload(
+          selectedStudent,
+          {
+            sakit,
+            izin,
+            alpa,
+            catatan,
+            spiritualUsaha,
+            spiritualProses,
+            spiritualCapaian,
+            spiritualDeskripsi,
+            sosialUsaha,
+            sosialProses,
+            sosialCapaian,
+            sosialDeskripsi,
+          },
+          map
+        );
+        map[selectedStudent.id] = activePayload;
+        saveNotesForStudent(selectedStudent, activePayload);
+        setIsDirty(false);
+        isDirtyRef.current = false;
+      }
     }
     return map;
   };
 
-  const saveCurrentNotes = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!selectedStudent) return;
+  const executeSaveCurrentNotes = async (bypassForeignNameCheck = false) => {
+    if (!selectedStudent || loadError || isOffline) return;
     const targetStudent = selectedStudent;
     setError("");
     setSuccess("");
+
+    if (!bypassForeignNameCheck) {
+      const detectedForeignNames = getDetectedForeignNamesInNotes(
+        targetStudent,
+        catatan,
+        spiritualDeskripsi,
+        sosialDeskripsi
+      );
+      if (detectedForeignNames.length > 0) {
+        setForeignNameWarning({ names: detectedForeignNames });
+        return;
+      }
+    }
+
+    setForeignNameWarning(null);
     setSaveLoading(true);
+    isSavingRef.current = true;
 
     try {
       const payload = buildSanitizedNotePayload(
@@ -533,17 +575,9 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
         allClassNotes
       );
 
-      // Keep local form fields synced with sanitized text
-      setCatatan(payload.catatan);
-      setSpiritualDeskripsi(payload.spiritualDeskripsi);
-      setSosialDeskripsi(payload.sosialDeskripsi);
-
-      // Optimistic update
-      setAllClassNotes(prev => ({
-        ...prev,
-        [targetStudent.id]: payload
-      }));
-      localStorage.setItem(`walikelas_draft_${targetStudent.id}`, JSON.stringify(payload));
+      if (!isFirebaseConfigured) {
+        localStorage.setItem(`walikelas_draft_${targetStudent.id}`, JSON.stringify(payload));
+      }
 
       const response = await fetch("/api/walikelas/notes", {
         method: "POST",
@@ -556,7 +590,10 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
         throw new Error(resData.error || "Gagal menyimpan catatan.");
       }
 
+      loadedNoteSignatureRef.current = computeNoteSignature(resData);
       setIsDirty(false);
+      isDirtyRef.current = false;
+      setRemoteUpdateBanner(null);
       setSuccess(`Data Presensi, Evaluasi Sikap & Catatan Wali Kelas untuk ${targetStudent.name} berhasil disimpan!`);
       onRefreshTrigger();
 
@@ -564,8 +601,14 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
     } catch (err: any) {
       setError(err.message || "Gagal menyimpan catatan.");
     } finally {
+      isSavingRef.current = false;
       setSaveLoading(false);
     }
+  };
+
+  const saveCurrentNotes = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    await executeSaveCurrentNotes(false);
   };
 
   // Filtered students
@@ -1040,16 +1083,48 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
             </div>
 
             {/* Error and success messages */}
-            {error && (
+            {(error || realtimeLoadError) && (
               <div className="p-3 bg-red-950 border-2 border-red-500 text-red-100 text-xs font-bold rounded-xl flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                <span>{error}</span>
+                <span>{error || realtimeLoadError}</span>
               </div>
             )}
             {success && (
               <div className="p-3 bg-[#0b291d] border-2 border-emerald-400 text-emerald-100 text-xs font-black rounded-xl flex items-center gap-2 shadow-lg">
                 <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />
                 <span>{success}</span>
+              </div>
+            )}
+
+            {/* Realtime Remote Update Conflict Banner (Dirty-Form Protection) */}
+            {remoteUpdateBanner && (
+              <div
+                className="p-3.5 bg-amber-950/95 border-2 border-amber-400 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-white shadow-xl"
+                id="walas-remote-update-banner"
+              >
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-black text-amber-200">
+                      Data siswa ini baru diperbarui oleh {remoteUpdateBanner.updatedBy}
+                    </p>
+                    <p className="text-[11px] text-amber-100/90 font-medium mt-0.5">
+                      Isian yang sedang Anda ketik tidak ditimpa otomatis. Klik tombol di samping jika ingin memuat data terbaru.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadStudentData(selectedStudent, allClassNotes, students);
+                    setSuccess("Data terbaru berhasil dimuat.");
+                    setTimeout(() => setSuccess(""), 3000);
+                  }}
+                  className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg border border-amber-200 cursor-pointer transition shrink-0 shadow-md"
+                  id="walas-reload-remote-data-btn"
+                >
+                  Muat data terbaru
+                </button>
               </div>
             )}
 
@@ -1370,7 +1445,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                   <button
                     type="button"
                     onClick={() => {
-                      setCatatan(generateCatatanWaliKelas(selectedStudent.name, 85));
+                      setCatatan(generateCatatanWaliKelas(selectedStudent.name, BATAS_UNGGUL + 1));
                       setIsDirty(true);
                     }}
                     className="px-2.5 py-1 bg-amber-950/80 hover:bg-amber-900 text-amber-200 text-[10px] font-black rounded-lg border border-amber-500/50 cursor-pointer flex items-center gap-1 transition"
@@ -1442,9 +1517,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                         const prosesVal = toLetter(eks.proses, fallbackLetter);
                         const capaianVal = toLetter(eks.capaian, fallbackLetter);
                         const rawEkskulDesc = eks.description || eks.deskripsi || "";
-                        const safeEkskulDesc = rawEkskulDesc
-                          ? sanitizeTextForStudent(rawEkskulDesc, selectedStudent, students)
-                          : "";
+                        const safeEkskulDesc = rawEkskulDesc ? String(rawEkskulDesc).trim() : "";
 
                         return (
                           <div
@@ -1505,20 +1578,62 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                 })()}
               </div>
 
+              {foreignNameWarning && (
+                <div className="p-4 bg-amber-950/95 border-2 border-amber-400 rounded-2xl space-y-3 text-xs text-white shadow-xl">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-black text-amber-200 uppercase tracking-wide">
+                        Peringatan Deteksi Nama Siswa Lain di Kelas {selectedStudent.kelas}
+                      </p>
+                      <p className="font-bold text-slate-100 leading-relaxed">
+                        Catatan/deskripsi untuk <strong>{selectedStudent.name}</strong> mengandung nama siswa lain dari kelas yang sama:{" "}
+                        <strong className="text-amber-300 underline">
+                          {foreignNameWarning.names.join(", ")}
+                        </strong>
+                        . Teks tidak akan diubah otomatis oleh sistem. Apakah Anda yakin ingin tetap menyimpan catatan ini apa adanya?
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setForeignNameWarning(null)}
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-lg border border-slate-500 cursor-pointer transition"
+                    >
+                      Batal / Perbaiki Teks
+                    </button>
+                    <button
+                      type="button"
+                      disabled={saveLoading || loadError || isOffline}
+                      onClick={() => executeSaveCurrentNotes(true)}
+                      className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-lg border-2 border-amber-300 cursor-pointer transition disabled:opacity-50"
+                    >
+                      Ya, Tetap Simpan Tanpa Mengubah Teks
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* SAVE BUTTON & CONTROLS */}
               <div className="sticky bottom-4 z-20 bg-[#0f172a]/95 backdrop-blur-md p-3.5 rounded-2xl border-2 border-emerald-500/70 shadow-2xl flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${isDirty ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
+                  <div className={`w-3 h-3 rounded-full ${isOffline ? "bg-rose-500" : isDirty ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
                   <span className="text-xs font-bold text-white">
-                    {isDirty ? "Perubahan belum disimpan (Tekan Simpan atau Ctrl+S)" : "Semua data tersimpan aman ✓"}
+                    {isOffline
+                      ? "Koneksi Offline — Tombol Simpan dinonaktifkan sementara"
+                      : isDirty
+                      ? "Perubahan belum disimpan (Tekan Simpan atau Ctrl+S)"
+                      : "Semua data tersimpan aman ✓"}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="submit"
-                    disabled={saveLoading}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-lg transition cursor-pointer disabled:opacity-50 border border-emerald-300"
+                    disabled={saveLoading || loadError || isOffline}
+                    title={isOffline ? "Tidak dapat menyimpan saat koneksi Offline" : undefined}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-lg transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-emerald-300"
                     id="submit-notes-button"
                   >
                     {saveLoading ? (
@@ -1526,7 +1641,7 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                     ) : (
                       <>
                         <Save className="w-4 h-4" />
-                        <span>Simpan Evaluasi & Presensi</span>
+                        <span>{isOffline ? "Offline (Simpan Nonaktif)" : "Simpan Evaluasi & Presensi"}</span>
                       </>
                     )}
                   </button>
@@ -1610,8 +1725,8 @@ export default function WaliKelasPanel({ user, onRefreshTrigger }: WaliKelasPane
                 </button>
                 <button
                   type="submit"
-                  disabled={isAddingStudent}
-                  className="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-black rounded-xl cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60 shadow-lg border border-emerald-300"
+                  disabled={isAddingStudent || isOffline}
+                  className="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-black rounded-xl cursor-pointer flex items-center justify-center gap-1.5 transition disabled:opacity-60 disabled:cursor-not-allowed shadow-lg border border-emerald-300"
                 >
                   {isAddingStudent ? (
                     <>

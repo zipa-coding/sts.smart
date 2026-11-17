@@ -78,8 +78,12 @@ export interface Grade {
   proses?: string;
   capaian?: string;
   deskripsi?: string;
+  teacherName?: string;
   lastUpdatedBy?: string;
   lastUpdatedAt?: string;
+  studentName?: string;
+  kelas?: string;
+  _docId?: string;
 }
 
 export interface WaliKelasNote {

@@ -1,5 +1,14 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { SchoolSummary } from "../types";
+import React, { useState, useMemo } from "react";
+import {
+  tentukanPredikat,
+  tentukanPredikatLabel,
+  RENTANG_PREDIKAT_A,
+  RENTANG_PREDIKAT_B,
+  RENTANG_PREDIKAT_C,
+  KKM_DEFAULT,
+  BATAS_UNGGUL,
+} from "../lib/predikat";
+import { useRealtimeSummary } from "../hooks/useRealtimeData";
 import AestheticClock from "./AestheticClock";
 import SplineWaveChart from "./SplineWaveChart";
 import {
@@ -33,11 +42,9 @@ interface DashboardProgressProps {
 }
 
 export default function DashboardProgress({
-  onRefreshTrigger,
+  onRefreshTrigger: _onRefreshTrigger,
 }: DashboardProgressProps) {
-  const [summary, setSummary] = useState<SchoolSummary | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { summary, loading, error, refresh: fetchSummary } = useRealtimeSummary();
 
   // Subject filtering and search
   const [categoryFilter, setCategoryFilter] = useState<"all" | "nasional" | "islamic" | "muatan">("all");
@@ -50,25 +57,6 @@ export default function DashboardProgress({
   const [rankingSortOrder, setRankingSortOrder] = useState<"desc" | "asc">("desc");
   const [rankingBasis, setRankingBasis] = useState<"total" | "average">("total");
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
-
-  const fetchSummary = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/summary");
-      if (!response.ok) throw new Error("Gagal memuat ringkasan data.");
-      const data = await response.json();
-      setSummary(data);
-    } catch (err: any) {
-      setError(err.message || "Gagal menghubungkan ke server.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSummary();
-  }, [onRefreshTrigger]);
 
   // Subject categorization helper
   const categorizedSubjects = useMemo(() => {
@@ -919,7 +907,7 @@ export default function DashboardProgress({
               <span className="px-2.5 py-0.5 rounded-md bg-red-950/70 text-red-300 border border-red-500/40 flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                 <span>
-                  {filteredRankings.filter((s: any) => s.currentSubjectScore !== null && s.currentSubjectScore < 75).length} Siswa Perlu Bimbingan Lebih (&lt; KKM 75)
+                  {filteredRankings.filter((s: any) => s.currentSubjectScore !== null && s.currentSubjectScore < KKM_DEFAULT).length} Siswa Perlu Bimbingan Lebih (&lt; KKM {KKM_DEFAULT})
                 </span>
               </span>
             </div>
@@ -1121,8 +1109,8 @@ export default function DashboardProgress({
 
                     const subScore = (student as any).currentSubjectScore as number | null;
                     const hasSubScore = subScore !== null && subScore !== undefined;
-                    const isNeedsGuidance = rankingSubjectFilter !== "all" && hasSubScore && subScore < 75;
-                    const isAdvanced = rankingSubjectFilter !== "all" && hasSubScore && subScore >= 85;
+                    const isNeedsGuidance = rankingSubjectFilter !== "all" && hasSubScore && subScore < KKM_DEFAULT;
+                    const isAdvanced = rankingSubjectFilter !== "all" && hasSubScore && subScore > BATAS_UNGGUL;
 
                     return (
                       <React.Fragment key={student.studentId}>
@@ -1240,14 +1228,14 @@ export default function DashboardProgress({
                                 {hasSubScore ? (
                                   <span
                                     className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                                      subScore >= 85
+                                      tentukanPredikat(subScore) === "A"
                                         ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                        : subScore >= 75
+                                        : tentukanPredikat(subScore) === "B"
                                         ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
-                                        : "bg-red-500/20 text-red-300 border border-red-500/40"
+                                        : "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                                     }`}
                                   >
-                                    {subScore >= 85 ? "A (Sangat Baik)" : subScore >= 75 ? "B (Baik)" : "C (Perlu Bimbingan)"}
+                                    {tentukanPredikatLabel(subScore, "-")}
                                   </span>
                                 ) : (
                                   <span className="text-slate-500">-</span>
@@ -1260,7 +1248,7 @@ export default function DashboardProgress({
                                   isNeedsGuidance ? (
                                     <span className="px-2.5 py-1 rounded-lg bg-red-950/80 text-red-300 border border-red-500 font-bold text-[10px] inline-flex items-center gap-1.5 shadow-xs">
                                       <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                                      <span>PERLU BIMBINGAN LEBIH (&lt; KKM 75)</span>
+                                      <span>PERLU BIMBINGAN LEBIH (&lt; KKM {KKM_DEFAULT})</span>
                                     </span>
                                   ) : isAdvanced ? (
                                     <span className="px-2.5 py-1 rounded-lg bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] inline-flex items-center gap-1.5">
@@ -1316,9 +1304,9 @@ export default function DashboardProgress({
                               <td className="py-3.5 px-4 text-right">
                                 <span
                                   className={`text-sm font-black font-mono ${
-                                    student.averageScore > 91
+                                    tentukanPredikat(student.averageScore) === "A"
                                       ? "text-emerald-400"
-                                      : student.averageScore >= 80
+                                      : tentukanPredikat(student.averageScore) === "B"
                                       ? "text-cyan-400"
                                       : student.averageScore > 0
                                       ? "text-amber-400"
@@ -1403,9 +1391,9 @@ export default function DashboardProgress({
                                           className={`font-mono font-bold text-xs px-1.5 py-0.5 rounded ${
                                             !hasScore
                                               ? "text-slate-600 bg-slate-900"
-                                              : score > 91
+                                              : tentukanPredikat(score) === "A"
                                               ? "text-emerald-400 bg-emerald-950/60 border border-emerald-500/30"
-                                              : score >= 80
+                                              : tentukanPredikat(score) === "B"
                                               ? "text-cyan-400 bg-cyan-950/60 border border-cyan-500/30"
                                               : "text-amber-400 bg-amber-950/60 border border-amber-500/30"
                                           }`}
@@ -1437,13 +1425,13 @@ export default function DashboardProgress({
             </div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Nilai &gt; 91 (A - Sangat Baik)
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> {RENTANG_PREDIKAT_A}
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Nilai 80 - 91 (B - Baik)
+                <span className="w-2 h-2 rounded-full bg-cyan-400"></span> {RENTANG_PREDIKAT_B}
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400"></span> Nilai &le; 79 (C - Cukup)
+                <span className="w-2 h-2 rounded-full bg-amber-400"></span> {RENTANG_PREDIKAT_C}
               </span>
             </div>
           </div>

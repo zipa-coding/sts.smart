@@ -11,9 +11,9 @@ import {
   query, 
   where 
 } from "firebase/firestore";
-import dbData from "../data/db.json";
+import { tentukanPredikat, tentukanPredikatLabel } from "./predikat";
+import { mergeDeskripsiAman } from "./gradeMerge";
 
-const dbDataAny = dbData as any;
 const metaEnv = (import.meta as any).env || {};
 
 // Firebase configuration with smartsts-12f15
@@ -37,14 +37,31 @@ export const isFirebaseConfigured = !!(
 let app: any = null;
 let db: any = null;
 
-// Timeout helper with 8s default so Firestore operations have ample time
-export function withTimeout<T>(promise: Promise<T>, ms = 8000): Promise<T> {
+// Timeout helper with 15s default
+export function withTimeout<T>(promise: Promise<T>, ms = 15000): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error("Firebase request timeout")), ms)
+      setTimeout(() => reject(new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.")), ms)
     ),
   ]);
+}
+
+// Timeout + 1 retry helper (15 seconds per attempt, 1 retry)
+export async function withRetryAndTimeout<T>(
+  operation: () => Promise<T>,
+  ms = 15000,
+  retries = 1
+): Promise<T> {
+  let lastError: any = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await withTimeout(operation(), ms);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
 }
 
 if (isFirebaseConfigured) {
@@ -52,86 +69,8 @@ if (isFirebaseConfigured) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app);
     console.log("Firebase initialized successfully with cloud Firestore.");
-    
-    // Check and seed templates in background only if completely empty
-    setTimeout(() => {
-      seedFirestoreIfEmpty().catch((err) => console.warn("Firestore seed skipped:", err));
-    }, 1500);
   } catch (error) {
     console.warn("Firebase initialization skipped or failed:", error);
-  }
-}
-
-// Function to seed Firestore if completely empty
-async function seedFirestoreIfEmpty() {
-  try {
-    if (!db) return;
-    const teachersRef = collection(db, "teachers");
-    const snapshot = await withTimeout(getDocs(teachersRef), 5000);
-    if (snapshot.empty) {
-      // Also check alternative 'guru' collection
-      const snapGuru = await withTimeout(getDocs(collection(db, "guru")), 3000).catch(() => ({ empty: true }));
-      if (!snapGuru.empty) {
-        console.log("Existing 'guru' collection detected, skipping default seed.");
-        return;
-      }
-
-      console.log("Firestore is empty. Seeding initial templates...");
-      
-      // 1. Seed Teachers
-      for (const t of dbDataAny.teachers) {
-        await setDoc(doc(db, "teachers", t.id), t);
-      }
-      
-      // 2. Seed Students
-      for (const s of dbDataAny.students) {
-        await setDoc(doc(db, "students", s.id), s);
-      }
-      
-      // 3. Seed Grades
-      for (const g of dbDataAny.grades) {
-        const id = `${g.studentId}_${g.subject.replace(/[^a-zA-Z0-9]/g, "_")}`;
-        await setDoc(doc(db, "grades", id), g);
-      }
-      
-      // 4. Seed Wali Kelas Notes
-      if (dbDataAny.walikelas_notes) {
-        for (const [studentId, note] of Object.entries(dbDataAny.walikelas_notes)) {
-          await setDoc(doc(db, "walikelas_notes", studentId), note as any);
-        }
-      }
-      
-      // 5. Seed TPs templates
-      if (dbDataAny.tujuan_pembelajaran_templates) {
-        for (const [subject, tps] of Object.entries(dbDataAny.tujuan_pembelajaran_templates)) {
-          await setDoc(doc(db, "tujuan_pembelajaran_templates", subject), { tps });
-        }
-      }
-      
-      // 6. Seed Settings
-      if (dbDataAny.settings) {
-        await setDoc(doc(db, "settings", "app"), dbDataAny.settings);
-      }
-      
-      // 7. Seed Ekskul
-      const defaultEkskul = [
-        { "id": "e1", "name": "Pramuka", "type": "Wajib" },
-        { "id": "e2", "name": "Mentoring", "type": "Wajib" },
-        { "id": "e3", "name": "Futsal", "type": "Pilihan" },
-        { "id": "e4", "name": "Voli", "type": "Pilihan" },
-        { "id": "e5", "name": "Panahan", "type": "Pilihan" },
-        { "id": "e6", "name": "Study Club", "type": "Pilihan" }
-      ];
-      for (const e of defaultEkskul) {
-        await setDoc(doc(db, "ekskul", e.id), e);
-      }
-      
-      console.log("Firestore initialized with template data.");
-    } else {
-      console.log(`Firestore already has ${snapshot.size} teacher(s). Retaining all user database records.`);
-    }
-  } catch (error) {
-    console.warn("Background seed check skipped:", error);
   }
 }
 
@@ -139,63 +78,49 @@ async function seedFirestoreIfEmpty() {
 export const firebaseApi = {
   // 1. POST /api/login
   login: async (body: any) => {
-    if (!db) return null;
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
     const { username, password } = body || {};
     if (!username) return null;
 
     const trimmedUser = String(username).trim();
-    const teacherCollections = ["teachers", "guru", "Teachers", "Guru", "data_guru", "dataGuru", "users", "Users", "ustadz"];
 
-    try {
-      for (const colName of teacherCollections) {
-        try {
-          // Check query by username
-          const q = query(collection(db, colName), where("username", "==", trimmedUser));
-          const snapshot = await withTimeout(getDocs(q), 3000).catch(() => null);
-          if (snapshot && !snapshot.empty) {
-            for (const docSnap of snapshot.docs) {
-              const data = docSnap.data();
-              if (data.password === password || (!data.password && password === "123")) {
-                return {
-                  id: docSnap.id,
-                  name: data.name || data.nama || data.namaGuru || data.nama_lengkap || "Guru",
-                  username: data.username || data.user || trimmedUser,
-                  password: data.password || password,
-                  subject: data.subject || data.mapel || data.mataPelajaran || data.mata_pelajaran || "Guru",
-                  isWaliKelas: !!(data.isWaliKelas || data.waliKelas || data.is_wali_kelas || data.isWali),
-                  kelas: data.kelas || data.rombel || data.class || "",
-                  ...data
-                };
-              }
-            }
-          }
-
-          // Direct doc lookup by ID (e.g. doc ID is the username)
-          const docDirect = await withTimeout(getDoc(doc(db, colName, trimmedUser)), 2000).catch(() => null);
-          if (docDirect && docDirect.exists()) {
-            const data = docDirect.data();
-            if (data.password === password || (!data.password && password === "123")) {
-              return {
-                id: docDirect.id,
-                name: data.name || data.nama || data.namaGuru || data.nama_lengkap || "Guru",
-                username: data.username || data.user || trimmedUser,
-                password: data.password || password,
-                subject: data.subject || data.mapel || data.mataPelajaran || data.mata_pelajaran || "Guru",
-                isWaliKelas: !!(data.isWaliKelas || data.waliKelas || data.is_wali_kelas || data.isWali),
-                kelas: data.kelas || data.rombel || data.class || "",
-                ...data
-              };
-            }
-          }
-        } catch (colErr) {
-          // continue checking next collection
+    const q = query(collection(db, "teachers"), where("username", "==", trimmedUser));
+    const snapshot = await withRetryAndTimeout(() => getDocs(q), 15000, 1);
+    if (snapshot && !snapshot.empty) {
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        if (data.password === password || (!data.password && password === "123")) {
+          return {
+            ...data,
+            id: docSnap.id,
+            name: data.name || data.nama || data.namaGuru || data.nama_lengkap || "Guru",
+            username: data.username || data.user || trimmedUser,
+            password: data.password || password,
+            subject: data.subject || data.mapel || data.mataPelajaran || data.mata_pelajaran || "Guru",
+            isWaliKelas: !!(data.isWaliKelas || data.waliKelas || data.is_wali_kelas || data.isWali),
+            kelas: data.kelas || data.rombel || data.class || "",
+          };
         }
       }
-    } catch (e) {
-      console.warn("Firestore login check error:", e);
     }
 
-    // Default admin fallback
+    const docDirect = await withRetryAndTimeout(() => getDoc(doc(db, "teachers", trimmedUser)), 15000, 1);
+    if (docDirect && docDirect.exists()) {
+      const data = docDirect.data();
+      if (data.password === password || (!data.password && password === "123")) {
+        return {
+          ...data,
+          id: docDirect.id,
+          name: data.name || data.nama || data.namaGuru || data.nama_lengkap || "Guru",
+          username: data.username || data.user || trimmedUser,
+          password: data.password || password,
+          subject: data.subject || data.mapel || data.mataPelajaran || data.mata_pelajaran || "Guru",
+          isWaliKelas: !!(data.isWaliKelas || data.waliKelas || data.is_wali_kelas || data.isWali),
+          kelas: data.kelas || data.rombel || data.class || "",
+        };
+      }
+    }
+
     if (trimmedUser === "admin" && password === "123") {
       return {
         id: "t1",
@@ -213,45 +138,30 @@ export const firebaseApi = {
 
   // 2. GET & POST /api/teachers
   getTeachers: async (): Promise<any[]> => {
-    if (!db) return [];
-    const teacherCollections = ["teachers", "guru", "Teachers", "Guru", "data_guru", "dataGuru", "data_teachers", "DataGuru", "ustadz"];
-    try {
-      for (const colName of teacherCollections) {
-        try {
-          const snap = await withTimeout(getDocs(collection(db, colName)), 4000).catch(() => null);
-          if (snap && !snap.empty) {
-            return snap.docs.map(docSnap => {
-              const d = docSnap.data();
-              return {
-                id: docSnap.id,
-                name: d.name || d.nama || d.namaGuru || d.nama_lengkap || d.namaLengkap || d.fullname || "Guru",
-                username: d.username || d.user || d.email || docSnap.id,
-                password: d.password || d.pass || "123",
-                subject: d.subject || d.mapel || d.mataPelajaran || d.mata_pelajaran || "Guru",
-                isWaliKelas: !!(d.isWaliKelas || d.waliKelas || d.is_wali_kelas || d.isWali),
-                kelas: d.kelas || d.rombel || d.class || "",
-                isPembinaEkskul: !!(d.isPembinaEkskul || d.is_pembina_ekskul),
-                pembinaEkskulId: d.pembinaEkskulId || "",
-                pembinaEkskulName: d.pembinaEkskulName || "",
-                ...d
-              };
-            });
-          }
-        } catch (err) {
-          // continue
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to get teachers from Firestore:", e);
-    }
-    return [];
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
+    const snap = await withRetryAndTimeout(() => getDocs(collection(db, "teachers")), 15000, 1);
+    return snap.docs.map(docSnap => {
+      const d = docSnap.data();
+      return {
+        ...d,
+        id: docSnap.id,
+        name: d.name || d.nama || d.namaGuru || d.nama_lengkap || d.namaLengkap || d.fullname || "Guru",
+        username: d.username || d.user || d.email || docSnap.id,
+        password: d.password || d.pass || "123",
+        subject: d.subject || d.mapel || d.mataPelajaran || d.mata_pelajaran || "Guru",
+        isWaliKelas: !!(d.isWaliKelas || d.waliKelas || d.is_wali_kelas || d.isWali),
+        kelas: d.kelas || d.rombel || d.class || "",
+        isPembinaEkskul: !!(d.isPembinaEkskul || d.is_pembina_ekskul),
+        pembinaEkskulId: d.pembinaEkskulId || "",
+        pembinaEkskulName: d.pembinaEkskulName || "",
+      };
+    });
   },
   postTeacher: async (body: any) => {
     if (!db) throw new Error("Database not connected");
     const { name, username, password, subject, isWaliKelas, kelas, isPembinaEkskul, pembinaEkskulId, pembinaEkskulName } = body;
-    // Check duplication
     const q = query(collection(db, "teachers"), where("username", "==", username));
-    const dup = await withTimeout(getDocs(q), 2500);
+    const dup = await withRetryAndTimeout(() => getDocs(q), 15000, 1);
     if (!dup.empty) throw new Error("Username sudah digunakan.");
 
     const id = "t_" + Date.now();
@@ -267,7 +177,7 @@ export const firebaseApi = {
       pembinaEkskulId: pembinaEkskulId || "",
       pembinaEkskulName: pembinaEkskulName || ""
     };
-    await withTimeout(setDoc(doc(db, "teachers", id), newTeacher), 2500);
+    await withRetryAndTimeout(() => setDoc(doc(db, "teachers", id), newTeacher), 15000, 1);
     return newTeacher;
   },
   putTeacher: async (id: string, body: any) => {
@@ -285,13 +195,13 @@ export const firebaseApi = {
       pembinaEkskulId: pembinaEkskulId || "",
       pembinaEkskulName: pembinaEkskulName || ""
     };
-    await withTimeout(updateDoc(ref, updated), 2500);
+    await withRetryAndTimeout(() => updateDoc(ref, updated), 15000, 1);
     return { id, ...updated };
   },
   deleteTeacher: async (id: string) => {
     if (!db) throw new Error("Database not connected");
     if (id === 't1') throw new Error("Akun Super Admin utama tidak boleh dihapus.");
-    await withTimeout(deleteDoc(doc(db, "teachers", id)), 2500);
+    await withRetryAndTimeout(() => deleteDoc(doc(db, "teachers", id)), 15000, 1);
     return { message: "Guru berhasil dihapus." };
   },
   deleteTeachersBulk: async (ids: string[]) => {
@@ -299,18 +209,19 @@ export const firebaseApi = {
     const validIds = ids.filter(id => id && id !== 't1');
     let deletedCount = 0;
     for (const id of validIds) {
-      try {
-        await withTimeout(deleteDoc(doc(db, "teachers", id)), 3000);
-        deletedCount++;
-      } catch (err) {
-        console.warn(`Failed to delete teacher ${id}:`, err);
-      }
+      await withRetryAndTimeout(() => deleteDoc(doc(db, "teachers", id)), 15000, 1);
+      deletedCount++;
     }
     return { success: true, deletedCount, message: `Berhasil menghapus ${deletedCount} guru.` };
   },
 
   // 3. GET, POST, PUT, DELETE /api/students
+  // Hanya membaca dari koleksi "students", menempatkan ...d sebelum id: docSnap.id, timeout 15s + 1 retry, dan melempar error jika gagal
   getStudents: async (): Promise<any[]> => {
+    if (!db) {
+      throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
+    }
+
     const sortList = (list: any[]) =>
       [...list].sort((a: any, b: any) => {
         if (a.kelas && b.kelas && String(a.kelas).trim() !== String(b.kelas).trim()) {
@@ -319,45 +230,30 @@ export const firebaseApi = {
         return String(a.name || "").localeCompare(String(b.name || ""), "id", { sensitivity: "base" });
       });
 
-    if (!db) return sortList(dbDataAny.students || []);
-    const studentCollections = ["students", "siswa", "Students", "Siswa", "data_siswa", "dataSiswa", "data_students", "DataSiswa", "santri"];
-    try {
-      for (const colName of studentCollections) {
-        try {
-          const snap = await withTimeout(getDocs(collection(db, colName)), 4000).catch(() => null);
-          if (snap && !snap.empty) {
-            const mapped = snap.docs.map(docSnap => {
-              const d = docSnap.data();
-              return {
-                id: docSnap.id,
-                name: d.name || d.nama || d.namaSiswa || d.nama_lengkap || d.namaLengkap || d.fullname || "Siswa",
-                nisn: d.nisn || d.nis || d.nisnSiswa || d.nis_nisn || d.no_induk || docSnap.id,
-                kelas: String(d.kelas || d.rombel || d.class || d.tingkat || "7").trim(),
-                ...d
-              };
-            });
-            return sortList(mapped);
-          }
-        } catch (err) {
-          // continue
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to get students from Firestore:", e);
-    }
-    return sortList(dbDataAny.students || []);
+    const snap = await withRetryAndTimeout(() => getDocs(collection(db, "students")), 15000, 1);
+    const mapped = snap.docs.map(docSnap => {
+      const d = docSnap.data();
+      return {
+        ...d,
+        id: docSnap.id,
+        name: d.name || d.nama || d.namaSiswa || d.nama_lengkap || d.namaLengkap || d.fullname || "Siswa",
+        nisn: d.nisn || d.nis || d.nisnSiswa || d.nis_nisn || d.no_induk || docSnap.id,
+        kelas: String(d.kelas || d.rombel || d.class || d.tingkat || "7").trim(),
+      };
+    });
+    return sortList(mapped);
   },
   postStudent: async (body: any) => {
     if (!db) throw new Error("Database not connected");
     const { name, nisn, kelas } = body;
     const cleanNisn = String(nisn || "").trim().replace(/\D/g, "");
     const q = query(collection(db, "students"), where("nisn", "==", cleanNisn));
-    const dup = await withTimeout(getDocs(q), 5000).catch(() => ({ empty: true }));
+    const dup = await withRetryAndTimeout(() => getDocs(q), 15000, 1);
     if (!dup.empty) throw new Error("Siswa dengan NISN ini sudah terdaftar.");
 
     const id = "s_" + Date.now();
     const newStudent = { id, nisn: cleanNisn, name: String(name || "").trim(), kelas: String(kelas || "7").trim() };
-    await withTimeout(setDoc(doc(db, "students", id), newStudent), 5000);
+    await withRetryAndTimeout(() => setDoc(doc(db, "students", id), newStudent), 15000, 1);
     return newStudent;
   },
   postStudentsBatch: async (studentsList: any[]): Promise<any> => {
@@ -395,7 +291,7 @@ export const firebaseApi = {
 
       const id = "s_" + Date.now() + "_" + (++counter);
       const newStudent = { id, nisn, name, kelas };
-      await withTimeout(setDoc(doc(db, "students", id), newStudent), 5000);
+      await withRetryAndTimeout(() => setDoc(doc(db, "students", id), newStudent), 15000, 1);
       addedStudents.push(newStudent);
     }
 
@@ -420,7 +316,6 @@ export const firebaseApi = {
     for (const item of updatesList) {
       const { id, currentNisn, currentName, name, nisn, kelas } = item;
 
-      // Match student by id, or currentNisn, or currentName
       let targetStudent = null;
       if (id) {
         targetStudent = existing.find((s: any) => s.id === id);
@@ -459,7 +354,6 @@ export const firebaseApi = {
       const newName = name !== undefined && String(name).trim() ? String(name).trim() : targetStudent.name;
       const newKelas = kelas !== undefined && String(kelas).trim() ? String(kelas).trim() : targetStudent.kelas;
 
-      // Duplicate NISN check
       if (newNisn && newNisn !== targetStudent.nisn) {
         const existsAnother = existing.some(
           (s: any) => s.id !== targetStudent.id && String(s.nisn).trim() === newNisn
@@ -477,7 +371,7 @@ export const firebaseApi = {
       };
 
       try {
-        await withTimeout(updateDoc(doc(db, "students", targetStudent.id), updatedData), 5000);
+        await withRetryAndTimeout(() => updateDoc(doc(db, "students", targetStudent.id), updatedData), 15000, 1);
         updatedCount++;
         updatedStudents.push({ ...targetStudent, ...updatedData });
       } catch (err: any) {
@@ -501,23 +395,20 @@ export const firebaseApi = {
     const { name, nisn, kelas } = body;
     const ref = doc(db, "students", id);
     const updated = { name, nisn, kelas };
-    await withTimeout(updateDoc(ref, updated), 5000);
+    await withRetryAndTimeout(() => updateDoc(ref, updated), 15000, 1);
     return { id, ...updated };
   },
   deleteStudent: async (id: string) => {
     if (!db) throw new Error("Database not connected");
-    // Delete student doc
-    await withTimeout(deleteDoc(doc(db, "students", id)), 5000);
+    await withRetryAndTimeout(() => deleteDoc(doc(db, "students", id)), 15000, 1);
     
-    // Clean up grades
-    const gradesSnap = await withTimeout(getDocs(collection(db, "grades")), 5000).catch(() => ({ docs: [] }));
+    const gradesSnap = await withRetryAndTimeout(() => getDocs(collection(db, "grades")), 15000, 1);
     for (const gDoc of gradesSnap.docs) {
       if (gDoc.data().studentId === id) {
         await deleteDoc(doc(db, "grades", gDoc.id));
       }
     }
     
-    // Clean up notes
     await deleteDoc(doc(db, "walikelas_notes", id)).catch(() => {});
     return { message: "Siswa berhasil dihapus." };
   },
@@ -527,238 +418,251 @@ export const firebaseApi = {
     let deletedCount = 0;
     
     for (const id of validIds) {
-      try {
-        await withTimeout(deleteDoc(doc(db, "students", id)), 3000);
-        await deleteDoc(doc(db, "walikelas_notes", id)).catch(() => {});
-        deletedCount++;
-      } catch (err) {
-        console.warn(`Failed to delete student ${id}:`, err);
-      }
+      await withRetryAndTimeout(() => deleteDoc(doc(db, "students", id)), 15000, 1);
+      await deleteDoc(doc(db, "walikelas_notes", id)).catch(() => {});
+      deletedCount++;
     }
 
-    // Bulk cleanup grades
-    try {
-      const gradesSnap = await withTimeout(getDocs(collection(db, "grades")), 5000).catch(() => ({ docs: [] }));
-      for (const gDoc of gradesSnap.docs) {
-        if (validIds.has(gDoc.data().studentId)) {
-          await deleteDoc(doc(db, "grades", gDoc.id)).catch(() => {});
-        }
+    const gradesSnap = await withRetryAndTimeout(() => getDocs(collection(db, "grades")), 15000, 1);
+    for (const gDoc of gradesSnap.docs) {
+      if (validIds.has(gDoc.data().studentId)) {
+        await deleteDoc(doc(db, "grades", gDoc.id)).catch(() => {});
       }
-    } catch (err) {
-      console.warn("Failed cleaning up grades:", err);
     }
 
     return { success: true, deletedCount, message: `Berhasil menghapus ${deletedCount} siswa.` };
   },
 
   // 4. GET & POST /api/grades
+  // Hanya membaca dari koleksi "grades", timeout 15s + 1 retry, dan melempar error jika gagal
   getGrades: async (): Promise<any[]> => {
-    if (!db) return [];
-    try {
-      const gradeCollections = ["grades", "nilai", "data_nilai", "raport", "Grades", "Nilai", "dataNilai"];
-      for (const colName of gradeCollections) {
-        try {
-          const snap = await withTimeout(getDocs(collection(db, colName)), 6000).catch(() => null);
-          if (snap && !snap.empty) {
-            return snap.docs.map(docSnap => docSnap.data());
-          }
-        } catch {}
-      }
-    } catch (e) {
-      console.warn("Failed to get grades from Firestore:", e);
+    if (!db) {
+      throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
     }
-    return [];
+    const snap = await withRetryAndTimeout(() => getDocs(collection(db, "grades")), 15000, 1);
+    return snap.docs.map(docSnap => ({
+      ...docSnap.data(),
+      _docId: docSnap.id,
+    }));
   },
   postGrade: async (body: any) => {
-    if (!db) throw new Error("Database not connected");
-    const { studentId, subject, score, tps, teacherName, usaha, proses, capaian, deskripsi } = body;
-    const cleanSub = subject.replace(/[^a-zA-Z0-9]/g, "_");
-    const docId = `${studentId}_${cleanSub}`;
-    
-    const updatedGrade = {
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
+    const {
       studentId,
       subject,
-      score: Number(score),
+      score,
       tps,
-      usaha: usaha || "B",
-      proses: proses || "B",
-      capaian: capaian || "B",
-      deskripsi: deskripsi || "",
+      teacherName,
+      usaha,
+      proses,
+      capaian,
+      deskripsi,
+      izinKosongkanDeskripsi,
+    } = body || {};
+    const cleanStudentId = String(studentId || "").trim();
+    if (!cleanStudentId) {
+      throw new Error("ID Siswa tidak boleh kosong.");
+    }
+    if (!subject || !String(subject).trim()) {
+      throw new Error("Mata pelajaran tidak boleh kosong.");
+    }
+
+    // Validasi bahwa studentId benar-benar ada di koleksi "students"
+    const studentRef = doc(db, "students", cleanStudentId);
+    const studentSnap = await withRetryAndTimeout(() => getDoc(studentRef), 15000, 1);
+    if (!studentSnap.exists()) {
+      throw new Error(`Siswa dengan ID "${cleanStudentId}" tidak ditemukan di koleksi students. Penyimpanan nilai ditolak.`);
+    }
+
+    const studentData = studentSnap.data() || {};
+    const snapshotStudentName = String(
+      studentData.name || studentData.nama || studentData.namaSiswa || studentData.nama_lengkap || ""
+    ).trim();
+    const snapshotKelas = String(
+      studentData.kelas || studentData.rombel || studentData.class || studentData.tingkat || ""
+    ).trim();
+
+    // Rumus ID dokumen grades TIDAK boleh diubah: studentId + "_" + nama mapel (karakter non-alfanumerik diganti "_")
+    const cleanSub = subject.replace(/[^a-zA-Z0-9]/g, "_");
+    const docId = `${cleanStudentId}_${cleanSub}`;
+    const gradeRef = doc(db, "grades", docId);
+
+    // Ambil dokumen lama terlebih dahulu untuk menjaga deskripsi dan tps yang sudah ada
+    const existingSnap = await withRetryAndTimeout(() => getDoc(gradeRef), 15000, 1);
+    const existingData = existingSnap.exists() ? existingSnap.data() || {} : {};
+    const deskripsiLama: string | undefined =
+      typeof existingData.deskripsi === "string"
+        ? existingData.deskripsi
+        : typeof existingData.description === "string"
+        ? existingData.description
+        : undefined;
+
+    const deskripsiBaru: string | undefined =
+      deskripsi !== undefined && deskripsi !== null ? String(deskripsi) : undefined;
+    const izinKosongkan = izinKosongkanDeskripsi === true;
+    const finalDeskripsi = mergeDeskripsiAman(deskripsiLama, deskripsiBaru, izinKosongkan);
+
+    const numericScore = Number(score);
+    const derivedPredikat = tentukanPredikat(numericScore);
+
+    const updatedGrade: Record<string, any> = {
+      studentId: cleanStudentId,
+      studentName: snapshotStudentName,
+      kelas: snapshotKelas,
+      subject,
+      score: numericScore,
+      usaha: usaha || existingData.usaha || derivedPredikat || "B",
+      proses: proses || existingData.proses || derivedPredikat || "B",
+      capaian: capaian || existingData.capaian || derivedPredikat || "B",
+      deskripsi: finalDeskripsi,
       lastUpdatedBy: teacherName || "Guru Mata Pelajaran",
-      lastUpdatedAt: new Date().toISOString()
+      lastUpdatedAt: new Date().toISOString(),
     };
-    
-    await withTimeout(setDoc(doc(db, "grades", docId), updatedGrade), 5000);
-    return updatedGrade;
+
+    if (derivedPredikat !== null) {
+      updatedGrade.predikat = derivedPredikat;
+    }
+
+    // Jika body.tps undefined, jangan timpa tps lama
+    if (tps !== undefined) {
+      updatedGrade.tps = tps;
+    }
+
+    await withRetryAndTimeout(
+      () => setDoc(gradeRef, updatedGrade, { merge: true }),
+      15000,
+      1
+    );
+    return {
+      ...existingData,
+      ...updatedGrade,
+    };
   },
 
   // 5. GET & POST /api/walikelas/notes
   getWaliKelasNotes: async () => {
-    const localNotes = (dbDataAny && typeof dbDataAny === 'object' && dbDataAny.walikelas_notes) ? { ...dbDataAny.walikelas_notes } : {};
-    if (!db) return localNotes;
-    try {
-      const [snap, ekskulBackupSnap, studentsList] = await Promise.all([
-        withTimeout(getDocs(collection(db, "walikelas_notes")), 8000).catch(() => null),
-        withTimeout(getDoc(doc(db, "settings", "ekskul_grades")), 5000).catch(() => null),
-        firebaseApi.getStudents().catch(() => [] as any[]),
-      ]);
+    if (!db) {
+      throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
+    }
 
-      const studentMap = new Map<string, any>();
-      if (Array.isArray(studentsList)) {
-        studentsList.forEach((s: any) => {
-          if (s && s.id) studentMap.set(String(s.id).trim(), s);
-        });
-      }
+    const [snap, ekskulBackupSnap, studentsList] = await Promise.all([
+      withRetryAndTimeout(() => getDocs(collection(db, "walikelas_notes")), 15000, 1),
+      withRetryAndTimeout(() => getDoc(doc(db, "settings", "ekskul_grades")), 15000, 1).catch(() => null),
+      firebaseApi.getStudents(),
+    ]);
 
-      const sanitizeStudentEkskuls = (rawList: any[], targetStudentId: string): any[] => {
-        if (!Array.isArray(rawList)) return [];
-        const cleanSid = String(targetStudentId).trim();
-        const targetStudent = studentMap.get(cleanSid);
-        const targetName = targetStudent?.name ? String(targetStudent.name).trim() : "";
+    const studentMap = new Map<string, any>();
+    if (Array.isArray(studentsList)) {
+      studentsList.forEach((s: any) => {
+        if (s && s.id) studentMap.set(String(s.id).trim(), s);
+      });
+    }
 
-        return rawList
-          .filter((item: any) => {
-            if (!item || !item.name) return false;
-            // Reject any ekskul item that explicitly belongs to a different studentId
-            if (item.studentId && String(item.studentId).trim() !== "" && String(item.studentId).trim() !== cleanSid) {
-              return false;
-            }
-            return true;
-          })
-          .map((item: any) => {
-            let desc = String(item.description || item.deskripsi || "").trim();
-            if (desc && targetName && Array.isArray(studentsList) && studentsList.length > 0) {
-              const others = studentsList
-                .filter(
-                  (s: any) =>
-                    s &&
-                    s.name &&
-                    String(s.id || "").trim() !== cleanSid &&
-                    String(s.name).trim().toLowerCase() !== targetName.toLowerCase()
-                )
-                .sort((a: any, b: any) => String(b.name || "").trim().length - String(a.name || "").trim().length);
+    // Filter ekskul items to strictly this studentId WITHOUT auto-rewriting description text
+    const filterStudentEkskuls = (rawList: any[], targetStudentId: string): any[] => {
+      if (!Array.isArray(rawList)) return [];
+      const cleanSid = String(targetStudentId).trim();
+      const targetStudent = studentMap.get(cleanSid);
+      const targetName = targetStudent?.name ? String(targetStudent.name).trim() : "";
 
-              for (const other of others) {
-                const otherName = String(other.name).trim();
-                if (otherName.length < 3) continue;
-                const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                const regex = new RegExp(escaped, "gi");
-                if (regex.test(desc)) {
-                  desc = desc.replace(regex, targetName);
-                }
-              }
-            }
-            return {
-              ...item,
+      return rawList
+        .filter((item: any) => {
+          if (!item || !item.name) return false;
+          if (item.studentId && String(item.studentId).trim() !== "" && String(item.studentId).trim() !== cleanSid) {
+            return false;
+          }
+          return true;
+        })
+        .map((item: any) => ({
+          ...item,
+          studentId: cleanSid,
+          studentName: targetName || item.studentName || "",
+          description: String(item.description || item.deskripsi || "").trim(),
+        }));
+    };
+
+    const notes: Record<string, any> = {};
+    if (snap && !snap.empty) {
+      snap.docs.forEach(docSnap => {
+        const sid = String(docSnap.id).trim();
+        const data = docSnap.data() || {};
+        const cloudEkskul = Array.isArray(data.ekskul) ? data.ekskul : [];
+        notes[sid] = {
+          ...data,
+          studentId: sid,
+          ekskul: filterStudentEkskuls(cloudEkskul, sid),
+        };
+      });
+    }
+
+    if (ekskulBackupSnap && ekskulBackupSnap.exists()) {
+      const backupMap = ekskulBackupSnap.data()?.map;
+      if (backupMap && typeof backupMap === "object") {
+        for (const [sid, backupEkskulList] of Object.entries(backupMap)) {
+          const cleanSid = String(sid).trim();
+          if (!Array.isArray(backupEkskulList)) continue;
+          const filteredBackup = filterStudentEkskuls(backupEkskulList, cleanSid);
+          if (!notes[cleanSid]) {
+            notes[cleanSid] = {
               studentId: cleanSid,
-              studentName: targetName || item.studentName || "",
-              description: desc,
+              sakit: 0,
+              izin: 0,
+              alpa: 0,
+              catatan: "",
+              spiritualUsaha: "B",
+              spiritualProses: "B",
+              spiritualCapaian: "B",
+              spiritualDeskripsi: "",
+              sosialUsaha: "B",
+              sosialProses: "B",
+              sosialCapaian: "B",
+              sosialDeskripsi: "",
+              ekskul: filteredBackup,
             };
-          });
-      };
-
-      const notes: any = { ...localNotes };
-      if (snap && !snap.empty) {
-        snap.docs.forEach(docSnap => {
-          const sid = String(docSnap.id).trim();
-          const data = docSnap.data() || {};
-          const existingLocalEkskul = Array.isArray(notes[sid]?.ekskul) ? notes[sid].ekskul : [];
-          const cloudEkskul = Array.isArray(data.ekskul) ? data.ekskul : [];
-          const mergedEkskul = cloudEkskul.length > 0 ? cloudEkskul : existingLocalEkskul;
-          notes[sid] = {
-            ...notes[sid],
-            ...data,
-            studentId: sid,
-            ekskul: sanitizeStudentEkskuls(mergedEkskul, sid),
-          };
-        });
-      }
-
-      // Also merge from settings/ekskul_grades master backup so no ekskul grade is ever lost
-      if (ekskulBackupSnap && ekskulBackupSnap.exists()) {
-        const backupMap = ekskulBackupSnap.data()?.map;
-        if (backupMap && typeof backupMap === "object") {
-          for (const [sid, backupEkskulList] of Object.entries(backupMap)) {
-            const cleanSid = String(sid).trim();
-            if (!Array.isArray(backupEkskulList)) continue;
-            const sanitizedBackup = sanitizeStudentEkskuls(backupEkskulList, cleanSid);
-            if (!notes[cleanSid]) {
-              notes[cleanSid] = {
-                studentId: cleanSid,
-                sakit: 0,
-                izin: 0,
-                alpa: 0,
-                catatan: "",
-                spiritualUsaha: "B",
-                spiritualProses: "B",
-                spiritualCapaian: "B",
-                spiritualDeskripsi: "",
-                sosialUsaha: "B",
-                sosialProses: "B",
-                sosialCapaian: "B",
-                sosialDeskripsi: "",
-                ekskul: sanitizedBackup,
-              };
-            } else {
-              const currentEkskuls: any[] = Array.isArray(notes[cleanSid].ekskul) ? [...notes[cleanSid].ekskul] : [];
-              if (currentEkskuls.length === 0 && sanitizedBackup.length > 0) {
-                notes[cleanSid].ekskul = sanitizedBackup;
-              } else if (sanitizedBackup.length > 0) {
-                // Merge by ekskulId / name
-                for (const bItem of sanitizedBackup) {
-                  const idx = currentEkskuls.findIndex(
-                    (e: any) =>
-                      (bItem.ekskulId && e.ekskulId === bItem.ekskulId) ||
-                      (e.name && bItem.name && String(e.name).toLowerCase() === String(bItem.name).toLowerCase())
-                  );
-                  if (idx === -1) {
-                    currentEkskuls.push(bItem);
-                  } else if (bItem.updatedAt && (!currentEkskuls[idx].updatedAt || bItem.updatedAt > currentEkskuls[idx].updatedAt)) {
-                    currentEkskuls[idx] = bItem;
-                  }
+          } else {
+            const currentEkskuls: any[] = Array.isArray(notes[cleanSid].ekskul) ? [...notes[cleanSid].ekskul] : [];
+            if (currentEkskuls.length === 0 && filteredBackup.length > 0) {
+              notes[cleanSid].ekskul = filteredBackup;
+            } else if (filteredBackup.length > 0) {
+              for (const bItem of filteredBackup) {
+                const idx = currentEkskuls.findIndex(
+                  (e: any) =>
+                    (bItem.ekskulId && e.ekskulId === bItem.ekskulId) ||
+                    (e.name && bItem.name && String(e.name).toLowerCase() === String(bItem.name).toLowerCase())
+                );
+                if (idx === -1) {
+                  currentEkskuls.push(bItem);
+                } else if (bItem.updatedAt && (!currentEkskuls[idx].updatedAt || bItem.updatedAt > currentEkskuls[idx].updatedAt)) {
+                  currentEkskuls[idx] = bItem;
                 }
-                notes[cleanSid].ekskul = sanitizeStudentEkskuls(currentEkskuls, cleanSid);
               }
+              notes[cleanSid].ekskul = filterStudentEkskuls(currentEkskuls, cleanSid);
             }
           }
         }
       }
-
-      if (dbDataAny) {
-        dbDataAny.walikelas_notes = notes;
-      }
-      return notes;
-    } catch (e) {
-      console.warn("Failed to fetch walikelas_notes from firestore, using cached:", e);
     }
-    return localNotes;
+
+    return notes;
   },
   postWaliKelasNotes: async (body: any) => {
-    const { studentId, sakit, izin, alpa, catatan, spiritualUsaha, spiritualProses, spiritualCapaian, spiritualDeskripsi, sosialUsaha, sosialProses, sosialCapaian, sosialDeskripsi, ekskul, updatedAt } = body;
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
+    const { studentId, sakit, izin, alpa, catatan, spiritualUsaha, spiritualProses, spiritualCapaian, spiritualDeskripsi, sosialUsaha, sosialProses, sosialCapaian, sosialDeskripsi, ekskul, updatedAt, lastUpdatedBy, waliKelasName } = body;
     if (!studentId) throw new Error("ID Siswa wajib diisi.");
     const cleanStudentId = String(studentId).trim();
 
-    // Preserve existing ekskul from Firestore or memory so Wali Kelas saving never wipes out Pembina Ekskul grades
     let preservedEkskul: any[] = Array.isArray(ekskul) ? ekskul : [];
-    const memoryEkskul = dbDataAny?.walikelas_notes?.[cleanStudentId]?.ekskul;
-    if (preservedEkskul.length === 0 && Array.isArray(memoryEkskul) && memoryEkskul.length > 0) {
-      preservedEkskul = memoryEkskul;
-    }
 
-    if (db) {
-      const existingSnap = await withTimeout(getDoc(doc(db, "walikelas_notes", cleanStudentId)), 4000).catch(() => null);
-      if (existingSnap && existingSnap.exists()) {
-        const cloudEkskul = existingSnap.data()?.ekskul;
-        if (Array.isArray(cloudEkskul) && cloudEkskul.length > 0) {
-          // Always prefer cloudEkskul if local payload had empty ekskul or fewer items
-          if (preservedEkskul.length === 0 || cloudEkskul.length >= preservedEkskul.length) {
-            preservedEkskul = cloudEkskul;
-          }
+    const existingSnap = await withRetryAndTimeout(() => getDoc(doc(db, "walikelas_notes", cleanStudentId)), 15000, 1);
+    if (existingSnap && existingSnap.exists()) {
+      const cloudEkskul = existingSnap.data()?.ekskul;
+      if (Array.isArray(cloudEkskul) && cloudEkskul.length > 0) {
+        if (preservedEkskul.length === 0 || cloudEkskul.length >= preservedEkskul.length) {
+          preservedEkskul = cloudEkskul;
         }
       }
     }
 
-    // Filter out any foreign studentId from preservedEkskul
     preservedEkskul = preservedEkskul
       .filter((item: any) => item && item.name && (!item.studentId || String(item.studentId).trim() === cleanStudentId))
       .map((item: any) => ({ ...item, studentId: cleanStudentId }));
@@ -778,72 +682,54 @@ export const firebaseApi = {
       sosialCapaian: sosialCapaian || "B",
       sosialDeskripsi: sosialDeskripsi || "",
       ekskul: preservedEkskul,
+      lastUpdatedBy: lastUpdatedBy || waliKelasName || "Wali Kelas",
       updatedAt: updatedAt || new Date().toISOString()
     };
 
-    if (dbDataAny) {
-      if (!dbDataAny.walikelas_notes) dbDataAny.walikelas_notes = {};
-      dbDataAny.walikelas_notes[cleanStudentId] = note;
-    }
-
-    if (db) {
-      await withTimeout(setDoc(doc(db, "walikelas_notes", cleanStudentId), note, { merge: true }), 6000).catch(err => {
-        console.warn("Firestore setDoc walikelas_notes warning:", err);
-      });
-    }
+    await withRetryAndTimeout(() => setDoc(doc(db, "walikelas_notes", cleanStudentId), note, { merge: true }), 15000, 1);
     return note;
   },
 
   // 6. GET, POST, PUT, DELETE /api/tps
   getTPs: async (kelas?: string) => {
-    if (!db) return dbDataAny.tujuan_pembelajaran_templates || {};
-    try {
-      const snap = await withTimeout(getDocs(collection(db, "tujuan_pembelajaran_templates")), 6000).catch(() => null);
-      if (snap && !snap.empty) {
-        const templates: any = {};
-        snap.docs.forEach(docSnap => {
-          let tpsList = docSnap.data().tps || [];
-          if (kelas) {
-            tpsList = tpsList.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
-          }
-          templates[docSnap.id] = tpsList;
-        });
-        return templates;
+    if (!db) {
+      throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
+    }
+    const snap = await withRetryAndTimeout(() => getDocs(collection(db, "tujuan_pembelajaran_templates")), 15000, 1);
+    const templates: Record<string, any[]> = {};
+    snap.docs.forEach(docSnap => {
+      let tpsList = docSnap.data().tps || [];
+      if (kelas) {
+        tpsList = tpsList.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
       }
-    } catch {}
-    return dbDataAny.tujuan_pembelajaran_templates || {};
+      templates[docSnap.id] = tpsList;
+    });
+    return templates;
   },
 
   postTP: async (body: any) => {
-    if (!db) throw new Error("Database not connected");
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
     const { subject, tpText, kelas } = body;
     const ref = doc(db, "tujuan_pembelajaran_templates", subject);
-    const docSnap = await withTimeout(getDoc(ref), 5000).catch(() => null);
-    let tpsList = [];
+    const docSnap = await withRetryAndTimeout(() => getDoc(ref), 15000, 1);
+    let tpsList: any[] = [];
     if (docSnap && docSnap.exists()) {
       tpsList = docSnap.data().tps || [];
-    } else if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
-      tpsList = [...dbDataAny.tujuan_pembelajaran_templates[subject]];
     }
     const newTP = { id: "tp_" + Date.now(), text: tpText, kelas: kelas ? String(kelas).trim() : "7" };
     tpsList.push(newTP);
-    await withTimeout(setDoc(ref, { tps: tpsList }), 5000);
-    if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
-      dbDataAny.tujuan_pembelajaran_templates[subject] = tpsList;
-    }
+    await withRetryAndTimeout(() => setDoc(ref, { tps: tpsList }), 15000, 1);
     return newTP;
   },
 
   putTP: async (subject: string, tpId: string, body: any) => {
-    if (!db) throw new Error("Database not connected");
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
     const { tpText, kelas } = body || {};
     const ref = doc(db, "tujuan_pembelajaran_templates", subject);
-    const docSnap = await withTimeout(getDoc(ref), 5000).catch(() => null);
+    const docSnap = await withRetryAndTimeout(() => getDoc(ref), 15000, 1);
     let tpsList: any[] = [];
     if (docSnap && docSnap.exists()) {
       tpsList = docSnap.data().tps || [];
-    } else if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
-      tpsList = [...dbDataAny.tujuan_pembelajaran_templates[subject]];
     }
     const cleanTpId = String(tpId).trim();
     const index = tpsList.findIndex((tp: any) => String(tp.id).trim() === cleanTpId);
@@ -860,29 +746,21 @@ export const firebaseApi = {
         kelas: kelas ? String(kelas).trim() : "7",
       });
     }
-    await withTimeout(setDoc(ref, { tps: tpsList }), 5000);
-    if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
-      dbDataAny.tujuan_pembelajaran_templates[subject] = tpsList;
-    }
+    await withRetryAndTimeout(() => setDoc(ref, { tps: tpsList }), 15000, 1);
     return tpsList[index !== -1 ? index : tpsList.length - 1];
   },
 
   deleteTP: async (subject: string, tpId: string) => {
-    if (!db) throw new Error("Database not connected");
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
     const ref = doc(db, "tujuan_pembelajaran_templates", subject);
-    const docSnap = await withTimeout(getDoc(ref), 5000).catch(() => null);
+    const docSnap = await withRetryAndTimeout(() => getDoc(ref), 15000, 1);
     let tpsList: any[] = [];
     if (docSnap && docSnap.exists()) {
       tpsList = docSnap.data().tps || [];
-    } else if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
-      tpsList = [...dbDataAny.tujuan_pembelajaran_templates[subject]];
     }
     const cleanTpId = String(tpId).trim();
     const filtered = tpsList.filter((tp: any) => String(tp.id).trim() !== cleanTpId);
-    await withTimeout(setDoc(ref, { tps: filtered }), 5000);
-    if (dbDataAny.tujuan_pembelajaran_templates && dbDataAny.tujuan_pembelajaran_templates[subject]) {
-      dbDataAny.tujuan_pembelajaran_templates[subject] = filtered;
-    }
+    await withRetryAndTimeout(() => setDoc(ref, { tps: filtered }), 15000, 1);
     return { message: "TP berhasil dihapus." };
   },
 
@@ -890,7 +768,7 @@ export const firebaseApi = {
   getSettings: async () => {
     if (!db) throw new Error("Database not connected");
     const ref = doc(db, "settings", "app");
-    const docSnap = await withTimeout(getDoc(ref), 2500);
+    const docSnap = await withRetryAndTimeout(() => getDoc(ref), 15000, 1);
     if (docSnap.exists()) {
       const data = docSnap.data();
       if (!data.principalName) data.principalName = "Ari Gunawan, S.Kom.";
@@ -932,7 +810,7 @@ export const firebaseApi = {
   },
   postSettings: async (body: any) => {
     if (!db) throw new Error("Database not connected");
-    const { principalName, principalNip, format } = body;
+    const { principalNip, format } = body;
     const settingsData = {
       principalName: "Ari Gunawan, S.Kom.",
       principalNip: principalNip || "",
@@ -958,13 +836,12 @@ export const firebaseApi = {
         watermarkOpacity: format.watermarkOpacity !== undefined ? Number(format.watermarkOpacity) : 0.05
       } : {}
     };
-    await withTimeout(setDoc(doc(db, "settings", "app"), settingsData), 2500);
+    await withRetryAndTimeout(() => setDoc(doc(db, "settings", "app"), settingsData), 15000, 1);
     return { success: true, settings: settingsData };
   },
 
   // 8. GET /api/summary
   getSummary: async () => {
-    // Aggregation logic
     const students = (await firebaseApi.getStudents()) as any[];
     const teachers = (await firebaseApi.getTeachers()) as any[];
     const grades = (await firebaseApi.getGrades()) as any[];
@@ -975,18 +852,12 @@ export const firebaseApi = {
     ];
     const totalStudents = students.length;
 
-    // Helper to normalize subjects (removes punctuation, quotes, case-insensitive)
     const normalizeSub = (str: string) =>
       String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
-    // Helper to match a grade to a student
     const matchesStudent = (g: any, s: any) => {
       if (!g || !s) return false;
-      if (g.studentId && g.studentId === s.id) return true;
-      if (g.studentId && String(g.studentId).replace(/\D/g, "") === String(s.nisn).replace(/\D/g, "") && String(s.nisn).length >= 4) return true;
-      if (g.nisn && String(g.nisn).replace(/\D/g, "") === String(s.nisn).replace(/\D/g, "")) return true;
-      if (g.studentName && s.name && g.studentName.trim().toLowerCase() === s.name.trim().toLowerCase()) return true;
-      return false;
+      return String(g.studentId || "").trim() === String(s.id || "").trim();
     };
     
     const subjectProgress = subjectsList.map(sub => {
@@ -1058,11 +929,10 @@ export const firebaseApi = {
           ? Math.round((totalScore / filledSubjectsCount) * 10) / 10
           : 0;
 
-      let predikat = "C (Cukup)";
-      if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
-      else if (averageScore > 91) predikat = "A (Sangat Baik)";
-      else if (averageScore >= 80) predikat = "B (Baik)";
-      else predikat = "C (Cukup)";
+      const predikat =
+        filledSubjectsCount === 0
+          ? "Belum Ada Nilai"
+          : tentukanPredikatLabel(averageScore);
 
       return {
         studentId: s.id,
@@ -1107,11 +977,10 @@ export const firebaseApi = {
     };
   },
 
-
   // 9. GET, POST, DELETE /api/ekskul
   getEkskul: async (): Promise<any[]> => {
-    if (!db) return [];
-    const snap = await withTimeout(getDocs(collection(db, "ekskul")), 2500);
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
+    const snap = await withRetryAndTimeout(() => getDocs(collection(db, "ekskul")), 15000, 1);
     if (snap.empty) {
       return [
         { "id": "e1", "name": "Pramuka", "type": "Wajib" },
@@ -1122,7 +991,7 @@ export const firebaseApi = {
         { "id": "e6", "name": "Study Club", "type": "Pilihan" }
       ];
     }
-    return snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    return snap.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id }));
   },
   postEkskul: async (body: any) => {
     if (!db) throw new Error("Database not connected");
@@ -1135,7 +1004,7 @@ export const firebaseApi = {
       pembinaTeacherId: pembinaTeacherId || "",
       pembinaName: pembinaName || ""
     };
-    await withTimeout(setDoc(doc(db, "ekskul", id), newE), 2500);
+    await withRetryAndTimeout(() => setDoc(doc(db, "ekskul", id), newE), 15000, 1);
     return newE;
   },
   putEkskul: async (id: string, body: any) => {
@@ -1148,26 +1017,24 @@ export const firebaseApi = {
       pembinaTeacherId: pembinaTeacherId || "",
       pembinaName: pembinaName || ""
     };
-    await withTimeout(setDoc(ref, updated, { merge: true }), 2500);
+    await withRetryAndTimeout(() => setDoc(ref, updated, { merge: true }), 15000, 1);
     return { id, ...updated };
   },
   deleteEkskul: async (id: string) => {
     if (!db) throw new Error("Database not connected");
-    await withTimeout(deleteDoc(doc(db, "ekskul", id)), 2500);
+    await withRetryAndTimeout(() => deleteDoc(doc(db, "ekskul", id)), 15000, 1);
     return { message: "Ekskul deleted" };
   },
   postEkskulGradesBulk: async (gradesList: any[]) => {
-    if (!db) throw new Error("Database not connected");
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
     if (!Array.isArray(gradesList) || gradesList.length === 0) {
       return { success: true, count: 0 };
     }
 
-    // 1. Load all existing notes, ekskul backup map, and students once up-front
-    // so we NEVER overwrite a student's other ekskuls if a single read times out!
     const [existingNotesMap, backupSnap, studentsList] = await Promise.all([
-      firebaseApi.getWaliKelasNotes().catch(() => ({} as Record<string, any>)),
-      withTimeout(getDoc(doc(db, "settings", "ekskul_grades")), 5000).catch(() => null),
-      firebaseApi.getStudents().catch(() => [] as any[]),
+      firebaseApi.getWaliKelasNotes(),
+      withRetryAndTimeout(() => getDoc(doc(db, "settings", "ekskul_grades")), 15000, 1).catch(() => null),
+      firebaseApi.getStudents(),
     ]);
 
     const studentMap = new Map<string, any>();
@@ -1191,31 +1058,6 @@ export const firebaseApi = {
       if (s === "D" || s === "KURANG" || s === "KB" || s.startsWith("D ") || s.startsWith("D(")) return "D";
       if (s.length === 1 && ["A", "B", "C", "D"].includes(s)) return s;
       return fallback;
-    };
-
-    const sanitizeDescForStudent = (rawDesc: string, cleanStudentId: string, targetName: string): string => {
-      let desc = String(rawDesc || "").trim();
-      if (!desc || !targetName || !Array.isArray(studentsList) || studentsList.length === 0) return desc;
-      const others = studentsList
-        .filter(
-          (s: any) =>
-            s &&
-            s.name &&
-            String(s.id || "").trim() !== cleanStudentId &&
-            String(s.name).trim().toLowerCase() !== targetName.toLowerCase()
-        )
-        .sort((a: any, b: any) => String(b.name || "").trim().length - String(a.name || "").trim().length);
-
-      for (const other of others) {
-        const otherName = String(other.name).trim();
-        if (otherName.length < 3) continue;
-        const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const regex = new RegExp(escaped, "gi");
-        if (regex.test(desc)) {
-          desc = desc.replace(regex, targetName);
-        }
-      }
-      return desc;
     };
 
     const docsToUpdate: Array<{ studentId: string; noteData: any }> = [];
@@ -1245,7 +1087,6 @@ export const firebaseApi = {
         ekskul: [],
       };
 
-      // Filter current ekskuls to strictly this studentId
       let currentEkskuls: any[] = (Array.isArray(currentNote.ekskul) ? [...currentNote.ekskul] : []).filter(
         (e: any) => e && e.name && (!e.studentId || String(e.studentId).trim() === cleanStudentId)
       );
@@ -1257,7 +1098,6 @@ export const firebaseApi = {
       const existIdx = currentEkskuls.findIndex(matchesTargetEkskul);
 
       if (selected === false) {
-        // If student wasn't enrolled in this ekskul anyway, skip writing to Firestore for this student!
         if (existIdx === -1) {
           masterEkskulMap[cleanStudentId] = currentEkskuls;
           continue;
@@ -1268,7 +1108,6 @@ export const firebaseApi = {
         const uL = toLetter(usaha, fallbackL);
         const pL = toLetter(proses, fallbackL);
         const cL = toLetter(capaian, fallbackL);
-        const safeDesc = sanitizeDescForStudent(description || "", cleanStudentId, studentName);
 
         const newEkskulEntry = {
           studentId: cleanStudentId,
@@ -1280,7 +1119,7 @@ export const firebaseApi = {
           proses: pL,
           capaian: cL,
           predicate: cL,
-          description: safeDesc,
+          description: String(description || "").trim(),
           pembinaName: pembinaName || "",
           pembinaTeacherId: pembinaTeacherId || "",
           updatedAt: nowIso,
@@ -1302,68 +1141,54 @@ export const firebaseApi = {
 
       existingNotesMap[cleanStudentId] = updatedNote;
       masterEkskulMap[cleanStudentId] = currentEkskuls;
-      if (dbDataAny) {
-        if (!dbDataAny.walikelas_notes) dbDataAny.walikelas_notes = {};
-        dbDataAny.walikelas_notes[cleanStudentId] = updatedNote;
-      }
 
       docsToUpdate.push({ studentId: cleanStudentId, noteData: updatedNote });
     }
 
-    // 2. Write updated student notes in parallel batches of 15 for fast, reliable execution
     const BATCH_SIZE = 15;
     for (let i = 0; i < docsToUpdate.length; i += BATCH_SIZE) {
       const chunk = docsToUpdate.slice(i, i + BATCH_SIZE);
       await Promise.all(
         chunk.map(({ studentId: sid, noteData }) =>
-          withTimeout(setDoc(doc(db!, "walikelas_notes", sid), noteData, { merge: true }), 6000).catch((err) => {
-            console.warn(`Failed to save ekskul note for ${sid}:`, err);
-          })
+          withRetryAndTimeout(() => setDoc(doc(db!, "walikelas_notes", sid), noteData, { merge: true }), 15000, 1)
         )
       );
     }
 
-    // 3. Also save master ekskul backup in settings/ekskul_grades (allowed by firestore.rules settings/{settingId})
-    await withTimeout(
-      setDoc(
-        doc(db, "settings", "ekskul_grades"),
-        {
-          principalName: "Ari Gunawan, S.Kom.",
-          principalNip: "",
-          map: masterEkskulMap,
-          updatedAt: nowIso,
-        },
-        { merge: true }
-      ),
-      6000
-    ).catch((err) => {
-      console.warn("Failed to save master ekskul backup:", err);
-    });
+    await withRetryAndTimeout(
+      () =>
+        setDoc(
+          doc(db, "settings", "ekskul_grades"),
+          {
+            principalName: "Ari Gunawan, S.Kom.",
+            principalNip: "",
+            map: masterEkskulMap,
+            updatedAt: nowIso,
+          },
+          { merge: true }
+        ),
+      15000,
+      1
+    );
 
     return { success: true, count: docsToUpdate.length, notes: existingNotesMap };
   },
 
   // 10. GET, POST, PUT, DELETE /api/halaqoh (Cloud Firestore Persistence)
   getHalaqoh: async (): Promise<any[]> => {
-    if (!db) return dbDataAny.halaqoh || [];
-    try {
-      // 1. Primary: Read from Firestore settings/halaqoh document (universal master cloud sync across all devices)
-      const docSnap = await withTimeout(getDoc(doc(db, "settings", "halaqoh")), 3500).catch(() => null);
-      if (docSnap && docSnap.exists() && Array.isArray(docSnap.data()?.list) && docSnap.data().list.length > 0) {
-        return docSnap.data().list;
-      }
-
-      // 2. Secondary: Check halaqoh collection
-      const snap = await withTimeout(getDocs(collection(db, "halaqoh")), 3500).catch(() => null);
-      if (snap && !snap.empty) {
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        await setDoc(doc(db, "settings", "halaqoh"), { list }, { merge: true }).catch(() => {});
-        return list;
-      }
-    } catch (e) {
-      console.warn("Failed to get halaqoh from Firestore:", e);
+    if (!db) throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
+    const docSnap = await withRetryAndTimeout(() => getDoc(doc(db, "settings", "halaqoh")), 15000, 1).catch(() => null);
+    if (docSnap && docSnap.exists() && Array.isArray(docSnap.data()?.list) && docSnap.data().list.length > 0) {
+      return docSnap.data().list;
     }
-    return dbDataAny.halaqoh || [];
+
+    const snap = await withRetryAndTimeout(() => getDocs(collection(db, "halaqoh")), 15000, 1);
+    if (snap && !snap.empty) {
+      const list = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      await setDoc(doc(db, "settings", "halaqoh"), { list }, { merge: true }).catch(() => {});
+      return list;
+    }
+    return [];
   },
   postHalaqoh: async (body: any) => {
     if (!db) throw new Error("Database not connected");
@@ -1379,17 +1204,14 @@ export const firebaseApi = {
       createdAt: new Date().toISOString()
     };
 
-    // Fetch current list from Firestore
     let currentList: any[] = [];
-    try {
-      const snap = await withTimeout(getDoc(doc(db, "settings", "halaqoh")), 3000).catch(() => null);
-      if (snap && snap.exists() && Array.isArray(snap.data()?.list)) {
-        currentList = snap.data().list;
-      }
-    } catch {}
+    const snap = await withRetryAndTimeout(() => getDoc(doc(db, "settings", "halaqoh")), 15000, 1).catch(() => null);
+    if (snap && snap.exists() && Array.isArray(snap.data()?.list)) {
+      currentList = snap.data().list;
+    }
 
     const updatedList = [...currentList, newHalaqoh];
-    await withTimeout(setDoc(doc(db, "settings", "halaqoh"), { list: updatedList }, { merge: true }), 4000);
+    await withRetryAndTimeout(() => setDoc(doc(db, "settings", "halaqoh"), { list: updatedList }, { merge: true }), 15000, 1);
     await setDoc(doc(db, "halaqoh", id), newHalaqoh).catch(() => {});
     return newHalaqoh;
   },
@@ -1398,12 +1220,10 @@ export const firebaseApi = {
     const { name, mentorName, mentorTeacherId, studentIds } = body || {};
 
     let currentList: any[] = [];
-    try {
-      const snap = await withTimeout(getDoc(doc(db, "settings", "halaqoh")), 3000).catch(() => null);
-      if (snap && snap.exists() && Array.isArray(snap.data()?.list)) {
-        currentList = snap.data().list;
-      }
-    } catch {}
+    const snap = await withRetryAndTimeout(() => getDoc(doc(db, "settings", "halaqoh")), 15000, 1).catch(() => null);
+    if (snap && snap.exists() && Array.isArray(snap.data()?.list)) {
+      currentList = snap.data().list;
+    }
 
     const index = currentList.findIndex((h: any) => h.id === id);
     let updatedH: any = null;
@@ -1429,29 +1249,27 @@ export const firebaseApi = {
       currentList.push(updatedH);
     }
 
-    await withTimeout(setDoc(doc(db, "settings", "halaqoh"), { list: currentList }, { merge: true }), 4000);
+    await withRetryAndTimeout(() => setDoc(doc(db, "settings", "halaqoh"), { list: currentList }, { merge: true }), 15000, 1);
     await setDoc(doc(db, "halaqoh", id), updatedH, { merge: true }).catch(() => {});
     return updatedH;
   },
   deleteHalaqoh: async (id: string) => {
     if (!db) throw new Error("Database not connected");
     let currentList: any[] = [];
-    try {
-      const snap = await withTimeout(getDoc(doc(db, "settings", "halaqoh")), 3000).catch(() => null);
-      if (snap && snap.exists() && Array.isArray(snap.data()?.list)) {
-        currentList = snap.data().list;
-      }
-    } catch {}
+    const snap = await withRetryAndTimeout(() => getDoc(doc(db, "settings", "halaqoh")), 15000, 1).catch(() => null);
+    if (snap && snap.exists() && Array.isArray(snap.data()?.list)) {
+      currentList = snap.data().list;
+    }
 
     const filtered = currentList.filter((h: any) => h.id !== id);
-    await withTimeout(setDoc(doc(db, "settings", "halaqoh"), { list: filtered }, { merge: true }), 4000);
+    await withRetryAndTimeout(() => setDoc(doc(db, "settings", "halaqoh"), { list: filtered }, { merge: true }), 15000, 1);
     await deleteDoc(doc(db, "halaqoh", id)).catch(() => {});
     return { message: "Halaqoh berhasil dihapus." };
   },
   syncHalaqohList: async (list: any[]) => {
     if (!db || !Array.isArray(list)) return [];
-    await withTimeout(setDoc(doc(db, "settings", "halaqoh"), { list }, { merge: true }), 4000);
+    await withRetryAndTimeout(() => setDoc(doc(db, "settings", "halaqoh"), { list }, { merge: true }), 15000, 1);
     return list;
   }
 };
-export { db as default };
+export { db, db as default };

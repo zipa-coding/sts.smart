@@ -20,6 +20,7 @@ import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.j
 // @ts-ignore
 import html2pdf from "html2pdf.js";
 import { downloadClassRaportZip, ZipBatchProgress, sanitizeTextForStudent } from "../lib/raportPdfService";
+import { tentukanPredikat } from "../lib/predikat";
 
 interface PrintRaportViewProps {
   student: Student;
@@ -384,16 +385,6 @@ export default function PrintRaportView({
     );
   };
 
-  const scoreToPredicate = (score: number | string | undefined | null): string => {
-    if (score === undefined || score === null || score === "") return "";
-    const num = typeof score === "number" ? score : parseFloat(String(score));
-    if (isNaN(num)) return String(score).trim();
-    if (num > 91) return "A";
-    if (num >= 80) return "B";
-    if (num >= 70) return "C";
-    return "D";
-  };
-
   const getSubjectScore = (sub: string) => {
     const g = getSubjectGradeObj(sub);
     if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "") return g.score;
@@ -403,7 +394,8 @@ export default function PrintRaportView({
   const getSubjectUsaha = (sub: string) => {
     const g = getSubjectGradeObj(sub);
     if (g && g.usaha && g.usaha.trim() !== "") return g.usaha.trim();
-    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "") return scoreToPredicate(g.score);
+    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "")
+      return tentukanPredikat(g.score) || String(g.score).trim();
     if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
     return "B";
   };
@@ -411,7 +403,8 @@ export default function PrintRaportView({
   const getSubjectProses = (sub: string) => {
     const g = getSubjectGradeObj(sub);
     if (g && g.proses && g.proses.trim() !== "") return g.proses.trim();
-    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "") return scoreToPredicate(g.score);
+    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "")
+      return tentukanPredikat(g.score) || String(g.score).trim();
     if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
     return "B";
   };
@@ -419,7 +412,8 @@ export default function PrintRaportView({
   const getSubjectCapaian = (sub: string) => {
     const g = getSubjectGradeObj(sub);
     if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
-    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "") return scoreToPredicate(g.score);
+    if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "")
+      return tentukanPredikat(g.score) || String(g.score).trim();
     if (g && g.usaha && g.usaha.trim() !== "") return g.usaha.trim();
     return "B";
   };

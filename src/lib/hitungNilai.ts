@@ -1,6 +1,17 @@
-export type SemesterType = "Ganjil" | "Genap";
+import {
+  PredikatNilai,
+  tentukanPredikat as tentukanPredikatMaster,
+  tentukanPredikatLabel as tentukanPredikatLabelMaster,
+  labelPredikat,
+  KETERANGAN_RENTANG_PREDIKAT,
+  KKM_DEFAULT,
+  BATAS_UNGGUL,
+} from "./predikat";
 
-export type PredikatNilai = "A" | "B" | "C" | "D";
+export type { PredikatNilai };
+export { labelPredikat, KETERANGAN_RENTANG_PREDIKAT, KKM_DEFAULT, BATAS_UNGGUL };
+
+export type SemesterType = "Ganjil" | "Genap";
 
 export type ModeRataKomponen =
   | "bab_terisi"
@@ -139,8 +150,6 @@ export interface RingkasanKelas {
   jumlahSiswaTerhitung: number;
   totalSiswa: number;
 }
-
-export const KKM_DEFAULT = 73;
 
 /**
  * Menormalkan objek KonfigurasiRumus agar selalu memiliki nilai valid.
@@ -562,22 +571,28 @@ export function hitungNilaiRapor(nilaiAkhir: number | null): number | null {
 }
 
 /**
- * Menentukan Predikat dari Nilai Rapor yang sudah dibulatkan:
- * 91–100 = A
- * 81–90  = B
- * 73–80  = C
- * < 73   = D
+ * Menentukan Predikat Nilai (mendelegasikan ke sumber kebenaran tunggal src/lib/predikat.ts):
+ * - nilai > 91        = A
+ * - nilai >= 80..91   = B
+ * - nilai < 80        = C
  */
 export function tentukanPredikat(
-  nilaiRaporBulat: number | null
+  nilai: number | string | null | undefined
 ): PredikatNilai | null {
-  if (nilaiRaporBulat === null || Number.isNaN(nilaiRaporBulat)) {
-    return null;
-  }
-  if (nilaiRaporBulat >= 91) return "A";
-  if (nilaiRaporBulat >= 81) return "B";
-  if (nilaiRaporBulat >= 73) return "C";
-  return "D";
+  return tentukanPredikatMaster(nilai);
+}
+
+/**
+ * Mengembalikan label lengkap predikat nilai (mendelegasikan ke src/lib/predikat.ts):
+ * - > 91      = "A (Sangat Baik)"
+ * - 80 - 91   = "B (Baik)"
+ * - < 80      = "C (Cukup)"
+ */
+export function tentukanPredikatLabel(
+  nilai: number | string | null | undefined,
+  emptyLabel: string = "-"
+): string {
+  return tentukanPredikatLabelMaster(nilai, emptyLabel);
 }
 
 /**
@@ -730,7 +745,7 @@ export function hitungAkumulasiSiswa(
 
   const nilaiRapor = hitungNilaiRapor(nilaiAkhir);
   const predikat = tentukanPredikat(nilaiRapor);
-  const isBelowKKM = nilaiRapor !== null && nilaiRapor < KKM_DEFAULT;
+  const isBelowKKM = cekDiBawahKKM(nilaiRapor);
 
   return {
     perBab,
@@ -761,6 +776,20 @@ export function hitungAkumulasiSiswa(
 }
 
 /**
+ * Mengecek apakah suatu nilai berada di bawah KKM_DEFAULT (80).
+ * Mengembalikan false jika nilai null/undefined/NaN.
+ */
+export function cekDiBawahKKM(nilai: number | null | undefined): boolean {
+  return (
+    nilai !== null &&
+    nilai !== undefined &&
+    Number.isFinite(nilai) &&
+    !Number.isNaN(nilai) &&
+    nilai < KKM_DEFAULT
+  );
+}
+
+/**
  * Menghasilkan daftar kolom Legger (3.1, 4.1, ... sampai 3.N, 4.N) untuk bab yang aktif.
  */
 export function hitungLeggerSiswa(
@@ -783,7 +812,7 @@ export function hitungLeggerSiswa(
 }
 
 /**
- * Menghitung statistik ringkasan kelas (rata-rata kelas, tertinggi, terendah, jumlah < 73).
+ * Menghitung statistik ringkasan kelas (rata-rata kelas, tertinggi, terendah, jumlah < KKM_DEFAULT).
  */
 export function hitungRingkasanKelas(
   hasilSiswaList: HasilHitungSiswa[]
@@ -807,8 +836,8 @@ export function hitungRingkasanKelas(
   const rataRataNilaiRapor = round2(total / nilaiRaporValid.length);
   const nilaiTertinggi = Math.max(...nilaiRaporValid);
   const nilaiTerendah = Math.min(...nilaiRaporValid);
-  const jumlahDiBawahKKM = nilaiRaporValid.filter(
-    (v) => v < KKM_DEFAULT
+  const jumlahDiBawahKKM = nilaiRaporValid.filter((v) =>
+    cekDiBawahKKM(v)
   ).length;
 
   return {

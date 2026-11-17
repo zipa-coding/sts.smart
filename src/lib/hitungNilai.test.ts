@@ -7,12 +7,23 @@ import {
   hitungNilaiAkhir,
   hitungNilaiRapor,
   tentukanPredikat,
+  tentukanPredikatLabel,
   hitungAkumulasiSiswa,
+  cekDiBawahKKM,
   hitungLeggerSiswa,
   hitungRingkasanKelas,
   parseAndValidateCellInput,
   KonfigurasiCakupan,
+  KKM_DEFAULT,
+  BATAS_UNGGUL,
 } from "./hitungNilai";
+import {
+  tentukanPredikat as tentukanPredikatDirect,
+  labelPredikat,
+  KETERANGAN_RENTANG_PREDIKAT,
+  KKM_DEFAULT as KKM_DEFAULT_DIRECT,
+  BATAS_UNGGUL as BATAS_UNGGUL_DIRECT,
+} from "./predikat";
 
 function assertEqual<T>(actual: T, expected: T, message: string): void {
   if (actual !== expected) {
@@ -38,7 +49,7 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   // - Rata SH = 86,33
   // - Rata P = 84,67
   // - Nilai Akhir STS = ((2×86,33) + 84,67 + 79) / 4 = 84,08
-  // - Nilai Rapor = 84, Predikat = B
+  // - Nilai Rapor = 84, Predikat = B (aturan: 80 - 91 = B)
   // =========================================================================
   const hasilSiswaA = hitungAkumulasiSiswa(
     {
@@ -60,7 +71,7 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   assertEqual(hasilSiswaA.pengetahuanSTS, 84.08, "Siswa A - Pengetahuan STS");
   assertEqual(hasilSiswaA.nilaiAkhirSTS, 84.08, "Siswa A - Nilai Akhir STS");
   assertEqual(hasilSiswaA.nilaiRapor, 84, "Siswa A - Nilai Rapor");
-  assertEqual(hasilSiswaA.predikat, "B", "Siswa A - Predikat");
+  assertEqual(hasilSiswaA.predikat, "B", "Siswa A - Predikat B untuk nilai 84 (80 - 91 = B)");
   assertEqual(hasilSiswaA.pengetahuanSAS, null, "Siswa A - Pengetahuan SAS harus null karena SAT kosong");
   assertEqual(hasilSiswaA.nilaiAkhirSAS, null, "Siswa A - Nilai Akhir SAS harus null karena SAT kosong");
   assertEqual(hasilSiswaA.isBelowKKM, false, "Siswa A - Tidak di bawah KKM");
@@ -87,7 +98,7 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   details.push("PASS: Kasus Uji Siswa B (Semua nilai kosong menghasilkan null / '-')");
 
   // =========================================================================
-  // KASUS UJI 3 (Siswa C - T=70, SH=70, P=70, STS=70, SAT=70 -> < 73, Predikat D & merah):
+  // KASUS UJI 3 (Siswa C - T=70, SH=70, P=70, STS=70, SAT=70 -> < 80 = Predikat C, < KKM 80 merah KKM):
   // =========================================================================
   const hasilSiswaC = hitungAkumulasiSiswa(
     {
@@ -110,10 +121,10 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   assertEqual(hasilSiswaC.nilaiAkhirSTS, 70, "Siswa C - Nilai Akhir STS");
   assertEqual(hasilSiswaC.nilaiAkhirSAS, 70, "Siswa C - Nilai Akhir SAS");
   assertEqual(hasilSiswaC.nilaiRapor, 70, "Siswa C - Nilai Rapor");
-  assertEqual(hasilSiswaC.predikat, "D", "Siswa C - Predikat D");
-  assertEqual(hasilSiswaC.isBelowKKM, true, "Siswa C - Ditandai merah (di bawah 73)");
+  assertEqual(hasilSiswaC.predikat, "C", "Siswa C - Predikat C untuk nilai 70 (< 80 = C)");
+  assertEqual(hasilSiswaC.isBelowKKM, true, "Siswa C - Ditandai merah (di bawah KKM 80)");
   passed += 10;
-  details.push("PASS: Kasus Uji Siswa C (Nilai 70 menghasilkan Rapor=70, Predikat=D, isBelowKKM=true)");
+  details.push("PASS: Kasus Uji Siswa C (Nilai 70 menghasilkan Rapor=70, Predikat=C, isBelowKKM=true)");
 
   // =========================================================================
   // KASUS UJI 4: Rumus Nilai Akhir Siswa = ((2 × Rata SH) + Rata T + Nilai SAT + Nilai STS) / 5
@@ -153,6 +164,48 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   assertEqual(hitungRataRataTerisi([80, null, 100]), 90, "Rata-rata mengabaikan null");
   assertEqual(hitungRataRataTerisi([80, 0, 100]), 60, "Rata-rata menyertakan angka 0");
 
+  // =========================================================================
+  // KASUS UJI 6: Pengujian Khusus tentukanPredikat & labelPredikat (src/lib/predikat.ts)
+  // Aturan tunggal: > 91 = A, >= 80 dan <= 91 = B, < 80 = C
+  // =========================================================================
+  assertEqual(tentukanPredikatDirect(100), "A", "tentukanPredikat(100) -> A");
+  assertEqual(tentukanPredikatDirect(95), "A", "tentukanPredikat(95) -> A");
+  assertEqual(tentukanPredikatDirect(92), "A", "tentukanPredikat(92) -> A");
+  assertEqual(tentukanPredikatDirect(91.5), "A", "tentukanPredikat(91.5) -> A");
+  assertEqual(tentukanPredikatDirect(91), "B", "tentukanPredikat(91) -> B");
+  assertEqual(tentukanPredikatDirect(85), "B", "tentukanPredikat(85) -> B");
+  assertEqual(tentukanPredikatDirect(80), "B", "tentukanPredikat(80) -> B");
+  assertEqual(tentukanPredikatDirect(79.9), "C", "tentukanPredikat(79.9) -> C");
+  assertEqual(tentukanPredikatDirect(79), "C", "tentukanPredikat(79) -> C");
+  assertEqual(tentukanPredikatDirect(70), "C", "tentukanPredikat(70) -> C");
+  assertEqual(tentukanPredikatDirect(0), "C", "tentukanPredikat(0) -> C");
+  assertEqual(tentukanPredikatDirect(null), null, "tentukanPredikat(null) -> null");
+  assertEqual(tentukanPredikatDirect(""), null, 'tentukanPredikat("") -> null');
+  assertEqual(tentukanPredikatDirect("abc"), null, 'tentukanPredikat("abc") -> null');
+  assertEqual(tentukanPredikatDirect("92"), "A", 'tentukanPredikat("92") -> A');
+  assertEqual(tentukanPredikatDirect("91"), "B", 'tentukanPredikat("91") -> B');
+  assertEqual(tentukanPredikatDirect("80"), "B", 'tentukanPredikat("80") -> B');
+  assertEqual(tentukanPredikatDirect("79"), "C", 'tentukanPredikat("79") -> C');
+
+  // Delegasi dari hitungNilai.ts
+  assertEqual(tentukanPredikat(92), "A", "Delegasi tentukanPredikat(92) = A");
+  assertEqual(tentukanPredikat(91), "B", "Delegasi tentukanPredikat(91) = B");
+  assertEqual(tentukanPredikat(80), "B", "Delegasi tentukanPredikat(80) = B");
+  assertEqual(tentukanPredikat(79), "C", "Delegasi tentukanPredikat(79) = C");
+
+  // Label predikat & konstanta keterangan rentang
+  assertEqual(labelPredikat("A"), "A (Sangat Baik)", 'labelPredikat("A") = A (Sangat Baik)');
+  assertEqual(labelPredikat("B"), "B (Baik)", 'labelPredikat("B") = B (Baik)');
+  assertEqual(labelPredikat("C"), "C (Cukup)", 'labelPredikat("C") = C (Cukup)');
+  assertEqual(tentukanPredikatLabel(92), "A (Sangat Baik)", "tentukanPredikatLabel(92) = A (Sangat Baik)");
+  assertEqual(tentukanPredikatLabel(80), "B (Baik)", "tentukanPredikatLabel(80) = B (Baik)");
+  assertEqual(tentukanPredikatLabel(79), "C (Cukup)", "tentukanPredikatLabel(79) = C (Cukup)");
+  assertEqual(
+    KETERANGAN_RENTANG_PREDIKAT,
+    "> 91 = A (Sangat Baik) | 80 - 91 = B (Baik) | < 80 = C (Cukup)",
+    "KETERANGAN_RENTANG_PREDIKAT sesuai spesifikasi"
+  );
+
   const leggerA = hitungLeggerSiswa(hasilSiswaA, 4);
   assertEqual(leggerA.length, 4, "Jumlah item legger sesuai jumlahBab aktif (4)");
   assertEqual(leggerA[0].kodePengetahuan, "3.1", "Kode pengetahuan bab 1");
@@ -165,15 +218,32 @@ export function runHitungNilaiTests(): { passed: number; details: string[] } {
   assertEqual(ringkasan.rataRataNilaiRapor, 77, "Rata-rata kelas (84 + 70) / 2 = 77");
   assertEqual(ringkasan.nilaiTertinggi, 84, "Nilai tertinggi = 84");
   assertEqual(ringkasan.nilaiTerendah, 70, "Nilai terendah = 70");
-  assertEqual(ringkasan.jumlahDiBawahKKM, 1, "Jumlah siswa di bawah 73 = 1 (Siswa C)");
+  assertEqual(ringkasan.jumlahDiBawahKKM, 1, "Jumlah siswa di bawah KKM 80 = 1 (Siswa C)");
+
+  // Verifikasi satu sumber kebenaran KKM_DEFAULT (80) dan BATAS_UNGGUL (91)
+  assertEqual(KKM_DEFAULT, 80, "KKM_DEFAULT di hitungNilai.ts = 80");
+  assertEqual(KKM_DEFAULT_DIRECT, 80, "KKM_DEFAULT di predikat.ts = 80");
+  assertEqual(BATAS_UNGGUL, 91, "BATAS_UNGGUL di hitungNilai.ts = 91");
+  assertEqual(BATAS_UNGGUL_DIRECT, 91, "BATAS_UNGGUL di predikat.ts = 91");
+
+  const hasilNilai74 = hitungAkumulasiSiswa({ sts: 74, bab: { "1": { t: 74, sh: 74 } } }, defaultConfig);
+  const hasilNilai79 = hitungAkumulasiSiswa({ sts: 79, bab: { "1": { t: 79, sh: 79 } } }, defaultConfig);
+  const hasilNilai80 = hitungAkumulasiSiswa({ sts: 80, bab: { "1": { t: 80, sh: 80 } } }, defaultConfig);
+  assertEqual(hasilNilai74.isBelowKKM, true, "Nilai Rapor 74 berada di bawah KKM 80");
+  assertEqual(hasilNilai79.isBelowKKM, true, "Nilai Rapor 79 berada di bawah KKM 80");
+  assertEqual(hasilNilai80.isBelowKKM, false, "Nilai Rapor 80 tuntas KKM 80");
+
+  // Pengujian langsung batas nilai 79.9 vs 80 terhadap KKM_DEFAULT (80)
+  assertEqual(cekDiBawahKKM(79.9), true, "isBelowKKM true untuk nilai 79.9 (< KKM 80)");
+  assertEqual(cekDiBawahKKM(80), false, "isBelowKKM false untuk nilai 80 (>= KKM 80)");
 
   assertEqual(parseAndValidateCellInput("85,5").valid, true, "Input desimal koma valid");
   assertEqual(parseAndValidateCellInput("85,5").value, 85.5, "Nilai desimal koma = 85.5");
   assertEqual(parseAndValidateCellInput("105").valid, false, "Input > 100 ditolak");
   assertEqual(parseAndValidateCellInput("-5").valid, false, "Input < 0 ditolak");
   assertEqual(parseAndValidateCellInput("abc").valid, false, "Input huruf ditolak");
-  passed += 20;
-  details.push("PASS: Kasus Uji Sel Kosong vs 0, Legger, Ringkasan Kelas, dan Validasi Input");
+  passed += 58;
+  details.push("PASS: Kasus Uji Predikat Terpadu (>91=A, 80-91=B, <80=C), KKM_DEFAULT=80, BATAS_UNGGUL=91, Sel Kosong vs 0, Legger, Ringkasan Kelas, dan Validasi Input");
 
   return { passed, details };
 }

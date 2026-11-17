@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Teacher, Student, Grade, Halaqoh, sortHalaqohStudents } from "../types";
+import { tentukanPredikat } from "../lib/predikat";
 import {
   Download,
   Printer,
@@ -21,15 +22,13 @@ import {
   Check,
   X,
 } from "lucide-react";
-import logoUrl from "../assets/images/smp_logo_exact_match_revised_1783840969621.jpg";
-import logoJsitUrl from "../assets/images/logo_jsit_indonesia_1783956323407.jpg";
-import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.jpg";
-import kopSuratBannerUrl from "../assets/images/kop_surat_banner.png";
+const logoUrl = new URL("../assets/images/smp_logo_exact_match_revised_1783840969621.jpg", import.meta.url).href;
+const logoJsitUrl = new URL("../assets/images/logo_jsit_indonesia_1783956323407.jpg", import.meta.url).href;
+const logoCahayaAmalUrl = new URL("../assets/images/logo_cahaya_amal_1783956338475.jpg", import.meta.url).href;
+const kopSuratBannerUrl = new URL("../assets/images/kop_surat_banner.png", import.meta.url).href;
 import { exportHalaqohToWord, exportAllHalaqohToZip, triggerBrowserDownload } from "../lib/wordExport";
-import { sanitizeTextForStudent } from "../lib/raportPdfService";
+import { sanitizeTextForStudent, getHtml2PdfRunner } from "../lib/raportPdfService";
 import JSZip from "jszip";
-// @ts-ignore
-import html2pdf from "html2pdf.js";
 
 interface HalaqohRaportViewProps {
   currentUser: Teacher;
@@ -425,32 +424,22 @@ export default function HalaqohRaportView({
           isSameSub(g.subject, subjectMeta.key)
       );
 
-      const scoreToPredicate = (score: number | string | undefined | null): string => {
-        if (score === undefined || score === null || score === "") return "";
-        const num = typeof score === "number" ? score : parseFloat(String(score));
-        if (isNaN(num)) return String(score).trim();
-        if (num >= 90) return "A";
-        if (num >= 80) return "B";
-        if (num >= 70) return "C";
-        return "D";
-      };
-
       const usahaVal = (gradeObj?.usaha && gradeObj.usaha.trim() !== "")
         ? gradeObj.usaha.trim()
         : (gradeObj?.score !== undefined && gradeObj?.score !== null && gradeObj?.score !== "")
-        ? scoreToPredicate(gradeObj.score)
+        ? (tentukanPredikat(gradeObj.score) || String(gradeObj.score).trim())
         : "A";
 
       const prosesVal = (gradeObj?.proses && gradeObj.proses.trim() !== "")
         ? gradeObj.proses.trim()
         : (gradeObj?.score !== undefined && gradeObj?.score !== null && gradeObj?.score !== "")
-        ? scoreToPredicate(gradeObj.score)
+        ? (tentukanPredikat(gradeObj.score) || String(gradeObj.score).trim())
         : "A";
 
       const capaianVal = (gradeObj?.capaian && gradeObj.capaian.trim() !== "")
         ? gradeObj.capaian.trim()
         : (gradeObj?.score !== undefined && gradeObj?.score !== null && gradeObj?.score !== "")
-        ? scoreToPredicate(gradeObj.score)
+        ? (tentukanPredikat(gradeObj.score) || String(gradeObj.score).trim())
         : "A";
 
       let descContent = "";
@@ -553,9 +542,9 @@ export default function HalaqohRaportView({
           <table style="width: 100%; border-collapse: collapse; border: none !important; font-size: 8.5pt; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', serif; box-sizing: border-box;">
             <tr style="background-color: #ffffff;">
               <td style="width: 95px; border-right: 1px solid #000000; border-top: none !important; border-bottom: none !important; border-left: none !important; padding: 3px 6px; vertical-align: top; background-color: #ffffff; color: #000000; line-height: 1.3;">
-                <div>A : 90 – 100</div>
-                <div>B : 75 – 89</div>
-                <div>C : 60 – 74</div>
+                <div>A : &gt; 91</div>
+                <div>B : 80 – 91</div>
+                <div>C : &lt; 80</div>
               </td>
               <td style="border: none !important; padding: 3px 6px; vertical-align: top; background-color: #ffffff; color: #000000; font-family: 'Times New Roman', serif;">
                 <table style="width: 100%; border: none !important; border-collapse: collapse; background: transparent; color: #000000; font-family: 'Times New Roman', serif; line-height: 1.3; box-sizing: border-box;">
@@ -796,43 +785,15 @@ export default function HalaqohRaportView({
           });
       };
 
-      if ((window as any).html2pdf) {
-        runExport((window as any).html2pdf);
-      } else {
-        try {
-          const pkg =
-            typeof html2pdf === "function"
-              ? html2pdf
-              : (html2pdf as any).default;
-          if (pkg) {
-            runExport(pkg);
-          } else {
-            throw new Error("Local html2pdf is not loaded yet");
-          }
-        } catch (e) {
-          console.warn("NPM module html2pdf load failed, trying dynamic CDN load:", e);
-          const script = document.createElement("script");
-          script.src =
-            "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-          script.onload = () => {
-            if ((window as any).html2pdf) {
-              runExport((window as any).html2pdf);
-            } else {
-              if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
-              setDownloadingSubject(null);
-              handlePrint();
-              resolve();
-            }
-          };
-          script.onerror = () => {
-            if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
-            setDownloadingSubject(null);
-            handlePrint();
-            resolve();
-          };
-          document.head.appendChild(script);
-        }
-      }
+      getHtml2PdfRunner()
+        .then((runner) => runExport(runner))
+        .catch((e) => {
+          console.warn("html2pdf load failed:", e);
+          if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+          setDownloadingSubject(null);
+          handlePrint();
+          resolve();
+        });
     });
   };
 
@@ -889,9 +850,7 @@ export default function HalaqohRaportView({
     };
 
     try {
-      const runner =
-        (window as any).html2pdf ||
-        (typeof html2pdf === "function" ? html2pdf : (html2pdf as any)?.default);
+      const runner = await getHtml2PdfRunner();
       const pdf = await runner().set(opt).from(pdfContainer).toPdf().get("pdf");
       const blob = pdf.output("blob");
       return blob;

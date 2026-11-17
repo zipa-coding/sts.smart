@@ -15,6 +15,10 @@ import {
   AkumulasiNilaiDoc,
   formatKelasRomawi,
 } from "./akumulasiNilaiService";
+import {
+  KETERANGAN_RENTANG_PREDIKAT,
+  KETERANGAN_RENTANG_PREDIKAT_LIST,
+} from "./predikat";
 
 export type PaperSizeOption = "F4" | "A4";
 
@@ -37,7 +41,7 @@ export function colIndexToLetter(colIndex: number): string {
  * - Judul "Format Akumulasi Nilai" & identitas sekolah SMP Islam SMART Pangkalpinang
  * - Kolom grup per bab (T, SH, Rata Bab, P)
  * - Rumus Excel hidup (AVERAGE, ROUND, IF, COUNTA, MAX, MIN, COUNTIF)
- * - Keterangan rentang nilai predikat (A/B/C/D)
+ * - Keterangan rentang nilai predikat (A/B/C)
  * - Tanda tangan Kepala Sekolah (kiri) dan Guru Mata Pelajaran (kanan)
  */
 export async function exportAkumulasiToExcel(params: {
@@ -375,10 +379,10 @@ export async function exportAkumulasiToExcel(params: {
     };
     raporCell.numFmt = "0";
 
-    // Predikat dari Nilai Rapor: 91-100=A, 81-90=B, 73-80=C, <73=D
+    // Predikat dari Nilai Rapor: > 91 = A, 80 - 91 = B, < 80 = C
     const predikatCell = ws.getCell(rowNum, predikatColIdx);
     predikatCell.value = {
-      formula: `IF(${raporRef}="","",IF(${raporRef}>=91,"A",IF(${raporRef}>=81,"B",IF(${raporRef}>=73,"C","D"))))`,
+      formula: `IF(${raporRef}="","",IF(${raporRef}>91,"A",IF(${raporRef}>=80,"B","C")))`,
       result: hasil.predikat ?? "",
     };
 
@@ -504,12 +508,7 @@ export async function exportAkumulasiToExcel(params: {
   ws.getCell(footerStartRow, 2).value = "Keterangan Rentang Nilai & Predikat:";
   ws.getCell(footerStartRow, 2).font = { name: "Arial", size: 9, bold: true };
 
-  const rentangInfo = [
-    "91 – 100 = A (Sangat Baik)",
-    "81 – 90  = B (Baik)",
-    "73 – 80  = C (Cukup)",
-    "< 73     = D (Perlu Bimbingan / Di Bawah KKM)",
-  ];
+  const rentangInfo = [...KETERANGAN_RENTANG_PREDIKAT_LIST];
   rentangInfo.forEach((info, i) => {
     const c = ws.getCell(footerStartRow + 1 + i, 2);
     c.value = info;
@@ -959,8 +958,7 @@ export function buildAkumulasiPrintHtml(params: {
         <div class="predikat-box">
           <strong>Rumus Nilai Akhir Siswa:</strong> ${rumusAktifText}<br/>
           <strong>Keterangan Rentang Nilai Rapor &amp; Predikat:</strong><br/>
-          • 91 – 100 = <strong>A</strong> (Sangat Baik) &nbsp;&nbsp; • 81 – 90 = <strong>B</strong> (Baik)<br/>
-          • 73 – 80 = <strong>C</strong> (Cukup) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; • &lt; 73 = <strong>D</strong> (Di Bawah KKM / Perlu Bimbingan)
+          ${KETERANGAN_RENTANG_PREDIKAT}
         </div>
         <div class="signature-area">
           <div class="sig-block">

@@ -10,11 +10,14 @@ Sistem Pengisian Raport Sumatif Tengah Semester (STS) terintegrasi untuk **SMP I
   - **Administrator**: Mengelola data Guru, Siswa, setelan instansi (Kepala Sekolah, NIP, Semester, Tahun Pelajaran), kontrol gaya cetak, serta visibilitas elemen raport.
   - **Guru Mata Pelajaran (Mapel)**: Melakukan penginputan nilai kriteria (nilai akhir, usaha, proses, capaian) dan memilih/menambahkan Tujuan Pembelajaran yang diujikan secara taktis.
   - **Wali Kelas**: Memantau progres kelengkapan nilai siswa di kelasnya, mengisi kehadiran siswa (Sakit, Izin, Alpa), memberikan penilaian Sikap (Spiritual & Sosial), serta menulis Catatan Wali Kelas.
-- **Auto-Kalkulasi Predikat & Capaian**:
-  - Konfigurasi kriteria rentang nilai baru yang presisi:
-    - **Nilai > 91**: Predikat **A**
-    - **Nilai >= 85**: Predikat **B**
-    - **Nilai < 85**: Predikat **C**
+- **Auto-Kalkulasi Predikat, KKM & Status Capaian Terpusat (`src/lib/predikat.ts`)**:
+  - Konfigurasi kriteria rentang nilai (`> 91 = A (Sangat Baik) | 80 - 91 = B (Baik) | < 80 = C (Cukup)`):
+    - **Nilai > 91**: Predikat **A (Sangat Baik)**
+    - **Nilai 80 - 91**: Predikat **B (Baik)**
+    - **Nilai < 80**: Predikat **C (Cukup)**
+  - Standar ketuntasan & capaian unggul satu sumber kebenaran:
+    - **`KKM_DEFAULT = 80`**: Nilai di bawah 80 ditandai perlu bimbingan / di bawah KKM (dikunci 80, tidak dapat diubah pengguna).
+    - **`BATAS_UNGGUL = 91`**: Nilai `> 91` dikategorikan berstatus capaian unggul (*advanced*).
 - **Dashboard Progress Real-time**: Menampilkan persentase kelengkapan data per mata pelajaran dan per kelas secara intuitif.
 - **Template Deskripsi & Capaian Otomatis**: Memilih TP (Tujuan Pembelajaran) yang langsung dirakit menjadi teks deskripsi komprehensif di lembar raport.
 - **Cetak & Ekspor Dokumen**:

@@ -10,10 +10,12 @@ import HalaqohRaportView from "./components/HalaqohRaportView";
 import AkumulasiNilaiPanel from "./components/AkumulasiNilaiPanel";
 import SmpIslamSmartLogo from "./components/SmpIslamSmartLogo";
 import { PWAInstallButton } from "./components/PWAInstallButton";
-import { BookOpen, LogOut, Key, BarChart3, Settings, ShieldAlert, GraduationCap, PenTool, Sun, Moon, Menu, X, LayoutDashboard, Sliders, Users, Award, Calculator } from "lucide-react";
+import { BookOpen, LogOut, Key, BarChart3, Settings, ShieldAlert, GraduationCap, PenTool, Sun, Moon, Menu, X, LayoutDashboard, Sliders, Users, Award, Calculator, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { isFirebaseConfigured } from "./lib/firebase";
+import { useConnectionStatus } from "./hooks/useRealtimeData";
 
 export default function App() {
+  const { connectionStatus, isOffline, activeListenerCount, activeListeners } = useConnectionStatus();
   const [currentUser, setCurrentUser] = useState<Teacher | null>(() => {
     try {
       const savedUser = sessionStorage.getItem("smp_islam_smart_user");
@@ -503,9 +505,39 @@ export default function App() {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>Keamanan Aktif</span>
               </div>
+
+              {/* Realtime Connection Status Indicator (Task 4) */}
+              <div
+                id="connection-status-indicator"
+                title={`Status Koneksi Realtime • Listener Aktif (${activeListenerCount}): ${activeListeners.join(", ") || "Tidak ada"}`}
+                className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all ${
+                  connectionStatus === "offline"
+                    ? "bg-rose-500/15 border-rose-500/40 text-rose-300"
+                    : connectionStatus === "syncing"
+                    ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+                    : "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                }`}
+              >
+                {connectionStatus === "offline" ? (
+                  <>
+                    <WifiOff className="w-3 h-3 text-rose-400" />
+                    <span>Offline</span>
+                  </>
+                ) : connectionStatus === "syncing" ? (
+                  <>
+                    <RefreshCw className="w-3 h-3 text-amber-400 animate-spin" />
+                    <span>Menyinkronkan</span>
+                  </>
+                ) : (
+                  <>
+                    <Wifi className="w-3 h-3 text-emerald-400" />
+                    <span>Tersambung</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-          
+            
           <div className="flex items-center gap-2">
             {/* Install Desktop App CTA */}
             <PWAInstallButton variant="navbar" />
@@ -556,6 +588,18 @@ export default function App() {
 
         {/* Inner Content Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4" id="app-workspace">
+          {isOffline && (
+            <div
+              id="global-offline-banner"
+              className="max-w-7xl mx-auto p-3.5 rounded-xl bg-rose-950/90 border-2 border-rose-500 text-rose-100 text-xs font-bold flex items-center gap-2.5 shadow-lg"
+            >
+              <WifiOff className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>
+                Perangkat sedang <strong>Offline</strong>. Tombol Simpan dinonaktifkan sementara agar data tidak hilang atau berkonflik. Periksa koneksi internet Anda.
+              </span>
+            </div>
+          )}
+
           {/* Tab view containers with persistent state */}
           <div className="tab-viewport max-w-7xl mx-auto" id="tab-viewport">
             {visitedTabs["progress"] && (

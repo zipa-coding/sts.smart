@@ -1,12 +1,11 @@
 import { Student, Grade, WaliKelasNote, Teacher } from "../types";
+import { tentukanPredikat } from "./predikat";
 import { triggerBrowserDownload } from "./wordExport";
 import JSZip from "jszip";
-// @ts-ignore
-import html2pdf from "html2pdf.js";
 
-import logoUrl from "../assets/images/smp_logo_exact_match_revised_1783840969621.jpg";
-import logoJsitUrl from "../assets/images/logo_jsit_indonesia_1783956323407.jpg";
-import logoCahayaAmalUrl from "../assets/images/logo_cahaya_amal_1783956338475.jpg";
+const logoUrl = new URL("../assets/images/smp_logo_exact_match_revised_1783840969621.jpg", import.meta.url).href;
+const logoJsitUrl = new URL("../assets/images/logo_jsit_indonesia_1783956323407.jpg", import.meta.url).href;
+const logoCahayaAmalUrl = new URL("../assets/images/logo_cahaya_amal_1783956338475.jpg", import.meta.url).href;
 
 export interface RaportFormatSettings {
   semesterName?: string;
@@ -155,16 +154,6 @@ export const isSameSubject = (a: string | undefined | null, b: string | undefine
   return aliasA === aliasB;
 };
 
-export const scoreToPredicate = (score: number | string | undefined | null): string => {
-  if (score === undefined || score === null || score === "") return "";
-  const num = typeof score === "number" ? score : parseFloat(String(score));
-  if (isNaN(num)) return String(score).trim();
-  if (num > 91) return "A";
-  if (num >= 80) return "B";
-  if (num >= 70) return "C";
-  return "D";
-};
-
 export const generateDescription = (g: Grade | undefined, studentName: string) => {
   if (!g || !g.tps || !Array.isArray(g.tps) || g.tps.length === 0) {
     return "";
@@ -200,73 +189,79 @@ export const generateDescription = (g: Grade | undefined, studentName: string) =
 };
 
 /**
- * Ensures any narrative description or note strictly belongs to the target student
- * and never contains another student's name due to copy-paste or stale state.
+ * Pemeriksaan non-destruktif: mendeteksi apakah di dalam teks deskripsi terdapat
+ * nama siswa lain dari kelas yang sama. Teks asli TIDAK pernah diubah otomatis.
  */
-export function sanitizeTextForStudent(
+export function detectForeignStudentNamesInDescription(
   text: string | undefined | null,
-  targetStudent: { id?: string; name?: string } | null | undefined,
-  allStudents?: { id?: string; name?: string }[],
-  useFirstNameInFallback: boolean = false
-): string {
-  if (!text || typeof text !== "string") return "";
-  let result = text.trim();
-  if (!result || !targetStudent || !targetStudent.name) return result;
+  targetStudent: { id?: string; name?: string; kelas?: string } | null | undefined,
+  allStudents?: Array<{ id?: string; name?: string; kelas?: string }>
+): string[] {
+  if (!text || typeof text !== "string") return [];
+  const trimmedText = text.trim();
+  if (!trimmedText || !targetStudent || !Array.isArray(allStudents) || allStudents.length === 0) {
+    return [];
+  }
 
-  const targetFullName = targetStudent.name.trim();
-  const targetFirstName = targetFullName.split(/\s+/)[0] || targetFullName;
-  const replacementName = useFirstNameInFallback ? targetFirstName : targetFullName;
+  const targetId = String(targetStudent.id || "").trim();
+  const targetNameRaw = String(targetStudent.name || "").trim();
+  const targetFullName = targetNameRaw.toLowerCase();
+  const targetKelas = String(targetStudent.kelas || "").trim();
 
-  // 1. Replace any other registered student's full name (sorted longest first to avoid partial token issues)
-  if (Array.isArray(allStudents) && allStudents.length > 0) {
-    const others = allStudents
-      .filter(
-        (s) =>
-          s &&
-          s.name &&
-          String(s.id || "").trim() !== String(targetStudent.id || "").trim() &&
-          s.name.trim().toLowerCase() !== targetFullName.toLowerCase()
-      )
-      .sort((a, b) => (b.name?.trim().length || 0) - (a.name?.trim().length || 0));
+  // Mask nama lengkap siswa terpilih (sebagai kata utuh) terlebih dahulu agar nama siswa lain
+  // yang kebetulan menjadi bagian dari nama lengkap siswa terpilih (mis. "Ali" di dalam "Ali Akbar")
+  // tidak ikut terdeteksi jika yang tertulis memang "Ali Akbar".
+  let textToSearch = trimmedText;
+  if (targetNameRaw.length >= 3) {
+    const escapedTarget = targetNameRaw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const targetRegex = new RegExp(`\\b${escapedTarget}\\b`, "gi");
+    textToSearch = textToSearch.replace(targetRegex, " ");
+  }
 
-    for (const other of others) {
-      const otherName = other.name!.trim();
-      if (otherName.length < 3) continue;
-      const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const regex = new RegExp(escaped, "gi");
-      if (regex.test(result)) {
-        result = result.replace(regex, replacementName);
-      }
+  const sameClassOthers = allStudents.filter((s) => {
+    if (!s || !s.name) return false;
+    const sid = String(s.id || "").trim();
+    const sname = String(s.name || "").trim();
+    if (sname.length < 3) return false;
+    if (sid && targetId && sid === targetId) return false;
+    if (sname.toLowerCase() === targetFullName) return false;
+    if (targetKelas) {
+      return String(s.kelas || "").trim() === targetKelas;
+    }
+    return true;
+  });
+
+  const detectedNames: string[] = [];
+  const seenLower = new Set<string>();
+
+  for (const other of sameClassOthers) {
+    const otherName = String(other.name || "").trim();
+    const lowerOther = otherName.toLowerCase();
+    if (seenLower.has(lowerOther)) continue;
+
+    const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b`, "i");
+    if (regex.test(textToSearch)) {
+      seenLower.add(lowerOther);
+      detectedNames.push(otherName);
     }
   }
 
-  // 2. Pattern-based guard for standard raport narrative templates ("ananda [Nama] dalam pembelajaran / menunjukkan / dll.")
-  const narrativePattern =
-    /(\bananda\s+)([^\.,;]+?)(?=\s+(?:dalam pembelajaran|menunjukkan|mudah bergaul|memiliki kepribadian|cukup baik|cukup kooperatif|memerlukan|terus meningkatkan|saat ini capaian pembelajaran))/gi;
+  return detectedNames;
+}
 
-  result = result.replace(narrativePattern, (fullMatch, prefix, capturedName) => {
-    const cleanCaptured = String(capturedName || "").trim();
-    if (!cleanCaptured) return fullMatch;
-    if (
-      cleanCaptured.toLowerCase() === targetFullName.toLowerCase() ||
-      (useFirstNameInFallback && cleanCaptured.toLowerCase() === targetFirstName.toLowerCase())
-    ) {
-      return fullMatch;
-    }
-    return `${prefix}${replacementName}`;
-  });
-
-  // 3. Pattern-based guard for homeroom high-achievement template ("pencapaian luar biasa ananda [Nama].")
-  const achievementPattern = /(\bpencapaian luar biasa ananda\s+)([^\.]+?)(\.)/gi;
-  result = result.replace(achievementPattern, (fullMatch, prefix, capturedName, dot) => {
-    const cleanCaptured = String(capturedName || "").trim();
-    if (!cleanCaptured || cleanCaptured.toLowerCase() === targetFullName.toLowerCase()) {
-      return fullMatch;
-    }
-    return `${prefix}${targetFullName}${dot}`;
-  });
-
-  return result;
+/**
+ * Pass-through non-destruktif (kompatibilitas impor cetak/ekspor):
+ * TIDAK mengubah atau mengganti nama siswa di dalam teks secara otomatis.
+ */
+export function sanitizeTextForStudent(
+  text: string | undefined | null,
+  _targetStudent?: { id?: string; name?: string; kelas?: string } | null,
+  _allStudents?: Array<{ id?: string; name?: string; kelas?: string }>,
+  _useFirstNameInFallback: boolean = false
+): string {
+  if (!text || typeof text !== "string") return "";
+  return text.trim();
 }
 
 export function getTransparentWatermarkBase64(
@@ -349,7 +344,7 @@ export function buildStudentRaportHtml({
     const g = getSubjectGradeObj(sub);
     if (g && g.usaha && g.usaha.trim() !== "") return g.usaha.trim();
     if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "")
-      return scoreToPredicate(g.score);
+      return tentukanPredikat(g.score) || String(g.score).trim();
     if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
     return "B";
   };
@@ -358,7 +353,7 @@ export function buildStudentRaportHtml({
     const g = getSubjectGradeObj(sub);
     if (g && g.proses && g.proses.trim() !== "") return g.proses.trim();
     if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "")
-      return scoreToPredicate(g.score);
+      return tentukanPredikat(g.score) || String(g.score).trim();
     if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
     return "B";
   };
@@ -367,7 +362,7 @@ export function buildStudentRaportHtml({
     const g = getSubjectGradeObj(sub);
     if (g && g.capaian && g.capaian.trim() !== "") return g.capaian.trim();
     if (g && g.score !== undefined && g.score !== null && String(g.score).trim() !== "")
-      return scoreToPredicate(g.score);
+      return tentukanPredikat(g.score) || String(g.score).trim();
     if (g && g.usaha && g.usaha.trim() !== "") return g.usaha.trim();
     return "B";
   };
@@ -833,7 +828,9 @@ export async function getHtml2PdfRunner(): Promise<any> {
     return (window as any).html2pdf;
   }
   try {
-    const mod = typeof html2pdf === "function" ? html2pdf : (html2pdf as any)?.default;
+    // @ts-ignore
+    const html2pdfMod = await import("html2pdf.js");
+    const mod = typeof html2pdfMod === "function" ? html2pdfMod : (html2pdfMod as any)?.default;
     if (mod) return mod;
   } catch {}
 

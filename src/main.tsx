@@ -4,6 +4,9 @@ import App from './App.tsx';
 import './index.css';
 import dbData from './data/db.json';
 import { isFirebaseConfigured, firebaseApi } from './lib/firebase';
+import { markWriteOperationStart, markWriteOperationEnd } from './lib/realtimeStore';
+import { tentukanPredikat, tentukanPredikatLabel } from './lib/predikat';
+import { mergeDeskripsiAman } from './lib/gradeMerge';
 import { registerSW } from 'virtual:pwa-register';
 
 // Automatically register and update PWA service worker in production
@@ -29,152 +32,10 @@ const isStaticHost =
   window.location.hostname.includes('gmpg.io') ||
   window.location.protocol === 'file:';
 
-// Memory cache for client-side storage simulation
+// Memory cache for client-side storage simulation (ONLY used when !isFirebaseConfigured)
 let clientDbCache: any = null;
 
-// Initialize localStorage with db.json seed data if empty
-function initializeLocalStorage() {
-  if (!clientDbCache) {
-    const raw = localStorage.getItem('smart_sts_db');
-    if (raw) {
-      try {
-        clientDbCache = JSON.parse(raw);
-        let needsSave = false;
-
-        // Ensure real teacher templates are updated with verified templates
-        const realTemplates = (dbData.tujuan_pembelajaran_templates || {}) as Record<string, any>;
-        if (!clientDbCache.tujuan_pembelajaran_templates || typeof clientDbCache.tujuan_pembelajaran_templates !== 'object') {
-          clientDbCache.tujuan_pembelajaran_templates = realTemplates;
-          needsSave = true;
-        } else {
-          // Check each subject and protect all teacher-created TPs
-          for (const sub of Object.keys(realTemplates)) {
-            const realSub = realTemplates[sub];
-            const realList: any[] = Array.isArray(realSub) ? realSub : (realSub?.tps || []);
-            const curSub = clientDbCache.tujuan_pembelajaran_templates[sub];
-            const curList: any[] = Array.isArray(curSub) ? [...curSub] : (curSub?.tps ? [...curSub.tps] : []);
-            
-            // JANGAN PERNAH menimpa atau menghapus TP yang telah ditambahkan oleh guru.
-            // Pertahankan seluruh TP yang sudah ada, hanya tambahkan jika belum pernah ada sama sekali.
-            const existingIds = new Set(curList.map((t: any) => String(t.id || '').trim()));
-            const existingTexts = new Set(curList.map((t: any) => String(t.text || '').trim().toLowerCase()));
-            
-            let updated = false;
-            for (const rTp of realList) {
-              const rId = String(rTp.id || '').trim();
-              const rText = String(rTp.text || '').trim().toLowerCase();
-              if (!existingIds.has(rId) && !existingTexts.has(rText)) {
-                curList.push(rTp);
-                existingIds.add(rId);
-                existingTexts.add(rText);
-                updated = true;
-              }
-            }
-            if (updated || !Array.isArray(curSub)) {
-              clientDbCache.tujuan_pembelajaran_templates[sub] = curList;
-              needsSave = true;
-            }
-          }
-        }
-
-        // Ensure halaqoh list is initialized if missing
-        if (!Array.isArray(clientDbCache.halaqoh) || clientDbCache.halaqoh.length === 0) {
-          clientDbCache.halaqoh = (dbData as any).halaqoh || [];
-          needsSave = true;
-        }
-
-        // Normalize any ekskul grades in walikelas_notes to letter format (A, B, C, D)
-        if (clientDbCache.walikelas_notes && typeof clientDbCache.walikelas_notes === 'object') {
-          const toLetter = (val: any, fallback = 'B') => {
-            if (!val) return fallback;
-            const s = String(val).trim().toUpperCase();
-            if (s === 'A' || s === 'SANGAT BAIK' || s === 'SB') return 'A';
-            if (s === 'B' || s === 'BAIK') return 'B';
-            if (s === 'C' || s === 'CUKUP' || s === 'CB') return 'C';
-            if (s === 'D' || s === 'KURANG' || s === 'KB') return 'D';
-            if (s.length === 1 && ['A', 'B', 'C', 'D'].includes(s)) return s;
-            return fallback;
-          };
-          for (const sId of Object.keys(clientDbCache.walikelas_notes)) {
-            const n = clientDbCache.walikelas_notes[sId];
-            if (n && Array.isArray(n.ekskul)) {
-              n.ekskul.forEach((e: any) => {
-                const fb = toLetter(e.predicate || e.capaian || 'B', 'B');
-                const u = toLetter(e.usaha, fb);
-                const p = toLetter(e.proses, fb);
-                const c = toLetter(e.capaian, fb);
-                const pred = toLetter(e.predicate, fb);
-                if (e.usaha !== u || e.proses !== p || e.capaian !== c || e.predicate !== pred) {
-                  e.usaha = u;
-                  e.proses = p;
-                  e.capaian = c;
-                  e.predicate = pred;
-                  needsSave = true;
-                }
-              });
-            }
-          }
-        }
-
-        // Clean any old dummy placeholder teacher accounts (t2, t3, t4, t5)
-        if (Array.isArray(clientDbCache.teachers)) {
-          const prevLen = clientDbCache.teachers.length;
-          clientDbCache.teachers = clientDbCache.teachers.filter(
-            (t: any) => t && !["t2", "t3", "t4", "t5"].includes(t.id) && !["ahmad", "fatimah", "lukman", "khadijah"].includes(t.username)
-          );
-          if (clientDbCache.teachers.length !== prevLen) {
-            needsSave = true;
-          }
-        }
-
-        // Tetapkan nama kepala sekolah permanen: Ari Gunawan, S.Kom.
-        if (!clientDbCache.settings) {
-          clientDbCache.settings = {};
-          needsSave = true;
-        }
-        if (clientDbCache.settings.principalName !== "Ari Gunawan, S.Kom.") {
-          clientDbCache.settings.principalName = "Ari Gunawan, S.Kom.";
-          needsSave = true;
-        }
-
-        // Pastikan deskripsi anak dan studentId pada nilai (terutama PPKN) 100% sinkron dan tidak tertukar
-        if (Array.isArray(clientDbCache.grades) && Array.isArray(clientDbCache.students)) {
-          const studentList: any[] = clientDbCache.students;
-          clientDbCache.grades.forEach((g: any) => {
-            if (g && g.subject === "PPKN" && (g.deskripsi || g.description)) {
-              const desc = g.deskripsi || g.description || "";
-              let matched: any = null;
-              for (const s of studentList) {
-                if (s && s.name && desc.includes(s.name)) {
-                  matched = s;
-                  break;
-                }
-              }
-              if (!matched) {
-                if (desc.includes("Shaza Qurratu Ain")) matched = studentList.find((s) => s.id === "s7_28");
-                else if (desc.includes("Aaisyah Nur Husnaa")) matched = studentList.find((s) => s.id === "s9_1");
-              }
-              if (matched && g.studentId !== matched.id) {
-                g.studentId = matched.id;
-                needsSave = true;
-              }
-            }
-          });
-        }
-        if (needsSave) {
-          localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
-        }
-      } catch (e) {
-        clientDbCache = dbData;
-      }
-    } else {
-      clientDbCache = dbData;
-      localStorage.setItem('smart_sts_db', JSON.stringify(dbData));
-    }
-  }
-}
-
-// Wrapper to simulate fetch for /api/* requests on static deployments
+// Wrapper to simulate fetch for /api/* requests
 const localFetchInterception = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   const urlStr = typeof input === 'string' ? input : (input as any).url || '';
   
@@ -183,13 +44,6 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
     return originalFetch(input, init);
   }
 
-  initializeLocalStorage();
-  const getDB = () => clientDbCache || JSON.parse(localStorage.getItem('smart_sts_db') || '{}');
-  const saveDB = (data: any) => {
-    clientDbCache = data;
-    localStorage.setItem('smart_sts_db', JSON.stringify(data));
-  };
-
   const path = urlStr.startsWith('http') 
     ? new URL(urlStr).pathname 
     : urlStr.split('?')[0];
@@ -197,378 +51,359 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
   const method = init?.method?.toUpperCase() || 'GET';
   const body = init?.body ? JSON.parse(init.body as string) : null;
 
-  try {
-    if (isFirebaseConfigured) {
-      try {
-        // 1. POST /api/login
-        if (path === '/api/login' && method === 'POST') {
-          const user = await firebaseApi.login(body);
-          if (!user) {
-            return new Response(JSON.stringify({ error: "Kombinasi pengguna dan kata sandi salah." }), {
-              status: 401,
-              headers: { 'Content-Type': 'application/json' }
-            });
-          }
-          return new Response(JSON.stringify(user), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  // When Firebase is configured, Firestore is the single source of truth.
+  // Never read/write localStorage 'smart_sts_db' or fallback to db.json.
+  if (isFirebaseConfigured) {
+    const isMutatingRequest =
+      (method === 'POST' || method === 'PUT' || method === 'DELETE') &&
+      path !== '/api/login' &&
+      path !== '/api/verify-session';
+    if (isMutatingRequest) {
+      markWriteOperationStart();
+    }
+    try {
+      // 1. POST /api/login
+      if (path === '/api/login' && method === 'POST') {
+        const user = await firebaseApi.login(body);
+        if (!user) {
+          return new Response(JSON.stringify({ error: "Kombinasi pengguna dan kata sandi salah." }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+          });
         }
+        return new Response(JSON.stringify(user), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
 
-        // POST /api/verify-session
-        if (path === '/api/verify-session' && method === 'POST') {
-          const user = await firebaseApi.login(body);
-          if (!user) {
-            return new Response(JSON.stringify({ error: "Sesi tidak valid." }), {
-              status: 401,
-              headers: { 'Content-Type': 'application/json' }
-            });
-          }
-          return new Response(JSON.stringify(user), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      // POST /api/verify-session
+      if (path === '/api/verify-session' && method === 'POST') {
+        const user = await firebaseApi.login(body);
+        if (!user) {
+          return new Response(JSON.stringify({ error: "Sesi tidak valid." }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+          });
         }
+        return new Response(JSON.stringify(user), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
 
-        // 2. GET /api/teachers
-        if (path === '/api/teachers' && method === 'GET') {
-          const t = await firebaseApi.getTeachers();
-          return new Response(JSON.stringify(t), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      // 2. GET /api/teachers
+      if (path === '/api/teachers' && method === 'GET') {
+        const t = await firebaseApi.getTeachers();
+        return new Response(JSON.stringify(t), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // POST /api/teachers
+      if (path === '/api/teachers' && method === 'POST') {
+        try {
+          const t = await firebaseApi.postTeacher(body);
+          return new Response(JSON.stringify(t), { status: 201, headers: { 'Content-Type': 'application/json' } });
+        } catch (e: any) {
+          return new Response(JSON.stringify({ error: e.message || "Gagal menyimpan data guru." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
+      }
 
-        // POST /api/teachers
-        if (path === '/api/teachers' && method === 'POST') {
-          try {
-            const t = await firebaseApi.postTeacher(body);
-            return new Response(JSON.stringify(t), { status: 201, headers: { 'Content-Type': 'application/json' } });
-          } catch (e: any) {
-            if (e.message?.includes("Username sudah digunakan") || e.message?.includes("wajib") || e.message?.includes("lengkap")) {
-              return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-            }
-            console.warn("Firestore postTeacher failed, falling back to local DB:", e);
-            // Fall back to local DB processing
-          }
-        }
+      // PUT /api/teachers/:id
+      if (path.startsWith('/api/teachers/') && method === 'PUT') {
+        const id = path.split('/').pop() || "";
+        const t = await firebaseApi.putTeacher(id, body);
+        return new Response(JSON.stringify(t), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
 
-        // PUT /api/teachers/:id
-        if (path.startsWith('/api/teachers/') && method === 'PUT') {
-          const id = path.split('/').pop() || "";
-          const t = await firebaseApi.putTeacher(id, body);
-          return new Response(JSON.stringify(t), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // DELETE /api/teachers/:id
-        if (path.startsWith('/api/teachers/') && method === 'DELETE') {
-          const id = path.split('/').pop() || "";
-          try {
-            const res = await firebaseApi.deleteTeacher(id);
-            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-          } catch (e: any) {
-            return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-          }
-        }
-
-        // POST /api/teachers/bulk-delete
-        if (path === '/api/teachers/bulk-delete' && method === 'POST') {
-          try {
-            const ids = body?.ids || [];
-            const res = await firebaseApi.deleteTeachersBulk(ids);
-            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-          } catch (e: any) {
-            return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-          }
-        }
-
-        // 3. GET /api/students
-        if (path === '/api/students' && method === 'GET') {
-          const s = await firebaseApi.getStudents();
-          return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // POST /api/students
-        if (path === '/api/students' && method === 'POST') {
-          try {
-            const s = await firebaseApi.postStudent(body);
-            return new Response(JSON.stringify(s), { status: 201, headers: { 'Content-Type': 'application/json' } });
-          } catch (e: any) {
-            if (e.message?.includes("NISN") || e.message?.includes("wajib") || e.message?.includes("lengkap")) {
-              return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-            }
-            console.warn("Firestore postStudent failed, falling back to local DB:", e);
-            // Fall back to local DB processing
-          }
-        }
-
-        // POST /api/students/batch
-        if (path === '/api/students/batch' && method === 'POST') {
-          try {
-            const res = await firebaseApi.postStudentsBatch(body?.students || []);
-            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-          } catch (e: any) {
-            console.warn("Firestore postStudentsBatch failed, falling back:", e);
-          }
-        }
-
-        // POST /api/students/bulk-update
-        if (path === '/api/students/bulk-update' && method === 'POST') {
-          try {
-            const res = await firebaseApi.putStudentsBulk(body?.updates || []);
-            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-          } catch (e: any) {
-            console.warn("Firestore putStudentsBulk failed, falling back:", e);
-          }
-        }
-
-
-        // PUT /api/students/:id
-        if (path.startsWith('/api/students/') && method === 'PUT') {
-          const id = path.split('/').pop() || "";
-          const s = await firebaseApi.putStudent(id, body);
-          return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // DELETE /api/students/:id
-        if (path.startsWith('/api/students/') && method === 'DELETE') {
-          const id = path.split('/').pop() || "";
-          const res = await firebaseApi.deleteStudent(id);
+      // DELETE /api/teachers/:id
+      if (path.startsWith('/api/teachers/') && method === 'DELETE') {
+        const id = path.split('/').pop() || "";
+        try {
+          const res = await firebaseApi.deleteTeacher(id);
           return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        } catch (e: any) {
+          return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
+      }
 
-        // POST /api/students/bulk-delete
-        if (path === '/api/students/bulk-delete' && method === 'POST') {
-          try {
-            const ids = body?.ids || [];
-            const res = await firebaseApi.deleteStudentsBulk(ids);
-            return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-          } catch (e: any) {
-            return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-          }
+      // POST /api/teachers/bulk-delete
+      if (path === '/api/teachers/bulk-delete' && method === 'POST') {
+        try {
+          const ids = body?.ids || [];
+          const res = await firebaseApi.deleteTeachersBulk(ids);
+          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        } catch (e: any) {
+          return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
+      }
 
-        // 4. GET /api/grades
-        if (path === '/api/grades' && method === 'GET') {
-          const g = await firebaseApi.getGrades();
-          if (Array.isArray(g) && g.length > 0) {
-            const db = getDB();
-            db.grades = g;
-            saveDB(db);
-          }
-          return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      // 3. GET /api/students
+      if (path === '/api/students' && method === 'GET') {
+        const s = await firebaseApi.getStudents();
+        return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // POST /api/students
+      if (path === '/api/students' && method === 'POST') {
+        try {
+          const s = await firebaseApi.postStudent(body);
+          return new Response(JSON.stringify(s), { status: 201, headers: { 'Content-Type': 'application/json' } });
+        } catch (e: any) {
+          return new Response(JSON.stringify({ error: e.message || "Gagal menyimpan data siswa." }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
+      }
 
-        // POST /api/grades
-        if (path === '/api/grades' && method === 'POST') {
-          const g = await firebaseApi.postGrade(body);
-          const db = getDB();
-          if (!Array.isArray(db.grades)) db.grades = [];
-          const idx = db.grades.findIndex((x: any) => x.studentId === g.studentId && x.subject === g.subject);
-          if (idx !== -1) {
-            db.grades[idx] = g;
-          } else {
-            db.grades.push(g);
-          }
-          saveDB(db);
-          return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      // POST /api/students/batch
+      if (path === '/api/students/batch' && method === 'POST') {
+        const res = await firebaseApi.postStudentsBatch(body?.students || []);
+        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // POST /api/students/bulk-update
+      if (path === '/api/students/bulk-update' && method === 'POST') {
+        const res = await firebaseApi.putStudentsBulk(body?.updates || []);
+        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // PUT /api/students/:id
+      if (path.startsWith('/api/students/') && method === 'PUT') {
+        const id = path.split('/').pop() || "";
+        const s = await firebaseApi.putStudent(id, body);
+        return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // DELETE /api/students/:id
+      if (path.startsWith('/api/students/') && method === 'DELETE') {
+        const id = path.split('/').pop() || "";
+        const res = await firebaseApi.deleteStudent(id);
+        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // POST /api/students/bulk-delete
+      if (path === '/api/students/bulk-delete' && method === 'POST') {
+        try {
+          const ids = body?.ids || [];
+          const res = await firebaseApi.deleteStudentsBulk(ids);
+          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        } catch (e: any) {
+          return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
+      }
 
-        // 5. GET /api/walikelas/notes
-        if (path === '/api/walikelas/notes' && method === 'GET') {
-          const n = await firebaseApi.getWaliKelasNotes();
-          const db = getDB();
-          if (n && typeof n === 'object' && Object.keys(n).length > 0) {
-            db.walikelas_notes = { ...(db.walikelas_notes || {}), ...n };
-            saveDB(db);
-          }
-          return new Response(JSON.stringify(db.walikelas_notes || n || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
+      // 4. GET /api/grades
+      if (path === '/api/grades' && method === 'GET') {
+        const g = await firebaseApi.getGrades();
+        return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
 
-        // POST /api/walikelas/notes
-        if (path === '/api/walikelas/notes' && method === 'POST') {
-          const n = await firebaseApi.postWaliKelasNotes(body);
-          const db = getDB();
-          if (!db.walikelas_notes) db.walikelas_notes = {};
-          if (n && n.studentId) {
-            db.walikelas_notes[n.studentId] = { ...(db.walikelas_notes[n.studentId] || {}), ...n };
-          }
-          saveDB(db);
-          return new Response(JSON.stringify(n), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
+      // POST /api/grades
+      if (path === '/api/grades' && method === 'POST') {
+        const g = await firebaseApi.postGrade(body);
+        return new Response(JSON.stringify(g), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
 
-        // 6. GET /api/tps
-        if (path === '/api/tps' && method === 'GET') {
-          const urlObj = new URL(urlStr, 'http://localhost');
-          const kelas = urlObj.searchParams.get('kelas') || undefined;
-          const subject = urlObj.searchParams.get('subject') || undefined;
+      // 5. GET /api/walikelas/notes
+      if (path === '/api/walikelas/notes' && method === 'GET') {
+        const n = await firebaseApi.getWaliKelasNotes();
+        return new Response(JSON.stringify(n || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
 
-          const allTps = await firebaseApi.getTPs();
-          if (allTps && typeof allTps === 'object') {
-            const db = getDB();
-            db.tujuan_pembelajaran_templates = { ...(allTps || {}) };
-            saveDB(db);
-          }
+      // POST /api/walikelas/notes
+      if (path === '/api/walikelas/notes' && method === 'POST') {
+        const n = await firebaseApi.postWaliKelasNotes(body);
+        return new Response(JSON.stringify(n), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
 
-          if (subject) {
-            let items = (allTps && allTps[subject]) || [];
-            if (kelas) {
-              items = items.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
-            }
-            return new Response(JSON.stringify(items), { status: 200, headers: { 'Content-Type': 'application/json' } });
-          }
+      // 6. GET /api/tps
+      if (path === '/api/tps' && method === 'GET') {
+        const urlObj = new URL(urlStr, 'http://localhost');
+        const kelas = urlObj.searchParams.get('kelas') || undefined;
+        const subject = urlObj.searchParams.get('subject') || undefined;
 
+        const allTps = await firebaseApi.getTPs();
+
+        if (subject) {
+          let items = (allTps && allTps[subject]) || [];
           if (kelas) {
-            const filtered: Record<string, any[]> = {};
-            for (const [sub, list] of Object.entries(allTps || {})) {
-              if (Array.isArray(list)) {
-                filtered[sub] = list.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
-              }
-            }
-            return new Response(JSON.stringify(filtered), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            items = items.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
           }
-
-          return new Response(JSON.stringify(allTps), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          return new Response(JSON.stringify(items), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
-        // POST /api/tps
-        if (path === '/api/tps' && method === 'POST') {
-          const tp = await firebaseApi.postTP(body);
-          const db = getDB();
-          if (!db.tujuan_pembelajaran_templates) db.tujuan_pembelajaran_templates = {};
-          if (!db.tujuan_pembelajaran_templates[body.subject]) db.tujuan_pembelajaran_templates[body.subject] = [];
-          db.tujuan_pembelajaran_templates[body.subject].push(tp);
-          saveDB(db);
-          return new Response(JSON.stringify(tp), { status: 201, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // PUT /api/tps/:subject/:tpId
-        if (path.startsWith('/api/tps/') && method === 'PUT') {
-          const parts = path.split('/');
-          const tpId = parts.pop() || "";
-          const subject = decodeURIComponent(parts.pop() || '');
-          const res = await firebaseApi.putTP(subject, tpId, body);
-          const db = getDB();
-          if (db.tujuan_pembelajaran_templates && db.tujuan_pembelajaran_templates[subject]) {
-            const cleanTpId = String(tpId).trim();
-            const idx = db.tujuan_pembelajaran_templates[subject].findIndex((t: any) => String(t.id).trim() === cleanTpId);
-            if (idx !== -1) {
-              db.tujuan_pembelajaran_templates[subject][idx] = { ...db.tujuan_pembelajaran_templates[subject][idx], ...body, id: tpId };
-            } else {
-              db.tujuan_pembelajaran_templates[subject].push({ id: tpId, text: body.tpText, kelas: body.kelas || "7" });
-            }
-            saveDB(db);
-          }
-          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // DELETE /api/tps/:subject/:tpId
-        if (path.startsWith('/api/tps/') && method === 'DELETE') {
-          const parts = path.split('/');
-          const tpId = parts.pop() || "";
-          const subject = decodeURIComponent(parts.pop() || '');
-          const res = await firebaseApi.deleteTP(subject, tpId);
-          const db = getDB();
-          if (db.tujuan_pembelajaran_templates && db.tujuan_pembelajaran_templates[subject]) {
-            const cleanTpId = String(tpId).trim();
-            db.tujuan_pembelajaran_templates[subject] = db.tujuan_pembelajaran_templates[subject].filter((t: any) => String(t.id).trim() !== cleanTpId);
-            saveDB(db);
-          }
-          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // 7. GET /api/settings
-        if (path === '/api/settings' && method === 'GET') {
-          const s = await firebaseApi.getSettings();
-          return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // POST /api/settings
-        if (path === '/api/settings' && method === 'POST') {
-          const s = await firebaseApi.postSettings(body);
-          return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // 8. GET /api/summary
-        if (path === '/api/summary' && method === 'GET') {
-          const sum = await firebaseApi.getSummary();
-          return new Response(JSON.stringify(sum), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // 9. GET, POST, DELETE /api/ekskul for Firebase
-        if (path === '/api/ekskul' && method === 'GET') {
-          const e = await firebaseApi.getEkskul();
-          return new Response(JSON.stringify(e), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        if (path === '/api/ekskul' && method === 'POST') {
-          const e = await firebaseApi.postEkskul(body);
-          return new Response(JSON.stringify(e), { status: 201, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        if (path.startsWith('/api/ekskul/') && method === 'PUT') {
-          const id = path.split('/').pop() || "";
-          const e = await firebaseApi.putEkskul(id, body);
-          return new Response(JSON.stringify(e), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        if (path.startsWith('/api/ekskul/') && method === 'DELETE') {
-          const id = path.split('/').pop() || "";
-          const res = await firebaseApi.deleteEkskul(id);
-          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        if (path === '/api/ekskul/grades/bulk' && method === 'POST') {
-          const grades = body?.grades || [];
-          const res: any = await firebaseApi.postEkskulGradesBulk(grades);
-          const db = getDB();
-          if (!db.walikelas_notes) db.walikelas_notes = {};
-          if (res && res.notes && typeof res.notes === 'object') {
-            db.walikelas_notes = { ...db.walikelas_notes, ...res.notes };
-            saveDB(db);
-          }
-          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // 10. GET, POST, PUT, DELETE /api/halaqoh for Cloud Firestore
-        if (path === '/api/halaqoh' && method === 'GET') {
-          const hlq = await firebaseApi.getHalaqoh();
-          const db = getDB();
-          if (Array.isArray(hlq)) {
-            db.halaqoh = hlq;
-            saveDB(db);
-          }
-          return new Response(JSON.stringify(hlq), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        if (path === '/api/halaqoh' && method === 'POST') {
-          const newH = await firebaseApi.postHalaqoh(body);
-          const db = getDB();
-          if (!Array.isArray(db.halaqoh)) db.halaqoh = [];
-          db.halaqoh.push(newH);
-          saveDB(db);
-          return new Response(JSON.stringify(newH), { status: 201, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        if (path.startsWith('/api/halaqoh/') && method === 'PUT') {
-          const id = path.split('/').pop() || "";
-          const updatedH = await firebaseApi.putHalaqoh(id, body);
-          const db = getDB();
-          if (Array.isArray(db.halaqoh)) {
-            const idx = db.halaqoh.findIndex((h: any) => h.id === id);
-            if (idx !== -1) {
-              db.halaqoh[idx] = { ...db.halaqoh[idx], ...updatedH };
-              saveDB(db);
+        if (kelas) {
+          const filtered: Record<string, any[]> = {};
+          for (const [sub, list] of Object.entries(allTps || {})) {
+            if (Array.isArray(list)) {
+              filtered[sub] = list.filter((item: any) => String(item.kelas || '').trim() === String(kelas).trim());
             }
           }
-          return new Response(JSON.stringify(updatedH), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          return new Response(JSON.stringify(filtered), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
-        if (path.startsWith('/api/halaqoh/') && method === 'DELETE') {
-          const id = path.split('/').pop() || "";
-          const res = await firebaseApi.deleteHalaqoh(id);
-          const db = getDB();
-          if (Array.isArray(db.halaqoh)) {
-            db.halaqoh = db.halaqoh.filter((h: any) => h.id !== id);
-            saveDB(db);
-          }
-          return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-      } catch (firebaseErr) {
-        console.warn("Firestore call failed, falling back to local database storage:", firebaseErr);
+        return new Response(JSON.stringify(allTps || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // POST /api/tps
+      if (path === '/api/tps' && method === 'POST') {
+        const tp = await firebaseApi.postTP(body);
+        return new Response(JSON.stringify(tp), { status: 201, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // PUT /api/tps/:subject/:tpId
+      if (path.startsWith('/api/tps/') && method === 'PUT') {
+        const parts = path.split('/');
+        const tpId = parts.pop() || "";
+        const subject = decodeURIComponent(parts.pop() || '');
+        const res = await firebaseApi.putTP(subject, tpId, body);
+        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // DELETE /api/tps/:subject/:tpId
+      if (path.startsWith('/api/tps/') && method === 'DELETE') {
+        const parts = path.split('/');
+        const tpId = parts.pop() || "";
+        const subject = decodeURIComponent(parts.pop() || '');
+        const res = await firebaseApi.deleteTP(subject, tpId);
+        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // 7. GET /api/settings
+      if (path === '/api/settings' && method === 'GET') {
+        const s = await firebaseApi.getSettings();
+        return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // GET /api/settings/halaqoh
+      if (path === '/api/settings/halaqoh' && method === 'GET') {
+        const s: any = await firebaseApi.getSettings();
+        const halaqohFormat = s?.halaqohFormat || {
+          tahunPelajaran: "2025/2026",
+          semesterName: "Semester-1",
+          tanggalRaport: "30 September 2025",
+          kota: "Pangkalpinang",
+          headerTitle: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+          descFontSize: "9.5pt",
+        };
+        return new Response(JSON.stringify(halaqohFormat), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // POST /api/settings/halaqoh
+      if (path === '/api/settings/halaqoh' && method === 'POST') {
+        const currentSettings: any = await firebaseApi.getSettings();
+        const updatedHalaqohFormat = {
+          tahunPelajaran: "2025/2026",
+          semesterName: "Semester-1",
+          tanggalRaport: "30 September 2025",
+          kota: "Pangkalpinang",
+          headerTitle: "Hasil Evaluasi Tahsin Tahfidz Qur,an (ETTQ)",
+          descFontSize: "9.5pt",
+          ...(currentSettings?.halaqohFormat || {}),
+          ...(body || {}),
+        };
+        await firebaseApi.postSettings({
+          ...currentSettings,
+          halaqohFormat: updatedHalaqohFormat,
+        });
+        return new Response(JSON.stringify({ success: true, halaqohFormat: updatedHalaqohFormat }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // POST /api/settings
+      if (path === '/api/settings' && method === 'POST') {
+        const s = await firebaseApi.postSettings(body);
+        return new Response(JSON.stringify(s), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // 8. GET /api/summary
+      if (path === '/api/summary' && method === 'GET') {
+        const sum = await firebaseApi.getSummary();
+        return new Response(JSON.stringify(sum), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // 9. GET, POST, PUT, DELETE /api/ekskul for Firebase
+      if (path === '/api/ekskul' && method === 'GET') {
+        const e = await firebaseApi.getEkskul();
+        return new Response(JSON.stringify(e), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path === '/api/ekskul' && method === 'POST') {
+        const e = await firebaseApi.postEkskul(body);
+        return new Response(JSON.stringify(e), { status: 201, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path.startsWith('/api/ekskul/') && method === 'PUT') {
+        const id = path.split('/').pop() || "";
+        const e = await firebaseApi.putEkskul(id, body);
+        return new Response(JSON.stringify(e), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path.startsWith('/api/ekskul/') && method === 'DELETE') {
+        const id = path.split('/').pop() || "";
+        const res = await firebaseApi.deleteEkskul(id);
+        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path === '/api/ekskul/grades/bulk' && method === 'POST') {
+        const grades = body?.grades || [];
+        const res: any = await firebaseApi.postEkskulGradesBulk(grades);
+        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // 10. GET, POST, PUT, DELETE /api/halaqoh for Cloud Firestore
+      if (path === '/api/halaqoh' && method === 'GET') {
+        const hlq = await firebaseApi.getHalaqoh();
+        return new Response(JSON.stringify(hlq), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path === '/api/halaqoh' && method === 'POST') {
+        const newH = await firebaseApi.postHalaqoh(body);
+        return new Response(JSON.stringify(newH), { status: 201, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path.startsWith('/api/halaqoh/') && method === 'PUT') {
+        const id = path.split('/').pop() || "";
+        const updatedH = await firebaseApi.putHalaqoh(id, body);
+        return new Response(JSON.stringify(updatedH), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path.startsWith('/api/halaqoh/') && method === 'DELETE') {
+        const id = path.split('/').pop() || "";
+        const res = await firebaseApi.deleteHalaqoh(id);
+        return new Response(JSON.stringify(res), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      return new Response(JSON.stringify({ error: "Endpoint tidak ditemukan." }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    } catch (firebaseErr: any) {
+      console.error("Firestore call failed:", firebaseErr);
+      return new Response(
+        JSON.stringify({
+          error: firebaseErr?.message || "Gagal memuat data dari server. Periksa koneksi lalu muat ulang."
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    } finally {
+      if (isMutatingRequest) {
+        markWriteOperationEnd();
       }
     }
+  }
+
+  // Local mock mode is ONLY active when Firebase is NOT configured (!isFirebaseConfigured)
+  const getDB = () => {
+    if (!clientDbCache) {
+      const raw = localStorage.getItem('smart_sts_db');
+      if (raw) {
+        try {
+          clientDbCache = JSON.parse(raw);
+        } catch {
+          clientDbCache = JSON.parse(JSON.stringify(dbData));
+        }
+      } else {
+        clientDbCache = JSON.parse(JSON.stringify(dbData));
+        localStorage.setItem('smart_sts_db', JSON.stringify(clientDbCache));
+      }
+    }
+    return clientDbCache;
+  };
+  const saveDB = (data: any) => {
+    clientDbCache = data;
+    localStorage.setItem('smart_sts_db', JSON.stringify(data));
+  };
+
+  try {
 
     // 1. POST /api/login
     if (path === '/api/login' && method === 'POST') {
@@ -906,39 +741,64 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
 
     // POST /api/grades
     if (path === '/api/grades' && method === 'POST') {
-      const { studentId, subject, score, tps, teacherName, usaha, proses, capaian, deskripsi } = body || {};
+      const { studentId, subject, score, tps, teacherName, usaha, proses, capaian, deskripsi, izinKosongkanDeskripsi } = body || {};
       const db = getDB();
-      const normalizeSubj = (s: string) => (s || "").toLowerCase().replace(/[’'"`]/g, "'").replace(/\s+/g, " ").trim();
-      const index = db.grades.findIndex((g: any) => g.studentId === studentId && normalizeSubj(g.subject) === normalizeSubj(subject));
-      
-      let safeDeskripsi = deskripsi || "";
+      const cleanStudentId = String(studentId || "").trim();
       const currentStudent = Array.isArray(db.students)
-        ? db.students.find((s: any) => s && s.id === studentId)
+        ? db.students.find((s: any) => s && String(s.id).trim() === cleanStudentId)
         : null;
-
-      if (currentStudent && safeDeskripsi.trim() !== "") {
-        const otherStudents = db.students.filter(
-          (s: any) => s && s.id !== studentId && s.kelas === currentStudent.kelas
+      if (!currentStudent) {
+        return new Response(
+          JSON.stringify({ error: `Gagal menyimpan nilai: ID siswa "${cleanStudentId}" tidak ditemukan di database.` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
         );
-        for (const other of otherStudents) {
-          if (other && other.name && safeDeskripsi.includes(other.name)) {
-            safeDeskripsi = safeDeskripsi.split(other.name).join(currentStudent.name);
-          }
-        }
       }
 
-      const updatedGrade = {
-        studentId,
+      const normalizeSubj = (s: string) => (s || "").toLowerCase().replace(/[’'"`]/g, "'").replace(/\s+/g, " ").trim();
+      const index = db.grades.findIndex((g: any) => g.studentId === cleanStudentId && normalizeSubj(g.subject) === normalizeSubj(subject));
+      const existingGrade = index !== -1 ? db.grades[index] : undefined;
+
+      const deskripsiLama: string | undefined =
+        typeof existingGrade?.deskripsi === "string"
+          ? existingGrade.deskripsi
+          : typeof existingGrade?.description === "string"
+          ? existingGrade.description
+          : undefined;
+      const deskripsiBaru: string | undefined =
+        deskripsi !== undefined && deskripsi !== null ? String(deskripsi) : undefined;
+      const izinKosongkan = izinKosongkanDeskripsi === true;
+      const safeDeskripsi = mergeDeskripsiAman(
+        deskripsiLama,
+        deskripsiBaru,
+        izinKosongkan
+      );
+
+      const numericScore = Number(score);
+      const derivedPredikat = tentukanPredikat(numericScore);
+
+      const updatedGrade: Record<string, any> = {
+        ...(existingGrade || {}),
+        studentId: cleanStudentId,
+        studentName: String(currentStudent.name || "").trim(),
+        kelas: String(currentStudent.kelas || "").trim(),
         subject,
-        score: Number(score),
-        tps,
-        usaha: usaha || "B",
-        proses: proses || "B",
-        capaian: capaian || "B",
+        score: numericScore,
+        usaha: usaha || existingGrade?.usaha || derivedPredikat || "B",
+        proses: proses || existingGrade?.proses || derivedPredikat || "B",
+        capaian: capaian || existingGrade?.capaian || derivedPredikat || "B",
         deskripsi: safeDeskripsi,
         lastUpdatedBy: teacherName || "Guru Mata Pelajaran",
         lastUpdatedAt: new Date().toISOString()
       };
+      if (derivedPredikat !== null) {
+        updatedGrade.predikat = derivedPredikat;
+      }
+      if (tps !== undefined) {
+        updatedGrade.tps = tps;
+      } else if (!existingGrade) {
+        updatedGrade.tps = [];
+      }
+
       if (index !== -1) {
         db.grades[index] = updatedGrade;
       } else {
@@ -1320,21 +1180,8 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
           const pL = toLetter(proses, fallbackL);
           const cL = toLetter(capaian, fallbackL);
 
-          let safeDesc = String(description || "").trim();
-          if (safeDesc && studentName && allStudents.length > 0) {
-            const others = allStudents
-              .filter((s: any) => s && s.name && String(s.id).trim() !== cleanStudentId && String(s.name).trim().toLowerCase() !== studentName.toLowerCase())
-              .sort((a: any, b: any) => String(b.name || "").trim().length - String(a.name || "").trim().length);
-            for (const other of others) {
-              const otherName = String(other.name).trim();
-              if (otherName.length < 3) continue;
-              const escaped = otherName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-              const regex = new RegExp(escaped, "gi");
-              if (regex.test(safeDesc)) {
-                safeDesc = safeDesc.replace(regex, studentName);
-              }
-            }
-          }
+          // Teks deskripsi ekskul TIDAK diubah otomatis
+          const safeDesc = String(description || "").trim();
 
           const newEkskulEntry = {
             studentId: cleanStudentId,
@@ -1505,11 +1352,9 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
             ? Math.round((totalScore / filledSubjectsCount) * 10) / 10
             : 0;
 
-        let predikat = "C (Cukup)";
-        if (filledSubjectsCount === 0) predikat = "Belum Ada Nilai";
-        else if (averageScore > 91) predikat = "A (Sangat Baik)";
-        else if (averageScore >= 80) predikat = "B (Baik)";
-        else predikat = "C (Cukup)";
+        const predikat = filledSubjectsCount === 0
+          ? "Belum Ada Nilai"
+          : tentukanPredikatLabel(averageScore, "Belum Ada Nilai");
 
         return {
           studentId: s.id,
@@ -1632,41 +1477,6 @@ try {
     console.error("Failed to assign fetch on window directly:", directError);
   }
 }
-
-// Two-way synchronization for Halaqoh: ensure Cloud Firestore is always the master source of truth across all devices
-async function syncHalaqohAcrossDevices() {
-  try {
-    // 1. If Firebase Firestore is configured, fetch live cloud halaqoh records
-    if (isFirebaseConfigured) {
-      const cloudHalaqoh = await firebaseApi.getHalaqoh();
-      if (Array.isArray(cloudHalaqoh) && cloudHalaqoh.length > 0) {
-        // Sync cloud data into localStorage so every device and browser has the exact same latest ustadz/ustadzah names
-        const raw = localStorage.getItem('smart_sts_db');
-        const localDb = raw ? JSON.parse(raw) : {};
-        localDb.halaqoh = cloudHalaqoh;
-        localStorage.setItem('smart_sts_db', JSON.stringify(localDb));
-        if (clientDbCache) clientDbCache.halaqoh = cloudHalaqoh;
-        return;
-      }
-    }
-
-    // 2. If Firestore had 0 records yet, check if user had created halaqoh in their local storage and push it to Cloud/Server
-    const raw = localStorage.getItem('smart_sts_db');
-    if (!raw) return;
-    const localDb = JSON.parse(raw);
-    if (!localDb || !Array.isArray(localDb.halaqoh) || localDb.halaqoh.length === 0) return;
-
-    if (isFirebaseConfigured) {
-      for (const h of localDb.halaqoh) {
-        if (!h || !h.id) continue;
-        await firebaseApi.postHalaqoh(h).catch(() => {});
-      }
-    }
-  } catch (err) {
-    console.warn("Sync halaqoh across devices error:", err);
-  }
-}
-syncHalaqohAcrossDevices();
 
 // Mount application
 createRoot(document.getElementById('root')!).render(

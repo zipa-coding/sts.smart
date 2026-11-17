@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Teacher, Student, Ekskul } from "../types";
-import { sanitizeTextForStudent } from "../lib/raportPdfService";
+import { detectForeignStudentNamesInDescription } from "../lib/raportPdfService";
+import { isFirebaseConfigured } from "../lib/firebase";
 import {
   Award,
   Users,
@@ -8,6 +9,7 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Sparkles,
   CheckSquare,
   Square,
@@ -59,12 +61,17 @@ export default function EkskulPanel({
   }>({});
 
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [foreignNameWarnings, setForeignNameWarnings] = useState<
+    { studentName: string; kelas: string; foreignNames: string[] }[]
+  >([]);
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(false);
     setError("");
     try {
       const [resE, resS, resN, resT] = await Promise.all([
@@ -73,6 +80,10 @@ export default function EkskulPanel({
         fetch("/api/walikelas/notes"),
         fetch("/api/teachers"),
       ]);
+
+      if (!resE.ok || !resS.ok || !resN.ok || !resT.ok) {
+        throw new Error("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
+      }
 
       const eData = await resE.json();
       const sData = await resS.json();
@@ -107,7 +118,8 @@ export default function EkskulPanel({
         }
       }
     } catch (err: any) {
-      setError("Gagal memuat data ekstrakurikuler.");
+      setLoadError(true);
+      setError("Gagal memuat data dari server. Periksa koneksi lalu muat ulang.");
     } finally {
       setLoading(false);
     }
@@ -153,12 +165,13 @@ export default function EkskulPanel({
 
       if (match) {
         const rawDesc = match.description || match.deskripsi || "";
+        // Teks TIDAK diubah otomatis saat pemuatan (Task 4)
         initial[s.id] = {
           selected: true,
           usaha: match.usaha || match.predicate || "B",
           proses: match.proses || match.predicate || "B",
           capaian: match.capaian || match.predicate || "B",
-          description: sanitizeTextForStudent(rawDesc, s, students),
+          description: String(rawDesc).trim(),
         };
       } else {
         // Default: Wajib is selected for everyone, Pilihan is unselected
@@ -173,6 +186,7 @@ export default function EkskulPanel({
     });
 
     setStudentGrades(initial);
+    setForeignNameWarnings([]);
   }, [activeEkskul, students, allNotes]);
 
   const filteredStudents = useMemo(() => {
@@ -215,6 +229,9 @@ export default function EkskulPanel({
     field: "usaha" | "proses" | "capaian" | "description",
     val: string
   ) => {
+    if (field === "description") {
+      setForeignNameWarnings([]);
+    }
     setStudentGrades((prev) => ({
       ...prev,
       [studentId]: {
@@ -258,27 +275,55 @@ export default function EkskulPanel({
     });
   };
 
-  const handleSaveAll = async () => {
-    if (!activeEkskul) return;
-    setSaveLoading(true);
+  const executeSaveAll = async (bypassForeignNameCheck = false) => {
+    if (!activeEkskul || loadError) return;
     setError("");
     setSuccess("");
 
-    try {
-      const studentById = new Map<string, Student>();
-      students.forEach((s) => {
-        if (s && s.id) studentById.set(String(s.id).trim(), s);
+    const studentById = new Map<string, Student>();
+    students.forEach((s) => {
+      if (s && s.id) studentById.set(String(s.id).trim(), s);
+    });
+
+    if (!bypassForeignNameCheck) {
+      const warnings: { studentName: string; kelas: string; foreignNames: string[] }[] = [];
+      Object.entries(studentGrades).forEach(([studentId, g]: [string, any]) => {
+        if (!g?.selected) return;
+        const cleanSid = String(studentId).trim();
+        const studentObj = studentById.get(cleanSid);
+        if (!studentObj) return;
+        const rawDesc = String(g?.description || "").trim();
+        if (!rawDesc) return;
+        const detected = detectForeignStudentNamesInDescription(
+          rawDesc,
+          studentObj,
+          students
+        );
+        if (detected.length > 0) {
+          warnings.push({
+            studentName: studentObj.name,
+            kelas: studentObj.kelas,
+            foreignNames: detected,
+          });
+        }
       });
 
+      if (warnings.length > 0) {
+        setForeignNameWarnings(warnings);
+        return;
+      }
+    }
+
+    setForeignNameWarnings([]);
+    setSaveLoading(true);
+
+    try {
       const payloadGrades = Object.entries(studentGrades).map(
         ([studentId, g]: [string, any]) => {
           const cleanSid = String(studentId).trim();
           const studentObj = studentById.get(cleanSid);
-          const safeDesc = sanitizeTextForStudent(
-            g?.description || "",
-            studentObj || { id: cleanSid, name: "" },
-            students
-          );
+          // Teks TIDAK diubah otomatis saat penyimpanan (Task 4)
+          const safeDesc = String(g?.description || "").trim();
           return {
             studentId: cleanSid,
             studentName: studentObj?.name || "",
@@ -313,30 +358,38 @@ export default function EkskulPanel({
       );
       onRefreshTrigger();
 
-      // Refresh notes map and sync any local walikelas_draft_* caches
+      // Refresh notes map
       const getNotes = await fetch("/api/walikelas/notes");
-      const updatedNotes = await getNotes.json();
-      if (updatedNotes && typeof updatedNotes === "object") {
-        setAllNotes(updatedNotes);
-        Object.entries(updatedNotes).forEach(([sid, noteObj]: [string, any]) => {
-          try {
-            const draftKey = `walikelas_draft_${sid}`;
-            const rawDraft = localStorage.getItem(draftKey);
-            if (rawDraft && noteObj && Array.isArray(noteObj.ekskul)) {
-              const parsed = JSON.parse(rawDraft);
-              if (parsed && String(parsed.studentId || "").trim() === String(sid).trim()) {
-                parsed.ekskul = noteObj.ekskul;
-                localStorage.setItem(draftKey, JSON.stringify(parsed));
-              }
-            }
-          } catch {}
-        });
+      if (getNotes.ok) {
+        const updatedNotes = await getNotes.json();
+        if (updatedNotes && typeof updatedNotes === "object") {
+          setAllNotes(updatedNotes);
+          if (!isFirebaseConfigured) {
+            Object.entries(updatedNotes).forEach(([sid, noteObj]: [string, any]) => {
+              try {
+                const draftKey = `walikelas_draft_${sid}`;
+                const rawDraft = localStorage.getItem(draftKey);
+                if (rawDraft && noteObj && Array.isArray(noteObj.ekskul)) {
+                  const parsed = JSON.parse(rawDraft);
+                  if (parsed && String(parsed.studentId || "").trim() === String(sid).trim()) {
+                    parsed.ekskul = noteObj.ekskul;
+                    localStorage.setItem(draftKey, JSON.stringify(parsed));
+                  }
+                }
+              } catch {}
+            });
+          }
+        }
       }
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat menyimpan nilai.");
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  const handleSaveAll = () => {
+    executeSaveAll(false);
   };
 
   return (
@@ -364,7 +417,7 @@ export default function EkskulPanel({
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleSaveAll}
-              disabled={saveLoading || !activeEkskul}
+              disabled={saveLoading || !activeEkskul || loadError}
               className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-950/40 flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
@@ -386,6 +439,47 @@ export default function EkskulPanel({
         <div className="p-3.5 bg-emerald-900/30 border border-emerald-500/40 rounded-xl text-emerald-200 text-xs flex items-center gap-2.5 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
           <span className="font-semibold">{success}</span>
+        </div>
+      )}
+
+      {foreignNameWarnings.length > 0 && (
+        <div className="p-4 bg-amber-950/90 border-2 border-amber-400 rounded-2xl space-y-3 text-xs text-white shadow-xl">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+            <div className="space-y-1.5">
+              <p className="font-black text-amber-200 uppercase tracking-wide">
+                Peringatan Deteksi Nama Siswa Lain di Kelas yang Sama
+              </p>
+              <p className="font-bold text-slate-100 leading-relaxed">
+                Ditemukan deskripsi ekstrakurikuler yang memuat nama siswa lain dari kelas yang sama. Teks tidak akan diubah otomatis oleh sistem:
+              </p>
+              <ul className="list-disc pl-4 space-y-1 text-amber-100 font-semibold">
+                {foreignNameWarnings.map((w, idx) => (
+                  <li key={idx}>
+                    Deskripsi untuk <strong>{w.studentName}</strong> (Kelas {w.kelas}) mengandung nama:{" "}
+                    <strong className="text-amber-300 underline">{w.foreignNames.join(", ")}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setForeignNameWarnings([])}
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-lg border border-slate-500 cursor-pointer transition"
+            >
+              Batal / Perbaiki Teks
+            </button>
+            <button
+              type="button"
+              disabled={saveLoading || loadError}
+              onClick={() => executeSaveAll(true)}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-lg border-2 border-amber-300 cursor-pointer transition disabled:opacity-50"
+            >
+              Ya, Tetap Simpan Tanpa Mengubah Teks
+            </button>
+          </div>
         </div>
       )}
 
@@ -755,7 +849,7 @@ export default function EkskulPanel({
             </div>
             <button
               onClick={handleSaveAll}
-              disabled={saveLoading || !activeEkskul}
+              disabled={saveLoading || !activeEkskul || loadError}
               className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-950/40 flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
             >
               <Save className="w-4 h-4" />

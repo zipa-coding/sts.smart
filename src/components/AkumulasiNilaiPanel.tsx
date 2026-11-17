@@ -19,6 +19,7 @@ import {
   hitungRataRataTerisi,
   KKM_DEFAULT,
 } from "../lib/hitungNilai";
+import { KETERANGAN_RENTANG_PREDIKAT } from "../lib/predikat";
 import {
   AkumulasiNilaiDoc,
   CellPatch,
@@ -108,6 +109,7 @@ export default function AkumulasiNilaiPanel({
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
   const [isSyncingToRaport, setIsSyncingToRaport] = useState<boolean>(false);
   const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
+  const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
 
   // Master data states
   const [allStudents, setAllStudents] = useState<Student[]>([]);
@@ -828,58 +830,62 @@ export default function AkumulasiNilaiPanel({
   const handleSyncToRaportGrades = async () => {
     setIsSyncingToRaport(true);
     setSyncSuccessMessage(null);
+    setSyncErrorMessage(null);
     try {
       await flushPendingPatches();
-      const gradesRes = await fetch("/api/grades");
-      const existingGrades = gradesRes.ok ? ((await gradesRes.json()) as Array<{
-        studentId: string;
-        subject: string;
-        score: number;
-        tps?: unknown[];
-        usaha?: string;
-        proses?: string;
-        capaian?: string;
-        deskripsi?: string;
-      }>) : [];
 
       let syncedCount = 0;
+      const failedNames: string[] = [];
+
       for (const s of classStudents) {
         const hasil = hasilPerSiswaMap[s.id];
         if (!hasil || hasil.nilaiRapor === null) continue;
 
-        const existing = existingGrades.find(
-          (g) => g.studentId === s.id && g.subject === selectedMapel
-        );
-
-        await fetch("/api/grades", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            studentId: s.id,
-            subject: selectedMapel,
-            score: hasil.nilaiRapor,
-            tps: existing?.tps || [],
-            teacherName: docData.teacherName || currentUser.name,
-            usaha: existing?.usaha || hasil.predikat || "B",
-            proses: existing?.proses || hasil.predikat || "B",
-            capaian: hasil.predikat || "B",
-            deskripsi: existing?.deskripsi || "",
-          }),
-        });
-        syncedCount++;
+        const pred = hasil.predikat || "C";
+        try {
+          const res = await fetch("/api/grades", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              studentId: s.id,
+              subject: selectedMapel,
+              score: hasil.nilaiRapor,
+              usaha: pred,
+              proses: pred,
+              capaian: pred,
+              predikat: pred,
+              teacherName: docData.teacherName || currentUser.name,
+            }),
+          });
+          if (!res.ok) {
+            failedNames.push(s.name);
+          } else {
+            syncedCount++;
+          }
+        } catch {
+          failedNames.push(s.name);
+        }
       }
 
       if (onRefreshTrigger) {
         onRefreshTrigger();
       }
-      setSyncSuccessMessage(
-        `Berhasil menyinkronkan ${syncedCount} Nilai Rapor (${selectedMapel} - Kelas ${formatKelasRomawi(
-          selectedKelas
-        )}) ke Rapor Wali Kelas.`
-      );
-      window.setTimeout(() => setSyncSuccessMessage(null), 5000);
+
+      if (failedNames.length > 0) {
+        setSyncErrorMessage(
+          `Sinkronisasi gagal untuk: ${failedNames.join(", ")}. Coba lagi.`
+        );
+      } else {
+        setSyncSuccessMessage(
+          `Berhasil menyinkronkan ${syncedCount} Nilai Rapor (${selectedMapel} - Kelas ${formatKelasRomawi(
+            selectedKelas
+          )}) ke Rapor Wali Kelas.`
+        );
+        window.setTimeout(() => setSyncSuccessMessage(null), 5000);
+      }
     } catch (err) {
       console.error("Gagal sinkronisasi ke rapor:", err);
+      setSyncErrorMessage("Sinkronisasi gagal. Coba lagi.");
     } finally {
       setIsSyncingToRaport(false);
     }
@@ -1723,6 +1729,12 @@ export default function AkumulasiNilaiPanel({
             <span>{pasteNotice}</span>
           </div>
         )}
+        {syncErrorMessage && (
+          <div className="px-3.5 py-2 rounded-lg bg-rose-950/70 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{syncErrorMessage}</span>
+          </div>
+        )}
         {syncSuccessMessage && (
           <div className="px-3.5 py-2 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -2190,9 +2202,9 @@ export default function AkumulasiNilaiPanel({
                           {isBelow && (
                             <span
                               className="text-[9px] font-mono font-bold text-rose-300 shrink-0"
-                              title="Nilai Rapor di bawah 73 (KKM)"
+                              title={`Nilai Rapor di bawah ${KKM_DEFAULT} (KKM)`}
                             >
-                              &lt;73
+                              &lt;{KKM_DEFAULT}
                             </span>
                           )}
                         </div>
@@ -2377,7 +2389,7 @@ export default function AkumulasiNilaiPanel({
               </div>
               <div className="bg-[#111c33] border border-[#253e66] rounded-lg p-3">
                 <div className="text-[11px] font-sans text-slate-400">
-                  Siswa di Bawah 73 (KKM)
+                  Siswa di Bawah {KKM_DEFAULT} (KKM)
                 </div>
                 <div
                   className={`text-base font-bold mt-0.5 tabular-nums ${
@@ -2398,7 +2410,7 @@ export default function AkumulasiNilaiPanel({
                   Keterangan Rentang Nilai Rapor &amp; Predikat:
                 </div>
                 <div className="text-slate-400 font-mono">
-                  91–100 = A (Sangat Baik) · 81–90 = B (Baik) · 73–80 = C (Cukup) · &lt; 73 = D (Merah / Peringatan)
+                  {KETERANGAN_RENTANG_PREDIKAT}
                 </div>
               </div>
 

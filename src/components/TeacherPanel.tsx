@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Teacher, Student, Grade, TPItem } from "../types";
 import {
   BookOpen,
@@ -26,9 +26,20 @@ import {
   CheckCircle2,
   ChevronRight,
   ChevronDown,
+  WifiOff,
 } from "lucide-react";
 
-import { sanitizeTextForStudent } from "../lib/raportPdfService";
+import { detectForeignStudentNamesInDescription } from "../lib/raportPdfService";
+import {
+  tentukanPredikat,
+  tentukanPredikatLabel,
+  RENTANG_PREDIKAT_A,
+  RENTANG_PREDIKAT_B,
+  RENTANG_PREDIKAT_C,
+  KKM_DEFAULT,
+  BATAS_UNGGUL,
+} from "../lib/predikat";
+import { useRealtimeData } from "../hooks/useRealtimeData";
 
 interface TeacherPanelProps {
   user: Teacher;
@@ -39,11 +50,15 @@ export default function TeacherPanel({
   user,
   onRefreshTrigger,
 }: TeacherPanelProps) {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [grades, setGrades] = useState<Grade[]>([]);
-  const [tpTemplates, setTpTemplates] = useState<
-    { id: string; text: string }[]
-  >([]);
+  const {
+    students = [],
+    grades = [],
+    tpTemplatesMap = {},
+    loading,
+    error: realtimeLoadError,
+    isOffline,
+    refresh: fetchData,
+  } = useRealtimeData(["students", "grades", "tujuan_pembelajaran_templates"]);
 
   // View state tab: grades (pengisian nilai), tps (kelola TP), or ranking (peringkat & analisis bimbingan)
   const [activeViewTab, setActiveViewTab] = useState<"grades" | "tps" | "ranking">(
@@ -55,13 +70,21 @@ export default function TeacherPanel({
   // Student selection state
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
+  const tpTemplates = useMemo(() => {
+    const allSubjectTps = Array.isArray(tpTemplatesMap[user.subject])
+      ? tpTemplatesMap[user.subject]
+      : [];
+    return allSubjectTps.filter(
+      (t: any) => String(t.kelas || "").trim() === String(selectedClass).trim()
+    );
+  }, [tpTemplatesMap, user.subject, selectedClass]);
+
   // Ranking & Bimbingan Tab States
   const [rankingSubject, setRankingSubject] = useState<string>(user.subject);
   const [rankingClass, setRankingClass] = useState<string>("all"); // "all" | "7" | "8" | "9"
   const [rankingSort, setRankingSort] = useState<"desc" | "asc">("desc"); // desc = highest to lowest, asc = lowest to highest
   const [rankingSearch, setRankingSearch] = useState<string>("");
   const [rankingFilterStatus, setRankingFilterStatus] = useState<"all" | "bimbingan" | "tuntas">("all");
-  const [kkmThreshold, setKkmThreshold] = useState<number>(75);
 
   // Form states
   const [score, setScore] = useState<string>("");
@@ -75,6 +98,17 @@ export default function TeacherPanel({
   const [customDescription, setCustomDescription] = useState<string>("");
   const [isCustomDescActive, setIsCustomDescActive] = useState<boolean>(false);
 
+  // Dirty form tracking & remote concurrent edit protection (Task 3)
+  const [isFormDirty, setIsFormDirty] = useState<boolean>(false);
+  const isFormDirtyRef = useRef<boolean>(false);
+  isFormDirtyRef.current = isFormDirty;
+  const loadedGradeSignatureRef = useRef<string>("empty");
+  const isSavingRef = useRef<boolean>(false);
+  const [remoteUpdateBanner, setRemoteUpdateBanner] = useState<{
+    updatedBy: string;
+    grade: Grade;
+  } | null>(null);
+
   // Manage TP template state for teacher (Add & Edit)
   const [newTpText, setNewTpText] = useState("");
   const [tpSubmitLoading, setTpSubmitLoading] = useState(false);
@@ -82,48 +116,32 @@ export default function TeacherPanel({
   const [editingTpText, setEditingTpText] = useState("");
   const [editTpLoading, setEditTpLoading] = useState(false);
 
-  const [loading, setLoading] = useState(false);
+  const loadError = Boolean(realtimeLoadError);
   const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [foreignNameWarning, setForeignNameWarning] = useState<{
+    names: string[];
+  } | null>(null);
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [resS, resG, resTp] = await Promise.all([
-        fetch("/api/students"),
-        fetch("/api/grades"),
-        fetch("/api/tps"),
-      ]);
+  const computeGradeSignature = (g: Grade | undefined | null): string => {
+    if (!g) return "empty";
+    const tpsSig = Array.isArray(g.tps)
+      ? g.tps.map((t) => `${t.id}:${t.text}:${Boolean(t.achieved)}`).join("|")
+      : "";
+    return `${g.score ?? ""}_${g.usaha ?? ""}_${g.proses ?? ""}_${g.capaian ?? ""}_${g.deskripsi ?? ""}_${tpsSig}_${g.lastUpdatedAt ?? ""}`;
+  };
 
-      const sData = await resS.json();
-      const gData = await resG.json();
-      const tpData = await resTp.json();
-
-      const sArr = Array.isArray(sData) ? sData : [];
-      const gArr = Array.isArray(gData) ? gData : [];
-      const tpObj = tpData && typeof tpData === "object" ? tpData : {};
-
-      setStudents(sArr);
-      setGrades(gArr);
-
-      // Filter TP templates specifically for this teacher's subject and the selected class
-      const allSubjectTps = Array.isArray(tpObj[user.subject])
-        ? tpObj[user.subject]
-        : [];
-      const classTps = allSubjectTps.filter(
-        (t: any) => String(t.kelas || "").trim() === String(selectedClass).trim()
+  // Auto-select first student when class or subject changes, or sync realtime changes
+  useEffect(() => {
+    const classStudentsList = (Array.isArray(students) ? students : [])
+      .filter((s: Student) => String(s.kelas).trim() === String(selectedClass).trim())
+      .sort((a: Student, b: Student) =>
+        (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" })
       );
-      setTpTemplates(classTps);
 
-      // Auto-select first student in this class if available
-      const classStudents = sArr
-        .filter((s: Student) => String(s.kelas).trim() === String(selectedClass).trim())
-        .sort((a: Student, b: Student) => (a.name || "").localeCompare(b.name || "", "id", { sensitivity: "base" }));
-      if (classStudents.length > 0) {
-        handleStudentSelect(classStudents[0], gArr, classTps);
-      } else {
+    if (classStudentsList.length === 0) {
+      if (selectedStudent && String(selectedStudent.kelas).trim() !== String(selectedClass).trim()) {
         setSelectedStudent(null);
         setScore("");
         setTpAchievements({});
@@ -132,17 +150,52 @@ export default function TeacherPanel({
         setCapaian("B");
         setCustomDescription("");
         setIsCustomDescActive(false);
+        setIsFormDirty(false);
+        setRemoteUpdateBanner(null);
       }
-    } catch (err) {
-      setError("Gagal memuat sinkronisasi data dari server.");
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedClass, user.subject]);
+    // If no student is selected or selected student belongs to another class, select the first student in this class
+    if (
+      !selectedStudent ||
+      String(selectedStudent.kelas).trim() !== String(selectedClass).trim() ||
+      !classStudentsList.some((s) => s.id === selectedStudent.id)
+    ) {
+      if (isFormDirtyRef.current && selectedStudent) {
+        return;
+      }
+      handleStudentSelect(classStudentsList[0], grades, tpTemplates, true);
+      return;
+    }
+
+    // A student in this class is already selected: check if their grade document changed remotely
+    const normSub = (s: string | undefined | null) =>
+      (s || "").toLowerCase().replace(/[’'"`]/g, "'").replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
+
+    const remoteGrade = (Array.isArray(grades) ? grades : []).find(
+      (g) =>
+        g &&
+        String(g.studentId).trim() === String(selectedStudent.id).trim() &&
+        normSub(g.subject) === normSub(user.subject)
+    );
+
+    const nextSig = computeGradeSignature(remoteGrade);
+    if (nextSig !== loadedGradeSignatureRef.current && !isSavingRef.current) {
+      if (isFormDirtyRef.current) {
+        // Teacher is currently editing the form -> DO NOT overwrite! Show banner (Task 3)
+        if (remoteGrade) {
+          setRemoteUpdateBanner({
+            updatedBy: remoteGrade.lastUpdatedBy || remoteGrade.teacherName || "Guru lain",
+            grade: remoteGrade,
+          });
+        }
+      } else {
+        // Teacher has not modified the form -> apply realtime update automatically
+        handleStudentSelect(selectedStudent, grades, tpTemplates, true);
+      }
+    }
+  }, [students, grades, tpTemplates, selectedClass, user.subject]);
 
   // Helper function to generate narrative description based on Kurikulum Merdeka standards
   const generateNarrativeDescription = (
@@ -205,15 +258,54 @@ export default function TeacherPanel({
     return t.toLowerCase().replace(/[^a-z0-9]/g, "");
   };
 
+  const confirmDiscardUnsavedChanges = (targetStudentId?: string | null): boolean => {
+    if (!isFormDirtyRef.current || !selectedStudent) return true;
+    if (
+      targetStudentId &&
+      String(targetStudentId).trim() === String(selectedStudent.id).trim()
+    ) {
+      return true;
+    }
+    return window.confirm(
+      `Ada perubahan yang belum disimpan untuk ${selectedStudent.name}. Pindah tanpa menyimpan?`
+    );
+  };
+
+  const handleClassSelect = (cls: string) => {
+    if (cls === selectedClass) return;
+    if (!confirmDiscardUnsavedChanges(null)) return;
+    isFormDirtyRef.current = false;
+    setIsFormDirty(false);
+    setSelectedClass(cls);
+  };
+
   const handleStudentSelect = (
     student: Student,
     allGrades: Grade[] = grades,
     templates: { id: string; text: string; kelas?: string }[] = tpTemplates,
+    skipDirtyConfirm: boolean = false,
   ) => {
     try {
+      if (
+        !skipDirtyConfirm &&
+        isFormDirtyRef.current &&
+        selectedStudent &&
+        String(selectedStudent.id).trim() !== String(student?.id || "").trim()
+      ) {
+        const proceed = window.confirm(
+          `Ada perubahan yang belum disimpan untuk ${selectedStudent.name}. Pindah tanpa menyimpan?`
+        );
+        if (!proceed) return;
+      }
       setSelectedStudent(student);
       setSuccess("");
-      setError("");
+      setForeignNameWarning(null);
+      setRemoteUpdateBanner(null);
+      setIsFormDirty(false);
+      isFormDirtyRef.current = false;
+      if (!loadError) {
+        setError("");
+      }
 
       const safeGrades = Array.isArray(allGrades) ? allGrades : [];
       let activeTemplates = Array.isArray(templates) ? [...templates] : [];
@@ -223,6 +315,8 @@ export default function TeacherPanel({
         (g) => g && g.studentId === student?.id && normalizeSubject(g.subject) === normalizeSubject(user.subject),
       );
 
+      loadedGradeSignatureRef.current = computeGradeSignature(existingGrade);
+
       if (existingGrade && Array.isArray(existingGrade.tps)) {
         existingGrade.tps.forEach((gtp: any) => {
           if (
@@ -231,7 +325,7 @@ export default function TeacherPanel({
             !activeTemplates.some(
               (t) =>
                 (t.id && gtp.id && String(t.id).trim() === String(gtp.id).trim()) ||
-                t.text.trim().toLowerCase() === gtp.text.trim().toLowerCase()
+                normalizeTpText(t.text) === normalizeTpText(gtp.text)
             )
           ) {
             activeTemplates.push({
@@ -257,16 +351,14 @@ export default function TeacherPanel({
 
         const studentSavedTps = Array.isArray(existingGrade.tps) ? existingGrade.tps : [];
 
-        // Build active checked states with multi-level matching:
-        // Priority:
-        // 1. Direct ID match
-        // 2. Exact/normalized text match
-        // 3. Substring text match
-        // 4. Positional index fallback if length is identical
-        // ABSOLUTE GUARANTEE: An un-checked TP (achieved: false) will ALWAYS remain false!
+        // Pencocokan TP secara ketat (Task 5):
+        // 1. Lewat ID persis
+        // 2. Lewat kecocokan teks penuh setelah normalisasi (huruf kecil, hanya alfanumerik)
+        // Tanpa pencocokan substring atau posisi urutan.
+        // Jika siswa sudah punya dokumen grade, TP yang tidak cocok dianggap achieved = false.
         const achievedMap: { [tpId: string]: boolean } = {};
 
-        activeTemplates.forEach((tmpl, tmplIdx) => {
+        activeTemplates.forEach((tmpl) => {
           if (!tmpl || !tmpl.id) return;
           const normTmplText = normalizeTpText(tmpl.text);
 
@@ -277,44 +369,25 @@ export default function TeacherPanel({
             (t) => t && t.id && String(t.id).trim() === String(tmpl.id).trim()
           );
 
-          // 2. Normalized text match
+          // 2. Full normalized text match
           if (!matchedItem && normTmplText) {
             matchedItem = studentSavedTps.find(
               (t) => t && t.text && normalizeTpText(t.text) === normTmplText
             );
           }
 
-          // 3. Substring text match
-          if (!matchedItem && normTmplText) {
-            matchedItem = studentSavedTps.find((t) => {
-              if (!t || !t.text) return false;
-              const normT = normalizeTpText(t.text);
-              return normT.includes(normTmplText) || normTmplText.includes(normT);
-            });
-          }
-
-          // 4. Fallback index match if same length
-          if (!matchedItem && studentSavedTps.length === activeTemplates.length && studentSavedTps[tmplIdx]) {
-            matchedItem = studentSavedTps[tmplIdx];
-          }
-
           if (matchedItem) {
-            // Strictly check false values - never let false flip to true
             const isAchieved =
-              matchedItem.achieved !== false &&
-              (matchedItem.achieved as any) !== "false" &&
-              (matchedItem.achieved as any) !== 0;
+              matchedItem.achieved === true ||
+              (matchedItem.achieved as any) === "true" ||
+              (matchedItem.achieved as any) === 1;
             achievedMap[tmpl.id] = isAchieved;
             if (matchedItem.id && matchedItem.id !== tmpl.id) {
               achievedMap[matchedItem.id] = isAchieved;
             }
           } else {
-            // If student already has saved TPs, check if this position in saved TPs was marked false
-            if (studentSavedTps.length > 0 && tmplIdx < studentSavedTps.length && studentSavedTps[tmplIdx]?.achieved === false) {
-              achievedMap[tmpl.id] = false;
-            } else {
-              achievedMap[tmpl.id] = true;
-            }
+            // Siswa sudah punya dokumen grade -> TP yang tidak cocok default achieved = false
+            achievedMap[tmpl.id] = false;
           }
         });
 
@@ -322,9 +395,9 @@ export default function TeacherPanel({
         studentSavedTps.forEach((stTp) => {
           if (stTp && stTp.id) {
             const isAchieved =
-              stTp.achieved !== false &&
-              (stTp.achieved as any) !== "false" &&
-              (stTp.achieved as any) !== 0;
+              stTp.achieved === true ||
+              (stTp.achieved as any) === "true" ||
+              (stTp.achieved as any) === 1;
             achievedMap[stTp.id] = isAchieved;
           }
         });
@@ -342,15 +415,12 @@ export default function TeacherPanel({
             : "";
 
         if (existingGrade.deskripsi && existingGrade.deskripsi.trim() !== "") {
-          const sanitizedExisting = sanitizeTextForStudent(
-            existingGrade.deskripsi.trim(),
-            student,
-            students,
-          );
-          setCustomDescription(sanitizedExisting);
+          // Teks TIDAK diubah otomatis saat pemuatan (Task 4)
+          const rawExisting = existingGrade.deskripsi.trim();
+          setCustomDescription(rawExisting);
           const isTrulyManual =
             !autoGeneratedForStudent ||
-            sanitizedExisting.toLowerCase().trim() !==
+            rawExisting.toLowerCase().trim() !==
               autoGeneratedForStudent.toLowerCase().trim();
           setIsCustomDescActive(isTrulyManual);
         } else if (autoGeneratedForStudent) {
@@ -361,7 +431,7 @@ export default function TeacherPanel({
           setIsCustomDescActive(false);
         }
       } else {
-        // Clear forms for new entries
+        // Siswa belum punya dokumen grade -> default achieved = true
         setScore("");
         setUsaha("B");
         setProses("B");
@@ -370,7 +440,7 @@ export default function TeacherPanel({
         const defaultMap: { [tpId: string]: boolean } = {};
         activeTemplates.forEach((t) => {
           if (t && t.id) {
-            defaultMap[t.id] = true; // default achieved for brand new grade
+            defaultMap[t.id] = true; // default achieved ONLY for brand new grade
           }
         });
         setTpAchievements(defaultMap);
@@ -394,15 +464,14 @@ export default function TeacherPanel({
     }
   };
 
-  // Helper with numeric-to-predicate mapping for default selections
+  // Helper with unified numeric-to-predicate mapping (Task 7)
   const handleScoreChange = (val: string) => {
     setScore(val);
+    setIsFormDirty(true);
+    isFormDirtyRef.current = true;
     const num = Number(val);
     if (!isNaN(num) && val.trim() !== "") {
-      let defaultGrade = "C";
-      if (num > 91) defaultGrade = "A";
-      else if (num >= 80) defaultGrade = "B";
-      else defaultGrade = "C";
+      const defaultGrade = tentukanPredikat(num) || "C";
 
       setUsaha(defaultGrade);
       setProses(defaultGrade);
@@ -412,6 +481,8 @@ export default function TeacherPanel({
 
   // Switch achievement status of some TP (preserves teacher-entered custom descriptions)
   const toggleTp = (id: string) => {
+    setIsFormDirty(true);
+    isFormDirtyRef.current = true;
     const currentVal = tpAchievements[id];
     // If currently false -> true; if true or undefined -> false
     const nextAchieved = currentVal === false ? true : false;
@@ -436,6 +507,8 @@ export default function TeacherPanel({
 
   // Bulk set all TPs status (Semua Optimal atau Semua Butuh Bimbingan)
   const setAllTpStatus = (achieved: boolean) => {
+    setIsFormDirty(true);
+    isFormDirtyRef.current = true;
     const nextMap: { [tpId: string]: boolean } = {};
     tpTemplates.forEach((t) => {
       if (t && t.id) nextMap[t.id] = achieved;
@@ -461,6 +534,8 @@ export default function TeacherPanel({
       setError("Belum ada Tujuan Pembelajaran (TP) untuk kelas ini.");
       return;
     }
+    setIsFormDirty(true);
+    isFormDirtyRef.current = true;
     const updatedDesc = generateNarrativeDescription(
       selectedStudent,
       user.subject,
@@ -482,9 +557,8 @@ export default function TeacherPanel({
     );
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedStudent) return;
+  const executeSaveGrade = async (bypassForeignNameCheck = false) => {
+    if (!selectedStudent || loadError || isOffline) return;
     const targetStudent = selectedStudent;
     setError("");
     setSuccess("");
@@ -500,27 +574,36 @@ export default function TeacherPanel({
       return;
     }
 
+    // Teks deskripsi TIDAK diubah otomatis (Task 4)
+    const finalDescription = customDescription.trim();
+
+    if (!bypassForeignNameCheck) {
+      const detectedForeignNames = detectForeignStudentNamesInDescription(
+        finalDescription,
+        targetStudent,
+        students,
+      );
+      if (detectedForeignNames.length > 0) {
+        setForeignNameWarning({ names: detectedForeignNames });
+        return;
+      }
+    }
+
+    setForeignNameWarning(null);
     setSaveLoading(true);
+    isSavingRef.current = true;
 
     // Format TP list for post payload (supports empty TP list)
     const safeTemplates = Array.isArray(tpTemplates) ? tpTemplates : [];
     const formattedTps: TPItem[] = safeTemplates.map((tp) => {
       const val = tpAchievements[tp.id];
-      const isAchieved = val === false || val === "false" || val === 0 ? false : (val ?? true);
+      const isAchieved = val === true || (val as any) === "true" || (val as any) === 1;
       return {
         id: tp.id,
         text: tp.text,
         achieved: isAchieved,
       };
     });
-
-    // Description is taken directly from the textarea and strictly sanitized for targetStudent
-    const finalDescription = sanitizeTextForStudent(
-      customDescription.trim(),
-      targetStudent,
-      students,
-    );
-    setCustomDescription(finalDescription);
 
     try {
       const response = await fetch("/api/grades", {
@@ -535,6 +618,7 @@ export default function TeacherPanel({
           proses,
           capaian,
           deskripsi: finalDescription,
+          izinKosongkanDeskripsi: isCustomDescActive && finalDescription === "",
           teacherName: user.name,
         }),
       });
@@ -542,30 +626,11 @@ export default function TeacherPanel({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal menyimpan nilai.");
 
-      // Immediately synchronize local state so un-checked TPs stay strictly intact
-      const updatedGradeItem = {
-        studentId: targetStudent.id,
-        subject: user.subject,
-        score: parsedScore,
-        tps: formattedTps,
-        usaha,
-        proses,
-        capaian,
-        deskripsi: finalDescription,
-        teacherName: user.name,
-        lastUpdatedBy: user.name,
-        lastUpdatedAt: new Date().toISOString(),
-      };
-
-      setGrades((prev) => {
-        const copy = [...prev];
-        const idx = copy.findIndex(
-          (g) => g && String(g.studentId).trim() === String(targetStudent.id).trim() && normalizeSubject(g.subject) === normalizeSubject(user.subject),
-        );
-        if (idx !== -1) copy[idx] = updatedGradeItem;
-        else copy.push(updatedGradeItem);
-        return copy;
-      });
+      // Record saved signature and reset dirty state
+      loadedGradeSignatureRef.current = computeGradeSignature(data);
+      setIsFormDirty(false);
+      isFormDirtyRef.current = false;
+      setRemoteUpdateBanner(null);
 
       setSuccess(
         `Nilai ${user.subject} untuk ${targetStudent.name} berhasil disimpan!`,
@@ -574,14 +639,20 @@ export default function TeacherPanel({
     } catch (err: any) {
       setError(err.message || "Gagal menyimpan.");
     } finally {
+      isSavingRef.current = false;
       setSaveLoading(false);
     }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeSaveGrade(false);
   };
 
   // Add TP template directly by the teacher
   const handleAddLocalTp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTpText.trim()) return;
+    if (!newTpText.trim() || isOffline) return;
     setError("");
     setSuccess("");
     setTpSubmitLoading(true);
@@ -602,19 +673,6 @@ export default function TeacherPanel({
 
       setNewTpText("");
       setSuccess(`Tujuan Pembelajaran untuk Kelas ${selectedClass} berhasil ditambahkan!`);
-
-      // Reload TP templates for this subject and selected class
-      const resTp = await fetch(`/api/tps?kelas=${selectedClass}`);
-      const tpData = await resTp.json();
-      const allSubjectTps = Array.isArray(tpData[user.subject])
-        ? tpData[user.subject]
-        : Array.isArray(tpData)
-        ? tpData
-        : [];
-      const classTps = allSubjectTps.filter(
-        (t: any) => String(t.kelas || "").trim() === String(selectedClass).trim()
-      );
-      setTpTemplates(classTps);
 
       // Default the new TP as achieved in state
       setTpAchievements((prev) => ({
@@ -643,7 +701,7 @@ export default function TeacherPanel({
 
   const handleSaveEditTp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingTpId || !editingTpText.trim()) return;
+    if (!editingTpId || !editingTpText.trim() || isOffline) return;
     setEditTpLoading(true);
     setError("");
     setSuccess("");
@@ -664,11 +722,6 @@ export default function TeacherPanel({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal memperbarui TP.");
 
-      setTpTemplates((prev) =>
-        prev.map((t) =>
-          t.id === editingTpId ? { ...t, text: editingTpText.trim() } : t,
-        ),
-      );
       setSuccess("Tujuan Pembelajaran berhasil diperbarui/diganti!");
       setEditingTpId(null);
       setEditingTpText("");
@@ -681,6 +734,7 @@ export default function TeacherPanel({
 
   // Delete TP template permanently (with cloud and cache synchronization)
   const handleDeleteLocalTp = async (tpId: string) => {
+    if (isOffline) return;
     if (
       !confirm(
         "Apakah Anda yakin ingin menghapus Tujuan Pembelajaran (TP) ini secara permanen?",
@@ -701,8 +755,6 @@ export default function TeacherPanel({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal menghapus TP.");
 
-      // Immediately filter out from active state so it is gone permanently
-      setTpTemplates((prev) => prev.filter((t) => t.id !== tpId));
       setTpAchievements((prev) => {
         const next = { ...prev };
         delete next[tpId];
@@ -710,19 +762,6 @@ export default function TeacherPanel({
       });
 
       setSuccess("Tujuan Pembelajaran berhasil dihapus permanen.");
-
-      // Also reload in background to stay synced
-      const resTp = await fetch("/api/tps");
-      const tpData = await resTp.json();
-      const allSubjectTps = Array.isArray(tpData[user.subject])
-        ? tpData[user.subject]
-        : Array.isArray(tpData)
-        ? tpData
-        : [];
-      const classTps = allSubjectTps.filter(
-        (t: any) => String(t.kelas || "").trim() === String(selectedClass).trim(),
-      );
-      setTpTemplates(classTps);
     } catch (err: any) {
       setError(err.message || "Gagal menghapus TP.");
     }
@@ -800,20 +839,14 @@ export default function TeacherPanel({
         (tp) => tp && tp.achieved === false
       );
 
-      let predikat = "-";
-      if (numericScore !== null) {
-        if (numericScore >= 90) predikat = "A (Sangat Baik)";
-        else if (numericScore >= 80) predikat = "B (Baik)";
-        else if (numericScore >= 70) predikat = "C (Cukup)";
-        else predikat = "D (Perlu Bimbingan)";
-      }
+      const predikat = numericScore !== null ? tentukanPredikatLabel(numericScore, "-") : "-";
 
       let guidanceStatus: "needs_guidance" | "competent" | "advanced" | "unrated" = "unrated";
       if (numericScore === null) {
         guidanceStatus = "unrated";
-      } else if (numericScore < kkmThreshold) {
+      } else if (numericScore < KKM_DEFAULT) {
         guidanceStatus = "needs_guidance";
-      } else if (numericScore >= 85) {
+      } else if (numericScore > BATAS_UNGGUL) {
         guidanceStatus = "advanced";
       } else {
         guidanceStatus = "competent";
@@ -880,7 +913,7 @@ export default function TeacherPanel({
     ungradedList.sort((a, b) => (a.student.name || "").localeCompare(b.student.name || "", "id"));
 
     return [...rankedList, ...ungradedList];
-  }, [students, grades, rankingSubject, rankingClass, rankingSort, kkmThreshold]);
+  }, [students, grades, rankingSubject, rankingClass, rankingSort]);
 
   // Filter rankings by search query and guidance status
   const filteredSubjectRankings = React.useMemo(() => {
@@ -945,11 +978,14 @@ export default function TeacherPanel({
 
   // Quick action from ranking table to grading form
   const handleSelectStudentForGrading = (st: Student) => {
+    if (!confirmDiscardUnsavedChanges(st.id)) return;
+    isFormDirtyRef.current = false;
+    setIsFormDirty(false);
     setSelectedClass(st.kelas);
     const classTps = tpTemplates.filter(
       (t: any) => String(t.kelas || "").trim() === String(st.kelas).trim()
     );
-    handleStudentSelect(st, grades, classTps);
+    handleStudentSelect(st, grades, classTps, true);
     setActiveViewTab("grades");
   };
 
@@ -1001,7 +1037,7 @@ export default function TeacherPanel({
           </div>
           <div class="meta">
             <div>Guru Pengampu: <strong>${user.name}</strong></div>
-            <div>Standar KKM: <strong>${kkmThreshold}</strong> | Tanggal: <strong>${dateStr}</strong></div>
+            <div>Standar KKM: <strong>${KKM_DEFAULT}</strong> | Tanggal: <strong>${dateStr}</strong></div>
           </div>
           <table>
             <thead>
@@ -1083,7 +1119,7 @@ export default function TeacherPanel({
               {["7", "8", "9"].map((cls) => (
                 <button
                   key={cls}
-                  onClick={() => setSelectedClass(cls)}
+                  onClick={() => handleClassSelect(cls)}
                   className={`py-2 px-3 rounded-lg text-xs font-black transition cursor-pointer text-center ${
                     selectedClass === cls
                       ? "bg-emerald-600 text-white border-2 border-emerald-300 shadow-md ring-2 ring-emerald-500/30"
@@ -1216,10 +1252,10 @@ export default function TeacherPanel({
           </button>
         </div>
 
-        {error && (
+        {(error || realtimeLoadError) && (
           <div className="p-3.5 bg-red-950/90 text-white text-xs font-black rounded-xl border-2 border-red-500 flex items-start gap-2.5 shadow-md">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
-            <span>{error}</span>
+            <span>{error || realtimeLoadError}</span>
           </div>
         )}
 
@@ -1230,23 +1266,64 @@ export default function TeacherPanel({
           </div>
         )}
 
+        {/* Remote Concurrent Update Protection Banner (Task 3) */}
+        {remoteUpdateBanner && selectedStudent && (
+          <div
+            id="teacher-remote-update-banner"
+            className="p-3.5 bg-amber-950/95 border-2 border-amber-400 text-amber-100 text-xs font-bold rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg animate-fade-in"
+          >
+            <div className="flex items-start gap-2.5">
+              <RefreshCw className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-black text-white">
+                  Data siswa ini baru diperbarui oleh {remoteUpdateBanner.updatedBy}
+                </p>
+                <p className="text-[11px] text-amber-200/90 mt-0.5">
+                  Isian yang sedang Anda ketik dilindungi agar tidak tertimpa otomatis. Klik tombol di samping jika ingin memuat data terbaru.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!confirmDiscardUnsavedChanges(null)) return;
+                handleStudentSelect(selectedStudent, grades, tpTemplates, true);
+              }}
+              className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg transition cursor-pointer shrink-0 flex items-center gap-1.5 shadow-md"
+              id="load-latest-teacher-data-btn"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Muat data terbaru</span>
+            </button>
+          </div>
+        )}
+
         {/* INPUT GRADING TAB */}
         {activeViewTab === "grades" &&
           (selectedStudent ? (
             <form onSubmit={handleSave} className="space-y-5">
-              <div className="p-4 bg-[#142036] border-2 border-[#294269] rounded-xl flex items-center gap-4 shadow-sm">
-                <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg border-2 border-emerald-300 shadow-md shrink-0">
-                  {selectedStudent.name?.charAt(0) || "?"}
-                </div>
-                <div>
-                  <h3 className="font-black text-base text-white uppercase tracking-wide">
-                    {selectedStudent.name || "N/A"}
-                  </h3>
-                  <p className="text-xs text-slate-200 font-bold mt-0.5 flex items-center gap-2 flex-wrap">
-                    <span>NISN: <span className="font-mono text-emerald-300 font-black">{selectedStudent.nisn || "-"}</span></span>
-                    <span>•</span>
-                    <span>Kelas: <span className="font-mono text-amber-300 font-black">{selectedStudent.kelas || "-"}</span></span>
-                  </p>
+              <div className="p-4 bg-[#142036] border-2 border-[#294269] rounded-xl flex items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg border-2 border-emerald-300 shadow-md shrink-0">
+                    {selectedStudent.name?.charAt(0) || "?"}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-black text-base text-white uppercase tracking-wide">
+                        {selectedStudent.name || "N/A"}
+                      </h3>
+                      {isFormDirty && (
+                        <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md">
+                          Sedang Diedit (Belum Disimpan)
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-200 font-bold mt-0.5 flex items-center gap-2 flex-wrap">
+                      <span>NISN: <span className="font-mono text-emerald-300 font-black">{selectedStudent.nisn || "-"}</span></span>
+                      <span>•</span>
+                      <span>Kelas: <span className="font-mono text-amber-300 font-black">{selectedStudent.kelas || "-"}</span></span>
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1259,13 +1336,13 @@ export default function TeacherPanel({
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1 text-[11px] font-black px-3 py-1 rounded-lg bg-emerald-950 border-2 border-emerald-400 text-emerald-200 shadow-xs">
-                        &gt; 91 = A (Sangat Baik)
+                        {RENTANG_PREDIKAT_A}
                       </span>
                       <span className="inline-flex items-center gap-1 text-[11px] font-black px-3 py-1 rounded-lg bg-blue-950 border-2 border-blue-400 text-blue-200 shadow-xs">
-                        80 - 91 = B (Baik)
+                        {RENTANG_PREDIKAT_B}
                       </span>
                       <span className="inline-flex items-center gap-1 text-[11px] font-black px-3 py-1 rounded-lg bg-amber-950 border-2 border-amber-400 text-amber-200 shadow-xs">
-                        &le; 79 = C (Cukup)
+                        {RENTANG_PREDIKAT_C}
                       </span>
                     </div>
                   </div>
@@ -1277,23 +1354,17 @@ export default function TeacherPanel({
                       <span
                         className={`text-xs font-black font-mono block ${
                           score !== ""
-                            ? Number(score) > 91
+                            ? tentukanPredikat(Number(score)) === "A"
                               ? "text-emerald-300"
-                              : Number(score) >= 80
+                              : tentukanPredikat(Number(score)) === "B"
                               ? "text-blue-300"
                               : "text-amber-300"
                             : "text-slate-300"
                         }`}
                       >
-                        {score !== "" ? (
-                          Number(score) > 91
-                            ? "Predikat A"
-                            : Number(score) >= 80
-                            ? "Predikat B"
-                            : "Predikat C"
-                        ) : (
-                          "Belum diisi"
-                        )}
+                        {score !== ""
+                          ? `Predikat ${tentukanPredikat(Number(score)) || "C"}`
+                          : "Belum diisi"}
                       </span>
                     </div>
                     <input
@@ -1318,7 +1389,11 @@ export default function TeacherPanel({
                     </label>
                     <select
                       value={usaha}
-                      onChange={(e) => setUsaha(e.target.value)}
+                      onChange={(e) => {
+                        setUsaha(e.target.value);
+                        setIsFormDirty(true);
+                        isFormDirtyRef.current = true;
+                      }}
                       className="w-full p-2.5 bg-[#060b14] border-2 border-[#3d5a8a] rounded-xl text-xs sm:text-sm font-black text-white focus:outline-none focus:border-emerald-400 shadow-xs"
                     >
                       <option value="A">A (Sangat Baik)</option>
@@ -1333,7 +1408,11 @@ export default function TeacherPanel({
                     </label>
                     <select
                       value={proses}
-                      onChange={(e) => setProses(e.target.value)}
+                      onChange={(e) => {
+                        setProses(e.target.value);
+                        setIsFormDirty(true);
+                        isFormDirtyRef.current = true;
+                      }}
                       className="w-full p-2.5 bg-[#060b14] border-2 border-[#3d5a8a] rounded-xl text-xs sm:text-sm font-black text-white focus:outline-none focus:border-emerald-400 shadow-xs"
                     >
                       <option value="A">A (Sangat Baik)</option>
@@ -1348,7 +1427,11 @@ export default function TeacherPanel({
                     </label>
                     <select
                       value={capaian}
-                      onChange={(e) => setCapaian(e.target.value)}
+                      onChange={(e) => {
+                        setCapaian(e.target.value);
+                        setIsFormDirty(true);
+                        isFormDirtyRef.current = true;
+                      }}
                       className="w-full p-2.5 bg-[#060b14] border-2 border-[#3d5a8a] rounded-xl text-xs sm:text-sm font-black text-white focus:outline-none focus:border-emerald-400 shadow-xs"
                     >
                       <option value="A">A (Sangat Baik)</option>
@@ -1488,6 +1571,9 @@ export default function TeacherPanel({
                   onChange={(e) => {
                     setCustomDescription(e.target.value);
                     setIsCustomDescActive(true);
+                    setIsFormDirty(true);
+                    isFormDirtyRef.current = true;
+                    setForeignNameWarning(null);
                   }}
                   rows={4}
                   placeholder={
@@ -1497,13 +1583,58 @@ export default function TeacherPanel({
                   }
                   className="w-full p-4 border-2 border-[#3d5a8a] rounded-xl text-xs sm:text-sm bg-[#060b14] text-white font-bold leading-relaxed placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 shadow-inner"
                 />
+
+                {foreignNameWarning && (
+                  <div className="p-4 bg-amber-950/90 border-2 border-amber-400 rounded-xl space-y-3 text-xs text-white shadow-md">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="font-black text-amber-200 uppercase tracking-wide">
+                          Peringatan Deteksi Nama Siswa Lain di Kelas {selectedStudent.kelas}
+                        </p>
+                        <p className="font-bold text-slate-100 leading-relaxed">
+                          Teks deskripsi untuk <strong>{selectedStudent.name}</strong> mengandung nama siswa lain dari kelas yang sama:{" "}
+                          <strong className="text-amber-300 underline">
+                            {foreignNameWarning.names.join(", ")}
+                          </strong>
+                          . Teks tidak akan diubah otomatis oleh sistem. Apakah Anda yakin ingin tetap menyimpan deskripsi ini apa adanya?
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setForeignNameWarning(null)}
+                        className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-lg border border-slate-500 cursor-pointer transition"
+                      >
+                        Batal / Perbaiki Teks
+                      </button>
+                      <button
+                        type="button"
+                        disabled={saveLoading || loadError || isOffline}
+                        onClick={() => executeSaveGrade(true)}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-lg border-2 border-amber-300 cursor-pointer transition disabled:opacity-50"
+                      >
+                        Ya, Tetap Simpan Tanpa Mengubah Teks
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Save trigger */}
-              <div className="border-t-2 border-[#203254] pt-4.5 text-right">
+              <div className="border-t-2 border-[#203254] pt-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {isOffline ? (
+                  <div className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                    <WifiOff className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>Perangkat sedang Offline. Tombol Simpan dinonaktifkan sementara.</span>
+                  </div>
+                ) : (
+                  <div />
+                )}
                 <button
                   type="submit"
-                  disabled={saveLoading}
+                  disabled={saveLoading || loadError || isOffline}
                   className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-sm font-black flex items-center gap-2 ml-auto shadow-lg border-2 border-emerald-300 transition cursor-pointer disabled:opacity-50"
                   id="submit-grades-button"
                 >
@@ -1564,7 +1695,7 @@ export default function TeacherPanel({
               </div>
               <button
                 type="submit"
-                disabled={tpSubmitLoading || !newTpText.trim()}
+                disabled={tpSubmitLoading || !newTpText.trim() || loadError || isOffline}
                 className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-5 py-3 rounded-lg cursor-pointer transition flex items-center justify-center gap-2 text-xs font-black shadow-md border-2 border-emerald-300 shrink-0 w-full sm:w-auto h-[46px]"
                 title="Tambahkan TP"
               >
@@ -1634,7 +1765,7 @@ export default function TeacherPanel({
                               </button>
                               <button
                                 type="submit"
-                                disabled={editTpLoading || !editingTpText.trim()}
+                                disabled={editTpLoading || !editingTpText.trim() || loadError || isOffline}
                                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-lg transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shadow-xs border-2 border-emerald-300"
                               >
                                 {editTpLoading ? (
@@ -1827,20 +1958,15 @@ export default function TeacherPanel({
                   </div>
                 </div>
 
-                {/* 4. KKM Threshold */}
+                {/* 4. KKM Threshold (Terkunci / Baca-Saja) */}
                 <div className="lg:col-span-2 space-y-1">
                   <label className="text-[11px] font-black text-slate-300 uppercase tracking-wider block flex items-center justify-between">
                     <span>Standar KKM:</span>
-                    <span className="text-[10px] text-amber-300 font-mono font-bold">{kkmThreshold}</span>
+                    <span className="text-[10px] text-amber-300 font-mono font-bold">{KKM_DEFAULT}</span>
                   </label>
-                  <input
-                    type="number"
-                    min="50"
-                    max="100"
-                    value={kkmThreshold}
-                    onChange={(e) => setKkmThreshold(Number(e.target.value) || 75)}
-                    className="w-full px-3 py-1.5 bg-[#090f1d] border border-[#2b4168] rounded-xl text-xs font-black text-center text-amber-300 focus:outline-none focus:border-amber-400"
-                  />
+                  <div className="w-full px-3 py-1.5 bg-[#090f1d] border border-[#2b4168] rounded-xl text-xs font-black text-center text-amber-300 select-none">
+                    KKM: {KKM_DEFAULT}
+                  </div>
                 </div>
               </div>
 
@@ -1952,7 +2078,7 @@ export default function TeacherPanel({
                 </div>
                 <div className="min-w-0">
                   <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 block font-mono">
-                    Siswa Tuntas (&ge; {kkmThreshold})
+                    Siswa Tuntas (&ge; {KKM_DEFAULT})
                   </span>
                   <div className="text-xl font-black text-emerald-300 font-mono">
                     {rankingStats.countCompetent} <span className="text-xs text-slate-400 font-normal">Siswa</span>
@@ -2268,8 +2394,6 @@ export default function TeacherPanel({
                                     ? "bg-blue-950 text-blue-300 border border-blue-500/50"
                                     : item.predikat.startsWith("C")
                                     ? "bg-amber-950 text-amber-300 border border-amber-500/50"
-                                    : item.predikat.startsWith("D")
-                                    ? "bg-red-950 text-red-300 border border-red-500/50"
                                     : "text-slate-500"
                                 }`}
                               >
@@ -2286,7 +2410,7 @@ export default function TeacherPanel({
                                     <span>PERLU BIMBINGAN LEBIH</span>
                                   </span>
                                   <div className="text-[10px] text-red-300 font-semibold leading-tight">
-                                    Nilai ({item.score}) di bawah KKM ({kkmThreshold}). Butuh perhatian khusus & remedial.
+                                    Nilai ({item.score}) di bawah KKM ({KKM_DEFAULT}). Butuh perhatian khusus & remedial.
                                   </div>
                                   {item.unachievedTps.length > 0 && (
                                     <div className="text-[9.5px] text-amber-300 bg-amber-950/40 p-1 rounded border border-amber-500/30">

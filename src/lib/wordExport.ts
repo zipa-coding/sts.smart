@@ -15,12 +15,14 @@ import {
   PageBreak,
   TabStopType,
 } from "docx";
-import { saveAs } from "file-saver";
+import FileSaver from "file-saver";
 import JSZip from "jszip";
+const saveAs = typeof FileSaver === "function" ? FileSaver : (FileSaver as any).saveAs;
 import { Student, Grade, Halaqoh, Teacher, sortHalaqohStudents } from "../types";
 import { KEISLAMAN_SUBJECTS } from "../components/HalaqohRaportView";
 import { sanitizeTextForStudent } from "./raportPdfService";
-import kopSuratBannerUrl from "../assets/images/kop_surat_banner.png";
+import { tentukanPredikat } from "./predikat";
+const kopSuratBannerUrl = new URL("../assets/images/kop_surat_banner.png", import.meta.url).href;
 
 const border = {
   style: BorderStyle.SINGLE,
@@ -167,32 +169,22 @@ export async function generateHalaqohWordBlob(
         isSameSub(g.subject, subjectMeta.key)
     );
 
-    const scoreToPred = (score: number | string | undefined | null): string => {
-      if (score === undefined || score === null || score === "") return "";
-      const num = typeof score === "number" ? score : parseFloat(String(score));
-      if (isNaN(num)) return String(score).trim();
-      if (num >= 90) return "A";
-      if (num >= 80) return "B";
-      if (num >= 70) return "C";
-      return "D";
-    };
-
     const usahaVal = (gradeObj?.usaha && gradeObj.usaha.trim() !== "")
       ? gradeObj.usaha.trim()
       : (gradeObj?.score !== undefined && gradeObj?.score !== null)
-      ? scoreToPred(gradeObj.score)
+      ? (tentukanPredikat(gradeObj.score) || String(gradeObj.score).trim())
       : "A";
 
     const prosesVal = (gradeObj?.proses && gradeObj.proses.trim() !== "")
       ? gradeObj.proses.trim()
       : (gradeObj?.score !== undefined && gradeObj?.score !== null)
-      ? scoreToPred(gradeObj.score)
+      ? (tentukanPredikat(gradeObj.score) || String(gradeObj.score).trim())
       : "A";
 
     const capaianVal = (gradeObj?.capaian && gradeObj.capaian.trim() !== "")
       ? gradeObj.capaian.trim()
       : (gradeObj?.score !== undefined && gradeObj?.score !== null)
-      ? scoreToPred(gradeObj.score)
+      ? (tentukanPredikat(gradeObj.score) || String(gradeObj.score).trim())
       : "A";
 
     let descContent = "";
@@ -646,7 +638,7 @@ export async function generateHalaqohWordBlob(
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "A : 90 – 100",
+                    text: "A : > 91",
                     font: "Times New Roman",
                     size: 18,
                   }),
@@ -656,7 +648,7 @@ export async function generateHalaqohWordBlob(
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "B : 75 – 89",
+                    text: "B : 80 – 91",
                     font: "Times New Roman",
                     size: 18,
                   }),
@@ -666,7 +658,7 @@ export async function generateHalaqohWordBlob(
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "C : 60 – 74",
+                    text: "C : < 80",
                     font: "Times New Roman",
                     size: 18,
                   }),
