@@ -295,6 +295,16 @@ class RealtimeStoreManager {
           predicate: computedPredicate,
           predikat: computedPredicate,
           description: d.description || d.deskripsi || d.catatan || "",
+          deskripsi:
+            typeof d.deskripsi === "string"
+              ? d.deskripsi
+              : typeof d.description === "string"
+              ? d.description
+              : "",
+          deskripsiDikosongkan:
+            typeof d.deskripsiDikosongkan === "boolean"
+              ? d.deskripsiDikosongkan
+              : undefined,
           achievedTps: Array.isArray(d.achievedTps)
             ? d.achievedTps
             : Array.isArray(d.tps)

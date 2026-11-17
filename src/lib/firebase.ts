@@ -519,6 +519,13 @@ export const firebaseApi = {
       lastUpdatedAt: new Date().toISOString(),
     };
 
+    if (izinKosongkan && finalDeskripsi.trim() === "") {
+      updatedGrade.deskripsi = "";
+      updatedGrade.deskripsiDikosongkan = true;
+    } else if (finalDeskripsi.trim() !== "") {
+      updatedGrade.deskripsiDikosongkan = false;
+    }
+
     if (derivedPredikat !== null) {
       updatedGrade.predikat = derivedPredikat;
     }

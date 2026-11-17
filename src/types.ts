@@ -78,6 +78,7 @@ export interface Grade {
   proses?: string;
   capaian?: string;
   deskripsi?: string;
+  deskripsiDikosongkan?: boolean;
   teacherName?: string;
   lastUpdatedBy?: string;
   lastUpdatedAt?: string;

@@ -790,6 +790,12 @@ const localFetchInterception = async (input: RequestInfo | URL, init?: RequestIn
         lastUpdatedBy: teacherName || "Guru Mata Pelajaran",
         lastUpdatedAt: new Date().toISOString()
       };
+      if (izinKosongkan && safeDeskripsi.trim() === "") {
+        updatedGrade.deskripsi = "";
+        updatedGrade.deskripsiDikosongkan = true;
+      } else if (safeDeskripsi.trim() !== "") {
+        updatedGrade.deskripsiDikosongkan = false;
+      }
       if (derivedPredikat !== null) {
         updatedGrade.predikat = derivedPredikat;
       }
